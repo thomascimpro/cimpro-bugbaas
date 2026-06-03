@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "CimPro BugBaas",
+    "slug": "cimpro-bugbaas",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "nl.cimpro.bugbaas"
+    },
+    "extra": {
+      "firebaseApiKey": "AIzaSyDSoTGqmjFMIzlVBjgNt55gCqpr4bsM9R4",
+      "firebaseAuthDomain": "thomascimpro-6266f.firebaseapp.com",
+      "firebaseProjectId": "thomascimpro-6266f",
+      "firebaseMessagingSenderId": "508370199825",
+      "firebaseAppId": "1:508370199825:android:469f30507a5623e281d8b0",
+      "googleClientId": "508370199825-9f589ss9c08k6u4q5u205e6lmfaobln9.apps.googleusercontent.com",
+      "googleAndroidClientId": "508370199825-70k6pl884r7cei7tn27qrlda953794qa.apps.googleusercontent.com"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ]
+  }
+}

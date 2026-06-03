@@ -1,0 +1,27 @@
+# Status
+
+- Projectbasis: klaar.
+- Auth-flow: klaar met Firebase integratie en demo-fallback.
+- Google-login toegevoegd; volledige OAuth-test vereist dev/standalone Android build.
+- Eerste standalone APK gebouwd en getest op Pixel 8.
+- Bug CRUD V1: aanmaken, tonen en status wijzigen klaar.
+- Upvotes op bugmeldingen: klaar.
+- Screenshot V1: client-side resize/compressie klaar; opgeslagen als Firestore data-URL voor Spark-only gebruik.
+- Puntenlogica: klaar.
+- Leaderboard/profiel: klaar.
+- Modern profielscherm met tier, badges en status: klaar.
+- Tier-systeem met insectbeelden: klaar.
+- Tier-upgrades tonen grotere, betere insect-assets per niveau: klaar.
+- Modern UI met achtergrond, betere knoppen, insect-stage en ranking-preview: klaar.
+- Walking bug animaties: klaar met vooruit lopend zijaanzicht.
+- Walking bugs zijn klikbaar en tonen splat-effect: klaar.
+- Bottom navigation met Home, Bug melden en Ranglijst: klaar.
+- Profielroute bereikbaar vanaf Home: klaar.
+- Home nieuws en Ranglijst status/badgechips: klaar.
+- Clean UI zonder zichtbare demo/uitlegtekst: klaar.
+- Online-inspired modern UI met prominente meldknop, dashboardtegels en sterkere ranglijstheader: klaar.
+- Firebase echte projectconfig, Auth persistence en Firestore rules: klaar.
+- Firebase live koppeling met Auth, Firestore users en bugs: klaar.
+- Firebase CLI beheert Firestore rules en indexes: klaar.
+- Spark-plan documentatie: klaar in `FIREBASE_SPARK_PLAN.md`.
+- Android test: zie `TESTRESULTS.md`.

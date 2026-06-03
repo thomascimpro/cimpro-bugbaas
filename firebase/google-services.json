@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "508370199825",
+    "project_id": "thomascimpro-6266f",
+    "storage_bucket": "thomascimpro-6266f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:508370199825:android:469f30507a5623e281d8b0",
+        "android_client_info": {
+          "package_name": "nl.cimpro.bugbaas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "508370199825-70k6pl884r7cei7tn27qrlda953794qa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "nl.cimpro.bugbaas",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "508370199825-tp4jcs7iacabpp45ulhfm44ef2mi0rkh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "nl.cimpro.bugbaas",
+            "certificate_hash": "2f2c57b30124971979aab3a9792b92c2354c9037"
+          }
+        },
+        {
+          "client_id": "508370199825-9f589ss9c08k6u4q5u205e6lmfaobln9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSoTGqmjFMIzlVBjgNt55gCqpr4bsM9R4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "508370199825-9f589ss9c08k6u4q5u205e6lmfaobln9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

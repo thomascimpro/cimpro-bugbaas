@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+.gradle/
+android/.gradle/
+android/build/
+android/app/build/
+release/*.apk
+*.log
+*.hprof
+*.tmp
+.tmp-*
+pixel8-*.png
+apk-window.xml
+firebase-debug.log
