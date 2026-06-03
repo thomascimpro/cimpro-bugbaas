@@ -57,7 +57,6 @@ function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: U
             <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={index === 0 ? 58 : 44} />
             <Text style={[styles.podiumRank, index === 0 && styles.podiumLeaderText]}>#{index + 1}</Text>
             <Text style={[styles.podiumName, index === 0 && styles.podiumLeaderText]} numberOfLines={1}>{user.displayName}</Text>
-            <Text style={[styles.podiumMeta, { color: index === 0 ? "#d7bd57" : tier.frameColor }]}>{tier.prestige}</Text>
           </Pressable>
         );
       })}
@@ -133,11 +132,6 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginTop: 2,
     maxWidth: "100%"
-  },
-  podiumMeta: {
-    fontSize: 12,
-    fontWeight: "900",
-    marginTop: 2
   },
   podiumLeaderText: {
     color: "#ffffff"

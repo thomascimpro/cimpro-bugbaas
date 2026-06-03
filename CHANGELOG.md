@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+- Ranglijst top-3 toont geen prestige/tiertekst meer onder de rank.
+- BugDex toont weer alle 31 slots met vraagtekens voor locked bugs.
+
 ## 1.0.1
 
 - BugDex toont alleen nog vrijgespeelde bugs.

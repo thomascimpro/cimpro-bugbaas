@@ -45,8 +45,7 @@ export function BugDexScreen({ user, onBack }: Props) {
   const featuredEntries = unlockedEntries.slice(0, 3);
   const headerEntry = unlockedEntries[unlockedEntries.length - 1];
   const dexCards = bugDexEntries
-    .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }))
-    .filter((item): item is { entry: BugDexEntry; index: number; inventoryItem: BugDexInventoryItem } => Boolean(item.inventoryItem));
+    .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }));
   const duplicateCount = inventory.reduce((total, item) => total + Math.max(0, item.count - 1), 0);
   const duplicateInventory = inventory.filter((item) => item.count > 1);
   const recipientDuplicateInventory = recipientInventory.filter((item) => item.count > 1);
@@ -278,27 +277,30 @@ export function BugDexScreen({ user, onBack }: Props) {
       </View>
 
       <View style={styles.grid}>
-        {dexCards.length ? dexCards.map(({ entry, index, inventoryItem }) => {
+        {dexCards.map(({ entry, index, inventoryItem }) => {
           const color = rarityColors[entry.rarity];
           const requiredCount = combineRequiredCount(entry.rarity);
-          const canCombine = Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
+          const unlocked = Boolean(inventoryItem);
+          const canCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
           return (
-            <View key={entry.id} style={[styles.card, { borderColor: color }]}>
+            <View key={entry.id} style={[styles.card, !unlocked && styles.lockedCard, { borderColor: unlocked ? color : "#cbd8d1" }]}>
               <View style={styles.cardTop}>
-                <View style={[styles.numberPill, { backgroundColor: color }]}>
+                <View style={[styles.numberPill, { backgroundColor: unlocked ? color : "#87958e" }]}>
                   <Text style={styles.numberText}>{String(index + 1).padStart(2, "0")}</Text>
                 </View>
-                <Text style={[styles.rarity, { color }]}>{entry.rarity}</Text>
+                <Text style={[styles.rarity, { color: unlocked ? color : "#87958e" }]}>{unlocked ? entry.rarity : "???"}</Text>
               </View>
-              <View style={styles.bugWrap}>
-                <BugArtImage bugId={entry.id} size={70} />
+              <View style={[styles.bugWrap, !unlocked && styles.lockedBugWrap]}>
+                {unlocked ? <BugArtImage bugId={entry.id} size={70} /> : <Text style={styles.lockedMark}>?</Text>}
               </View>
               <View style={styles.nameRow}>
-                <Text style={styles.name} numberOfLines={1}>{entry.name}</Text>
-                {inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
+                <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? entry.name : "Onbekend"}</Text>
+                {unlocked && inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
               </View>
-              <Text style={styles.title}>{entry.title}</Text>
-              <Text style={styles.note}>{entry.note}</Text>
+              <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? entry.title : "Nog niet ontdekt"}</Text>
+              <Text style={[styles.note, !unlocked && styles.lockedText]}>
+                {unlocked ? entry.note : "Gebruik de app om deze bug te vinden."}
+              </Text>
               {canCombine && (
                 <Pressable style={styles.combineButton} disabled={combineBusyId === entry.id} onPress={() => combine(entry.id)}>
                   <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : `Combine x${requiredCount}`}</Text>
@@ -306,12 +308,7 @@ export function BugDexScreen({ user, onBack }: Props) {
               )}
             </View>
           );
-        }) : (
-          <View style={styles.emptyDexCard}>
-            <Text style={styles.emptyDexTitle}>BugDex is leeg</Text>
-            <Text style={styles.emptyDexText}>Gebruik de app om je eerste bug te vinden.</Text>
-          </View>
-        )}
+        })}
       </View>
 
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
