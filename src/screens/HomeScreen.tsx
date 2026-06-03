@@ -63,16 +63,15 @@ export function HomeScreen({ user, onNavigate }: Props) {
       </View>
       <View style={styles.stage}>
         {userTiers.map((item) => {
-          const unlocked = user.totalPoints >= item.minPoints;
+          const current = item.title === tier.title;
           return (
-            <BugArtImage
-              key={item.title}
-              bugId={unlocked ? item.bugArtId : undefined}
-              fallbackLevel={unlocked ? item.evolutionLevel : 1}
-              fallbackVariant={unlocked ? item.insect : "larva"}
-              opacity={unlocked ? 1 : 0.3}
-              size={Math.max(34, item.bugSize * 0.62)}
-            />
+            <View key={item.title} style={[styles.stageTierItem, { backgroundColor: item.frameBackground, borderColor: item.frameColor }, current && styles.stageTierItemActive]}>
+              <View style={[styles.stageShine, { backgroundColor: item.frameAccent }]} />
+              <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={Math.max(34, item.bugSize * 0.58)} />
+              <View style={[styles.stageMedal, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
+                <Text style={[styles.stageStar, { color: item.frameColor }]}>★</Text>
+              </View>
+            </View>
           );
         })}
       </View>
@@ -100,12 +99,11 @@ export function HomeScreen({ user, onNavigate }: Props) {
           <Text style={styles.dexMeta}>{dexCount}/{bugDexEntries.length} gevangen</Text>
         </View>
         <View style={styles.dexBugs}>
-          {dexPreviewEntries.map((entry) => (
+          {dexPreviewEntries.length ? dexPreviewEntries.map((entry) => (
             <BugArtImage key={entry.id} bugId={entry.id} size={50} />
-          ))}
-          {Array.from({ length: Math.max(0, 3 - dexPreviewEntries.length) }).map((_, index) => (
-            <BugArtImage key={`locked-${index}`} fallbackLevel={1} fallbackVariant="larva" opacity={0.28} size={44} />
-          ))}
+          )) : (
+            <Text style={styles.dexEmptyText}>Nog leeg</Text>
+          )}
         </View>
       </Pressable>
       <View style={styles.missionCard}>
@@ -243,6 +241,48 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12
   },
+  stageTierItem: {
+    alignItems: "center",
+    backgroundColor: "#fdfefb",
+    borderRadius: 8,
+    borderWidth: 3,
+    height: 72,
+    justifyContent: "center",
+    overflow: "visible",
+    paddingTop: 5,
+    width: 72
+  },
+  stageTierItemActive: {
+    elevation: 4,
+    shadowColor: "#102018",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.16,
+    shadowRadius: 6
+  },
+  stageShine: {
+    height: 28,
+    opacity: 0.58,
+    position: "absolute",
+    right: -14,
+    top: -14,
+    transform: [{ rotate: "45deg" }],
+    width: 28
+  },
+  stageMedal: {
+    alignItems: "center",
+    borderRadius: 7,
+    borderWidth: 1,
+    bottom: -7,
+    height: 20,
+    justifyContent: "center",
+    position: "absolute",
+    width: 28
+  },
+  stageStar: {
+    fontSize: 12,
+    fontWeight: "900",
+    lineHeight: 14
+  },
   tierWrap: {
     marginBottom: 12
   },
@@ -284,6 +324,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 0
+  },
+  dexEmptyText: {
+    color: "#52665d",
+    fontSize: 12,
+    fontWeight: "900"
   },
   missionCard: {
     backgroundColor: "#102018",

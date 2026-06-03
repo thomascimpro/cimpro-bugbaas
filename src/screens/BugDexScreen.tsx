@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
+import { TradeAnimationModal } from "../components/TradeAnimationModal";
 import { BugDexDropResult, bugDexInventoryMap, combineBugDexDuplicates, combineRequiredCount, entryByBugId, listBugDexInventory } from "../services/bugDexService";
 import { notifyTradeRequest } from "../services/notificationService";
-import { bugDexEntries, BugDexRarity } from "../services/pointsService";
+import { bugDexEntries, BugDexEntry, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
 import { createTradeRequest, listTradeRequests, respondToTradeRequest } from "../services/tradeService";
 import { listUsers } from "../services/userService";
 import { BugDexInventoryItem, TradeRequest, User } from "../types";
@@ -28,6 +29,7 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [trades, setTrades] = useState<TradeRequest[]>([]);
   const [recipientInventory, setRecipientInventory] = useState<BugDexInventoryItem[]>([]);
   const [drop, setDrop] = useState<BugDexDropResult | null>(null);
+  const [completedTrade, setCompletedTrade] = useState<TradeRequest | null>(null);
   const [combineBusyId, setCombineBusyId] = useState("");
   const [tradeOfferId, setTradeOfferId] = useState("");
   const [tradeRecipientId, setTradeRecipientId] = useState("");
@@ -35,12 +37,14 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [tradeBusy, setTradeBusy] = useState("");
   const [tradeError, setTradeError] = useState("");
   const inventoryById = bugDexInventoryMap(inventory);
+  const tier = getTierForPoints(user.totalPoints);
   const unlockedCount = inventory.length;
   const totalCount = bugDexEntries.length;
   const progress = Math.round((unlockedCount / totalCount) * 100);
   const unlockedEntries = inventory.map((item) => entryByBugId(item.bugId)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const featuredEntries = unlockedEntries.slice(0, 3);
-  const headerEntry = unlockedEntries[unlockedEntries.length - 1] ?? bugDexEntries[0];
+  const headerEntry = unlockedEntries[unlockedEntries.length - 1];
+  const dexCards = bugDexEntries.map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }));
   const duplicateCount = inventory.reduce((total, item) => total + Math.max(0, item.count - 1), 0);
   const duplicateInventory = inventory.filter((item) => item.count > 1);
   const recipientDuplicateInventory = recipientInventory.filter((item) => item.count > 1);
@@ -109,7 +113,8 @@ export function BugDexScreen({ user, onBack }: Props) {
     setTradeBusy(trade.id);
     setTradeError("");
     try {
-      await respondToTradeRequest(user, trade, accept);
+      const result = await respondToTradeRequest(user, trade, accept);
+      if (accept) setCompletedTrade(result);
       await refreshAll();
     } catch (error) {
       setTradeError(error instanceof Error ? error.message : "Ruil verwerken mislukt.");
@@ -125,21 +130,52 @@ export function BugDexScreen({ user, onBack }: Props) {
           <Text style={[sharedStyles.title, styles.headerTitle]}>BugDex</Text>
           <Text style={styles.headerMeta}>{unlockedCount}/{totalCount} ontdekt - {progress}%</Text>
         </View>
-        <BugArtImage bugId={headerEntry.id} size={74} />
+        <BugArtImage bugId={headerEntry?.id ?? tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={74} />
       </View>
 
       <View style={styles.preview}>
-        {featuredEntries.map((entry) => (
-          <View key={entry.id} style={styles.previewTile}>
-            <BugArtImage bugId={entry.id} size={54} />
-          </View>
-        ))}
-        {unlockedCount < totalCount && (
-          <View style={[styles.previewTile, styles.previewLocked]}>
-            <BugArtImage fallbackLevel={1} fallbackVariant="larva" opacity={0.28} size={48} />
-            <Text style={styles.previewQuestion}>?</Text>
-          </View>
+        {featuredEntries.length ? (
+          featuredEntries.map((entry) => (
+            <View key={entry.id} style={styles.previewTile}>
+              <BugArtImage bugId={entry.id} size={54} />
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyDexText}>Nog geen vondsten. Gebruik de app om je eerste BugDex te vinden.</Text>
         )}
+      </View>
+
+      <View style={styles.tierPanel}>
+        <View style={styles.tierHeader}>
+          <Text style={styles.tierPanelTitle}>Tiers</Text>
+          <Text style={styles.tierPanelMeta}>{tier.title}</Text>
+        </View>
+        <View style={styles.tierGrid}>
+          {userTiers.map((item) => {
+            const current = item.title === tier.title;
+            return (
+              <View key={item.title} style={[styles.tierCard, { backgroundColor: item.frameBackground, borderColor: item.frameColor }, current && styles.tierCardCurrent]}>
+                <View style={[styles.tierGlow, { backgroundColor: item.frameAccent }]} />
+                <View style={[styles.tierImageWrap, { backgroundColor: `${item.frameAccent}66`, borderColor: item.frameColor }]}>
+                  <View style={[styles.tierCornerBadge, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
+                    <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={26} />
+                  </View>
+                  <View style={[styles.tierCircuit, styles.tierCircuitTop, { backgroundColor: item.frameColor }]} />
+                  <View style={[styles.tierCircuit, styles.tierCircuitBottom, { backgroundColor: item.frameColor }]} />
+                  <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={Math.max(44, item.bugSize * 0.66)} />
+                  <View style={[styles.tierMedal, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
+                    <Text style={[styles.tierStar, { color: item.frameColor }]}>★</Text>
+                  </View>
+                </View>
+                <Text style={[styles.tierTitle, { color: item.color }]} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.tierMeta}>{item.minPoints}+ pt</Text>
+                <Text style={styles.tierDescription} numberOfLines={2}>{item.description}</Text>
+                <Text style={[styles.tierReward, { color: item.frameColor }]} numberOfLines={1}>{item.rewardText}</Text>
+                {current && <Text style={styles.tierCurrentPill}>Huidig</Text>}
+              </View>
+            );
+          })}
+        </View>
       </View>
 
       <View style={styles.progressTrack}>
@@ -234,30 +270,33 @@ export function BugDexScreen({ user, onBack }: Props) {
       </View>
 
       <View style={styles.grid}>
-        {bugDexEntries.map((entry, index) => {
-          const inventoryItem = inventoryById[entry.id];
-          const unlocked = Boolean(inventoryItem);
+        {dexCards.map(({ entry, index, inventoryItem }) => {
           const color = rarityColors[entry.rarity];
+          const unlocked = Boolean(inventoryItem);
           const requiredCount = combineRequiredCount(entry.rarity);
           const canCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
           return (
-            <View key={entry.id} style={[styles.card, unlocked && { borderColor: color }, !unlocked && styles.lockedCard]}>
+            <View key={entry.id} style={[styles.card, !unlocked && styles.lockedCard, { borderColor: unlocked ? color : "#cbd8d1" }]}>
               <View style={styles.cardTop}>
-                <View style={[styles.numberPill, unlocked && { backgroundColor: color }]}>
+                <View style={[styles.numberPill, { backgroundColor: unlocked ? color : "#87958e" }]}>
                   <Text style={styles.numberText}>{String(index + 1).padStart(2, "0")}</Text>
                 </View>
-                <Text style={[styles.rarity, { color }]}>{entry.rarity}</Text>
+                <Text style={[styles.rarity, { color: unlocked ? color : "#87958e" }]}>{unlocked ? entry.rarity : "???"}</Text>
               </View>
-              <View style={styles.bugWrap}>
-                <BugArtImage bugId={unlocked ? entry.id : undefined} fallbackLevel={1} fallbackVariant="larva" opacity={unlocked ? 1 : 0.28} size={unlocked ? 70 : 54} />
-                {!unlocked && <View style={styles.lockOverlay}><Text style={styles.lockText}>?</Text></View>}
+              <View style={[styles.bugWrap, !unlocked && styles.lockedBugWrap]}>
+                {unlocked ? <BugArtImage bugId={entry.id} size={70} /> : <Text style={styles.lockedMark}>?</Text>}
               </View>
-              <Text style={[styles.name, !unlocked && styles.lockedText]}>{unlocked ? entry.name : "Onbekende bug"}</Text>
-              <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? entry.title : "???"}</Text>
-              <Text style={styles.note}>{unlocked ? `${entry.note}${inventoryItem && inventoryItem.count > 1 ? ` x${inventoryItem.count}` : ""}` : "Nog niet gevangen."}</Text>
+              <View style={styles.nameRow}>
+                <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? entry.name : "Onbekend"}</Text>
+                {unlocked && inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
+              </View>
+              <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? entry.title : "Nog niet ontdekt"}</Text>
+              <Text style={[styles.note, !unlocked && styles.lockedText]}>
+                {unlocked ? entry.note : "Gebruik de app om deze bug te vinden."}
+              </Text>
               {canCombine && (
                 <Pressable style={styles.combineButton} disabled={combineBusyId === entry.id} onPress={() => combine(entry.id)}>
-                  <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : "Combine"}</Text>
+                  <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : `Combine x${requiredCount}`}</Text>
                 </Pressable>
               )}
             </View>
@@ -269,6 +308,7 @@ export function BugDexScreen({ user, onBack }: Props) {
         <Text style={sharedStyles.secondaryButtonText}>Terug</Text>
       </Pressable>
       <BugDexUnlockModal drop={drop} onClose={() => setDrop(null)} />
+      <TradeAnimationModal currentUser={user} trade={completedTrade} onClose={() => setCompletedTrade(null)} />
     </ScrollView>
   );
 }
@@ -309,15 +349,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 68
   },
-  previewLocked: {
-    backgroundColor: "#e1e8e3"
-  },
-  previewQuestion: {
-    color: "#102018",
-    fontSize: 24,
-    fontWeight: "900",
-    position: "absolute"
-  },
   headerText: {
     flex: 1
   },
@@ -339,6 +370,143 @@ const styles = StyleSheet.create({
   progressFill: {
     backgroundColor: "#15724f",
     height: "100%"
+  },
+  tierPanel: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 12
+  },
+  tierHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10
+  },
+  tierPanelTitle: {
+    color: "#102018",
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  tierPanelMeta: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  tierGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10
+  },
+  tierCard: {
+    backgroundColor: "#f7faf6",
+    borderRadius: 8,
+    borderWidth: 3,
+    minHeight: 226,
+    overflow: "visible",
+    padding: 9,
+    width: "48%"
+  },
+  tierCardCurrent: {
+    backgroundColor: "#fff9df",
+    shadowColor: "#102018",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 5
+  },
+  tierImageWrap: {
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 8,
+    minHeight: 98,
+    justifyContent: "center",
+    marginBottom: 14,
+    overflow: "visible"
+  },
+  tierGlow: {
+    bottom: 0,
+    left: 0,
+    opacity: 0.18,
+    position: "absolute",
+    right: 0,
+    top: 0
+  },
+  tierCornerBadge: {
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    left: -1,
+    position: "absolute",
+    top: -1,
+    width: 50,
+    zIndex: 2
+  },
+  tierCircuit: {
+    height: 2,
+    opacity: 0.4,
+    position: "absolute",
+    width: 30
+  },
+  tierCircuitTop: {
+    right: 10,
+    top: 12
+  },
+  tierCircuitBottom: {
+    bottom: 12,
+    left: 10
+  },
+  tierMedal: {
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 2,
+    bottom: -12,
+    height: 30,
+    justifyContent: "center",
+    position: "absolute",
+    width: 42,
+    zIndex: 2
+  },
+  tierStar: {
+    fontSize: 17,
+    fontWeight: "900",
+    lineHeight: 20
+  },
+  tierTitle: {
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  tierMeta: {
+    color: "#52665d",
+    fontSize: 11,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  tierDescription: {
+    color: "#6d7b73",
+    fontSize: 10,
+    fontWeight: "800",
+    lineHeight: 14,
+    marginTop: 5
+  },
+  tierReward: {
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 6
+  },
+  tierCurrentPill: {
+    alignSelf: "flex-start",
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 7,
+    paddingHorizontal: 7,
+    paddingVertical: 3
   },
   summaryRow: {
     flexDirection: "row",
@@ -501,8 +669,7 @@ const styles = StyleSheet.create({
     width: "48%"
   },
   lockedCard: {
-    backgroundColor: "#eef4ed",
-    opacity: 0.82
+    backgroundColor: "#f3f7f2"
   },
   cardTop: {
     alignItems: "center",
@@ -531,24 +698,40 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     minHeight: 62
   },
-  lockOverlay: {
-    alignItems: "center",
-    backgroundColor: "rgba(16,32,24,0.62)",
-    borderRadius: 20,
-    height: 40,
-    justifyContent: "center",
-    position: "absolute",
-    width: 40
+  lockedBugWrap: {
+    backgroundColor: "#e8efe9",
+    borderColor: "#cbd8d1",
+    borderRadius: 8,
+    borderStyle: "dashed",
+    borderWidth: 1
   },
-  lockText: {
-    color: "#ffffff",
-    fontSize: 22,
+  lockedMark: {
+    color: "#87958e",
+    fontSize: 44,
     fontWeight: "900"
+  },
+  nameRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 6
   },
   name: {
     color: "#102018",
+    flex: 1,
     fontSize: 15,
     fontWeight: "900"
+  },
+  lockedName: {
+    color: "#53645d"
+  },
+  countPill: {
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "900",
+    paddingHorizontal: 6,
+    paddingVertical: 3
   },
   title: {
     color: "#52665d",
@@ -563,7 +746,30 @@ const styles = StyleSheet.create({
     marginTop: 7
   },
   lockedText: {
-    color: "#52665d"
+    color: "#87958e"
+  },
+  emptyDexCard: {
+    alignItems: "center",
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 18,
+    width: "100%"
+  },
+  emptyDexTitle: {
+    color: "#102018",
+    fontSize: 17,
+    fontWeight: "900",
+    marginTop: 8
+  },
+  emptyDexText: {
+    color: "#52665d",
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    textAlign: "center"
   },
   combineButton: {
     alignItems: "center",

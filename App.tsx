@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, StyleSheet, View } from "react-native";
+import { Pressable, SafeAreaView, StyleSheet, View } from "react-native";
 import { AppNotification, BugComment, NotificationSettings, User } from "./src/types";
-import { ensureUserDocument, getUserById, login, loginWithGoogle, logout, register, subscribeAuth, updateUserDisplayName } from "./src/services/userService";
+import { ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, updateUserDisplayName } from "./src/services/userService";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { BugListScreen } from "./src/screens/BugListScreen";
@@ -16,8 +16,10 @@ import { AppBackground } from "./src/components/AppBackground";
 import { BottomNav } from "./src/components/BottomNav";
 import { WalkingBugsLayer } from "./src/components/WalkingBugsLayer";
 import { BugDexUnlockModal } from "./src/components/BugDexUnlockModal";
+import { BugSplatBonusOverlay } from "./src/components/BugSplatBonusOverlay";
 import { DisplayNameModal } from "./src/components/DisplayNameModal";
 import { InAppNotificationToast } from "./src/components/InAppNotificationToast";
+import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
 import { listBugs } from "./src/services/bugService";
 import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, rollBugDexDrop } from "./src/services/bugDexService";
 import {
@@ -41,6 +43,8 @@ export default function App() {
   const [bugDexDrop, setBugDexDrop] = useState<BugDexDropResult | null>(null);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings);
   const [notification, setNotification] = useState<AppNotification | null>(null);
+  const [helpVisible, setHelpVisible] = useState(false);
+  const [splatBonusVisible, setSplatBonusVisible] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
@@ -67,6 +71,11 @@ export default function App() {
     if (!user) return;
     void getNotificationSettings(user).then(setNotificationSettings);
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user || user.nameSet !== true || user.helpSeen !== false) return;
+    setHelpVisible(true);
+  }, [user?.helpSeen, user?.nameSet, user?.uid]);
 
   useEffect(() => {
     if (!user) return () => undefined;
@@ -110,6 +119,16 @@ export default function App() {
     setUser(await updateUserDisplayName(user, displayName));
   }
 
+  async function finishHelpTour() {
+    setHelpVisible(false);
+    if (!user || user.helpSeen === true) return;
+    try {
+      setUser(await markHelpSeen(user));
+    } catch {
+      setUser({ ...user, helpSeen: true });
+    }
+  }
+
   async function refreshUser() {
     if (!user) return;
     const updated = await getUserById(user.uid);
@@ -128,6 +147,17 @@ export default function App() {
   function rewardActivity(source: BugDexDropSource) {
     if (!user) return;
     void maybeShowBugDexDrop(rollBugDexDrop(user, source));
+  }
+
+  async function handleBugSplat() {
+    if (!user) return;
+    try {
+      const result = await recordBugSplat(user);
+      setUser(result.user);
+      if (result.milestone) void maybeShowBugDexDrop(rollBugDexDrop(result.user, "bug_splat"));
+    } catch {
+      // Background splat rewards should never interrupt normal app use.
+    }
   }
 
   async function updateNotificationSettings(settings: NotificationSettings) {
@@ -151,10 +181,26 @@ export default function App() {
     setRoute("detail");
   }
 
-  function navigateMain(nextRoute: "home" | "bugs" | "new" | "bugdex" | "leaderboard" | "settings") {
+  function navigateMain(nextRoute: "home" | "bugs" | "new" | "bugdex" | "leaderboard") {
     setSelectedBug(null);
     setSelectedUser(null);
     setRoute(nextRoute);
+  }
+
+  function openSettings() {
+    setSelectedBug(null);
+    setSelectedUser(null);
+    setRoute("settings");
+  }
+
+  function showHelpTour() {
+    setHelpVisible(true);
+  }
+
+  function navigateHelp(routeName: "home" | "bugs" | "new" | "bugdex" | "leaderboard" | "settings") {
+    setSelectedBug(null);
+    setSelectedUser(null);
+    setRoute(routeName);
   }
 
   function openUserProfile(nextUser: User) {
@@ -170,7 +216,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.shell}>
       <AppBackground />
-      <WalkingBugsLayer />
+      <WalkingBugsLayer onSplat={() => void handleBugSplat()} />
       <View style={styles.content}>
         {route === "home" && <HomeScreen user={user} onNavigate={setRoute} />}
         {route === "bugs" && (
@@ -191,6 +237,7 @@ export default function App() {
               void notifyNewBug(bug, user).catch(() => undefined);
               void refreshUser();
               rewardActivity("bug_reported");
+              setSplatBonusVisible(true);
               setRoute("home");
             }}
           />
@@ -242,13 +289,28 @@ export default function App() {
         )}
         {route === "bugdex" && <BugDexScreen user={user} onBack={() => setRoute("home")} />}
         {route === "settings" && (
-          <SettingsScreen settings={notificationSettings} onBack={() => setRoute("home")} onChange={updateNotificationSettings} />
+          <SettingsScreen settings={notificationSettings} onBack={() => setRoute("home")} onChange={updateNotificationSettings} onShowHelp={showHelpTour} />
         )}
+        <Pressable
+          accessibilityLabel="Instellingen"
+          style={styles.settingsButton}
+          onPress={openSettings}
+          onTouchEnd={openSettings}
+        >
+          <View style={[styles.settingsSurface, route === "settings" && styles.settingsButtonActive]}>
+            <View style={[styles.settingsLine, route === "settings" && styles.settingsLineActive]} />
+            <View style={[styles.settingsDot, route === "settings" && styles.settingsDotActive, styles.settingsDotTop]} />
+            <View style={[styles.settingsLine, route === "settings" && styles.settingsLineActive]} />
+            <View style={[styles.settingsDot, route === "settings" && styles.settingsDotActive, styles.settingsDotBottom]} />
+          </View>
+        </Pressable>
       </View>
       <BottomNav activeRoute={route} onNavigate={navigateMain} />
       <InAppNotificationToast notification={notification} onClose={closeNotification} onOpen={openNotification} />
       <BugDexUnlockModal drop={bugDexDrop} onClose={() => setBugDexDrop(null)} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
+      <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
+      <BugSplatBonusOverlay visible={splatBonusVisible} onSplat={() => void handleBugSplat()} onSkip={() => setSplatBonusVisible(false)} />
     </SafeAreaView>
   );
 }
@@ -260,6 +322,70 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    position: "relative",
     zIndex: 0
+  },
+  settingsButton: {
+    alignItems: "center",
+    elevation: 30,
+    height: 76,
+    justifyContent: "center",
+    position: "absolute",
+    right: 0,
+    top: 16,
+    width: 76,
+    zIndex: 1000
+  },
+  settingsSurface: {
+    alignItems: "center",
+    backgroundColor: "#fdfefb",
+    borderColor: "#c8d5ce",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: "center",
+    shadowColor: "#102018",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    width: 48
+  },
+  settingsButtonActive: {
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57"
+  },
+  settingsGlyph: {
+    gap: 6,
+    width: 23
+  },
+  settingsLine: {
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    height: 3,
+    width: 23
+  },
+  settingsLineActive: {
+    backgroundColor: "#ffffff"
+  },
+  settingsDot: {
+    backgroundColor: "#15724f",
+    borderColor: "#fdfefb",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 9,
+    position: "absolute",
+    width: 9
+  },
+  settingsDotActive: {
+    backgroundColor: "#d7bd57",
+    borderColor: "#102018"
+  },
+  settingsDotTop: {
+    right: 3,
+    top: -3
+  },
+  settingsDotBottom: {
+    left: 3,
+    top: 12
   }
 });

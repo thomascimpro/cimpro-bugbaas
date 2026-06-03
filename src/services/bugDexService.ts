@@ -11,6 +11,7 @@ export type BugDexDropSource =
   | "bug_fixed"
   | "upvote_given"
   | "profile_view"
+  | "bug_splat"
   | "weekly_mission"
   | "combine";
 
@@ -32,8 +33,8 @@ const dropChances: Record<BugDexDropSource, number> = {
   bug_fixed: 0.45,
   upvote_given: 0.18,
   profile_view: 0.08,
-  weekly_mission: 1
-  ,
+  bug_splat: 0.35,
+  weekly_mission: 1,
   combine: 1
 };
 
@@ -45,8 +46,8 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   bug_fixed: [["Zeldzaam", 45], ["Episch", 45], ["Legendarisch", 10]],
   upvote_given: [["Gewoon", 75], ["Zeldzaam", 25]],
   profile_view: [["Gewoon", 88], ["Zeldzaam", 12]],
-  weekly_mission: [["Episch", 78], ["Legendarisch", 22]]
-  ,
+  bug_splat: [["Gewoon", 88], ["Zeldzaam", 12]],
+  weekly_mission: [["Episch", 78], ["Legendarisch", 22]],
   combine: [["Zeldzaam", 100]]
 };
 
@@ -65,11 +66,13 @@ export function bugDexInventoryMap(items: BugDexInventoryItem[]): Record<string,
 
 export async function listBugDexInventory(user: User): Promise<BugDexInventoryItem[]> {
   if (!isFirebaseConfigured) {
-    return Array.from(demoInventory.get(user.uid)?.values() ?? []).sort((a, b) => b.lastUnlockedAt.localeCompare(a.lastUnlockedAt));
+    return Array.from(demoInventory.get(user.uid)?.values() ?? [])
+      .filter((item) => item.count > 0)
+      .sort((a, b) => b.lastUnlockedAt.localeCompare(a.lastUnlockedAt));
   }
 
   const snapshot = await getDocs(query(collection(db, "users", user.uid, "bugdex"), orderBy("lastUnlockedAt", "desc")));
-  return snapshot.docs.map((item) => item.data() as BugDexInventoryItem);
+  return snapshot.docs.map((item) => item.data() as BugDexInventoryItem).filter((item) => item.count > 0);
 }
 
 export async function claimDailyLoginBug(user: User): Promise<BugDexDropResult | null> {
@@ -148,14 +151,16 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
   const targetRarity = nextRarity(sourceEntry.rarity);
   if (!targetRarity) throw new Error("Deze bug is al maximaal zeldzaam.");
   const requiredCount = combineRequiredCount(sourceEntry.rarity);
-  const targetEntry = pickFrom(bugDexEntries.filter((entry) => entry.rarity === targetRarity)) ?? bugDexEntries[0];
+  const currentInventory = await listBugDexInventory(user);
+  const targetEntry = pickCombineTarget(targetRarity, currentInventory);
   const now = new Date().toISOString();
 
   if (!isFirebaseConfigured) {
     const inventory = demoInventory.get(user.uid) ?? new Map<string, BugDexInventoryItem>();
     const sourceItem = inventory.get(bugId);
     if (!sourceItem || sourceItem.count < requiredCount) throw new Error(`Je hebt x${requiredCount} nodig om te combineren.`);
-    inventory.set(bugId, { ...sourceItem, count: sourceItem.count - requiredCount + 1, lastUnlockedAt: now });
+    const nextSourceCount = Math.max(1, sourceItem.count - requiredCount + 1);
+    inventory.set(bugId, { ...sourceItem, count: nextSourceCount, lastUnlockedAt: now });
     const existingTarget = inventory.get(targetEntry.id);
     const targetItem: BugDexInventoryItem = existingTarget
       ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
@@ -175,11 +180,11 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
 
     const targetSnapshot = await transaction.get(targetRef);
     const existingTarget = targetSnapshot.exists() ? targetSnapshot.data() as BugDexInventoryItem : null;
-    const nextSource = { ...sourceItem, count: sourceItem.count - requiredCount + 1, lastUnlockedAt: now };
+    const nextSourceCount = Math.max(1, sourceItem.count - requiredCount + 1);
     const targetItem: BugDexInventoryItem = existingTarget
       ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
       : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
-    transaction.set(sourceRef, nextSource);
+    transaction.set(sourceRef, { ...sourceItem, count: nextSourceCount, lastUnlockedAt: now });
     transaction.set(targetRef, targetItem);
     return { entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   });
@@ -197,6 +202,13 @@ function nextRarity(rarity: BugDexRarity): BugDexRarity | null {
   if (rarity === "Zeldzaam") return "Episch";
   if (rarity === "Episch") return "Legendarisch";
   return null;
+}
+
+function pickCombineTarget(rarity: BugDexRarity, inventory: BugDexInventoryItem[]): BugDexEntry {
+  const ownedIds = new Set(inventory.filter((item) => item.count > 0).map((item) => item.bugId));
+  const candidates = bugDexEntries.filter((entry) => entry.rarity === rarity);
+  const undiscovered = candidates.filter((entry) => !ownedIds.has(entry.id));
+  return pickFrom(undiscovered) ?? pickFrom(candidates) ?? bugDexEntries[0];
 }
 
 function pickEntry(source: BugDexDropSource): BugDexEntry {

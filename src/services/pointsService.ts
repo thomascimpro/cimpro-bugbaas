@@ -1,12 +1,19 @@
 import { BugSeverity, BugStatus, User } from "../types";
 
 export type InsectVariant = "larva" | "beetle" | "grasshopper" | "dragonfly" | "ladybug" | "crawler";
+export type TierPrestige = "Bronze" | "Silver" | "Gold" | "Platinum" | "Diamond";
 
 export type UserTier = {
   minPoints: number;
   title: string;
   description: string;
+  prestige: TierPrestige;
+  prestigeLevel: string;
   color: string;
+  frameColor: string;
+  frameAccent: string;
+  frameBackground: string;
+  rewardText: string;
   bugArtId: string;
   insect: InsectVariant;
   bugSize: number;
@@ -32,7 +39,13 @@ export const userTiers: UserTier[] = [
     minPoints: 0,
     title: "Zilvervisje Starter",
     description: "Glijdt stil door de eerste randgevallen.",
+    prestige: "Bronze",
+    prestigeLevel: "Bronze I",
     color: "#6f7f5f",
+    frameColor: "#9b6a3c",
+    frameAccent: "#d8a05f",
+    frameBackground: "#fff5e7",
+    rewardText: "Starter frame",
     bugArtId: "zilvervisje",
     insect: "larva",
     bugSize: 46,
@@ -42,7 +55,13 @@ export const userTiers: UserTier[] = [
     minPoints: 25,
     title: "Mierenmelder",
     description: "Draagt reproduceerstappen netjes naar het team.",
+    prestige: "Bronze",
+    prestigeLevel: "Bronze II",
     color: "#2f6b4f",
+    frameColor: "#a86f38",
+    frameAccent: "#e4b36f",
+    frameBackground: "#fff1df",
+    rewardText: "Bronze glow",
     bugArtId: "mier",
     insect: "beetle",
     bugSize: 56,
@@ -52,7 +71,13 @@ export const userTiers: UserTier[] = [
     minPoints: 75,
     title: "Sprinkhaan Speurder",
     description: "Springt snel naar reproduceerbare bugs.",
+    prestige: "Silver",
+    prestigeLevel: "Silver I",
     color: "#587c2d",
+    frameColor: "#9aa8ad",
+    frameAccent: "#edf4f5",
+    frameBackground: "#f4f8f8",
+    rewardText: "Silver border",
     bugArtId: "sprinkhaan",
     insect: "grasshopper",
     bugSize: 66,
@@ -62,7 +87,13 @@ export const userTiers: UserTier[] = [
     minPoints: 150,
     title: "Lieveheers Fixer",
     description: "Maakt van losse meldingen nette fixes.",
+    prestige: "Silver",
+    prestigeLevel: "Silver II",
     color: "#b83227",
+    frameColor: "#84989e",
+    frameAccent: "#ffffff",
+    frameBackground: "#eef6f7",
+    rewardText: "Silver shine",
     bugArtId: "lieveheersbeestje",
     insect: "ladybug",
     bugSize: 76,
@@ -72,7 +103,13 @@ export const userTiers: UserTier[] = [
     minPoints: 300,
     title: "Duizendpoot Regisseur",
     description: "Houdt meerdere flows tegelijk scherp.",
+    prestige: "Gold",
+    prestigeLevel: "Gold",
     color: "#8a5a2b",
+    frameColor: "#d7a928",
+    frameAccent: "#fff0a8",
+    frameBackground: "#fff8d9",
+    rewardText: "Gold frame",
     bugArtId: "duizendpoot",
     insect: "crawler",
     bugSize: 88,
@@ -82,7 +119,13 @@ export const userTiers: UserTier[] = [
     minPoints: 500,
     title: "Schorpioen Sentinel",
     description: "Steekt regressies voordat ze terugkomen.",
+    prestige: "Platinum",
+    prestigeLevel: "Platinum",
     color: "#6f4c38",
+    frameColor: "#6e9aa7",
+    frameAccent: "#dff9ff",
+    frameBackground: "#eefbff",
+    rewardText: "Platinum aura",
     bugArtId: "schorpioen",
     insect: "crawler",
     bugSize: 96,
@@ -92,7 +135,13 @@ export const userTiers: UserTier[] = [
     minPoints: 850,
     title: "Neushoorn Commander",
     description: "Duwt zware blokkades uit de release.",
+    prestige: "Diamond",
+    prestigeLevel: "Diamond",
     color: "#1d6f52",
+    frameColor: "#4aa8ff",
+    frameAccent: "#d9f4ff",
+    frameBackground: "#edf8ff",
+    rewardText: "Diamond frame",
     bugArtId: "neushoornkever",
     insect: "beetle",
     bugSize: 104,
@@ -102,7 +151,13 @@ export const userTiers: UserTier[] = [
     minPoints: 1350,
     title: "Goliath BugBaas",
     description: "Legendarische eindbaas van de BugDex.",
+    prestige: "Diamond",
+    prestigeLevel: "Diamond Crown",
     color: "#d7bd57",
+    frameColor: "#7d6bff",
+    frameAccent: "#f5eeff",
+    frameBackground: "#f6f1ff",
+    rewardText: "Crown frame",
     bugArtId: "goliathkever",
     insect: "ladybug",
     bugSize: 112,

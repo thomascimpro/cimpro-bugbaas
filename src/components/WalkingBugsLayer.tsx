@@ -12,24 +12,30 @@ type BugPath = {
   direction: "right" | "left";
   drift: number;
   opacity: number;
+  taps: number;
 };
 
 const paths: BugPath[] = [
-  { delay: 300, duration: 17500, top: 0.16, size: 42, bugId: "mier", direction: "right", drift: 38, opacity: 0.34 },
-  { delay: 1600, duration: 24000, top: 0.29, size: 34, bugId: "zilvervisje", direction: "left", drift: 54, opacity: 0.24 },
-  { delay: 3300, duration: 20500, top: 0.43, size: 46, bugId: "pissebed", direction: "right", drift: 72, opacity: 0.28 },
-  { delay: 5200, duration: 22500, top: 0.57, size: 44, bugId: "lieveheersbeestje", direction: "left", drift: 46, opacity: 0.3 },
-  { delay: 7100, duration: 26800, top: 0.7, size: 38, bugId: "duizendpoot", direction: "right", drift: 62, opacity: 0.22 },
-  { delay: 9400, duration: 19000, top: 0.82, size: 48, bugId: "sprinkhaan", direction: "left", drift: 58, opacity: 0.26 },
-  { delay: 11800, duration: 28500, top: 0.92, size: 54, bugId: "neushoornkever", direction: "right", drift: 32, opacity: 0.2 },
-  { delay: 15100, duration: 34000, top: 0.37, size: 42, bugId: "schorpioen", direction: "left", drift: 86, opacity: 0.16 },
-  { delay: 18800, duration: 38000, top: 0.64, size: 50, bugId: "vogelspin", direction: "right", drift: 74, opacity: 0.14 },
-  { delay: 23100, duration: 42000, top: 0.24, size: 58, bugId: "goliathkever", direction: "left", drift: 40, opacity: 0.12 }
+  { delay: 300, duration: 17500, top: 0.16, size: 42, bugId: "mier", direction: "right", drift: 38, opacity: 0.34, taps: 1 },
+  { delay: 1600, duration: 24000, top: 0.29, size: 34, bugId: "zilvervisje", direction: "left", drift: 54, opacity: 0.24, taps: 1 },
+  { delay: 3300, duration: 20500, top: 0.43, size: 46, bugId: "pissebed", direction: "right", drift: 72, opacity: 0.28, taps: 1 },
+  { delay: 5200, duration: 22500, top: 0.57, size: 44, bugId: "lieveheersbeestje", direction: "left", drift: 46, opacity: 0.3, taps: 1 },
+  { delay: 7100, duration: 26800, top: 0.7, size: 38, bugId: "duizendpoot", direction: "right", drift: 62, opacity: 0.22, taps: 2 },
+  { delay: 9400, duration: 19000, top: 0.82, size: 48, bugId: "sprinkhaan", direction: "left", drift: 58, opacity: 0.26, taps: 2 },
+  { delay: 11800, duration: 28500, top: 0.92, size: 54, bugId: "neushoornkever", direction: "right", drift: 32, opacity: 0.2, taps: 3 },
+  { delay: 15100, duration: 34000, top: 0.37, size: 42, bugId: "schorpioen", direction: "left", drift: 86, opacity: 0.16, taps: 3 },
+  { delay: 18800, duration: 38000, top: 0.64, size: 50, bugId: "vogelspin", direction: "right", drift: 74, opacity: 0.14, taps: 3 },
+  { delay: 23100, duration: 42000, top: 0.24, size: 58, bugId: "goliathkever", direction: "left", drift: 40, opacity: 0.12, taps: 4 }
 ];
 
-export function WalkingBugsLayer() {
+type Props = {
+  onSplat?: () => void;
+};
+
+export function WalkingBugsLayer({ onSplat }: Props) {
   const { width, height } = Dimensions.get("window");
   const [splatted, setSplatted] = useState<Record<number, boolean>>({});
+  const [hits, setHits] = useState<Record<number, number>>({});
   const splatTimers = useRef<Array<ReturnType<typeof setTimeout>>>([]);
   const tracks = useMemo(
     () =>
@@ -70,8 +76,16 @@ export function WalkingBugsLayer() {
     return () => splatTimers.current.forEach((timer) => clearTimeout(timer));
   }, []);
 
-  function splatBug(index: number) {
+  function tapBug(index: number, taps: number) {
+    if (splatted[index]) return;
+    const nextHits = (hits[index] ?? 0) + 1;
+    if (nextHits < taps) {
+      setHits((current) => ({ ...current, [index]: nextHits }));
+      return;
+    }
+    setHits((current) => ({ ...current, [index]: 0 }));
     setSplatted((current) => ({ ...current, [index]: true }));
+    onSplat?.();
     const timer = setTimeout(() => {
       setSplatted((current) => ({ ...current, [index]: false }));
     }, 1300);
@@ -108,8 +122,15 @@ export function WalkingBugsLayer() {
               }
             ]}
           >
-            <Pressable hitSlop={12} onPress={() => splatBug(index)} style={[styles.hitbox, { minHeight: track.size + 18, minWidth: track.size * 1.8 }]}>
-              {splatted[index] ? <SplatMark size={track.size + 20} /> : <BugArtImage bugId={track.bugId} size={track.size} />}
+            <Pressable hitSlop={12} onPress={() => tapBug(index, track.taps)} style={[styles.hitbox, { minHeight: track.size + 18, minWidth: track.size * 1.8 }]}>
+              {splatted[index] ? (
+                <SplatMark size={track.size + 20} />
+              ) : (
+                <>
+                  <BugArtImage bugId={track.bugId} size={track.size} />
+                  {track.taps > 1 && hits[index] > 0 && <View style={[styles.damageRing, { height: track.size + 10, width: track.size + 10 }]} />}
+                </>
+              )}
             </Pressable>
           </Animated.View>
         );
@@ -142,6 +163,13 @@ const styles = StyleSheet.create({
   hitbox: {
     alignItems: "center",
     justifyContent: "center"
+  },
+  damageRing: {
+    borderColor: "#b83227",
+    borderRadius: 999,
+    borderWidth: 2,
+    opacity: 0.65,
+    position: "absolute"
   },
   splat: {
     alignItems: "center",

@@ -51,12 +51,13 @@ function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: U
       {users.map((user, index) => {
         const tier = index === 0 ? getTierForPoints(Number.MAX_SAFE_INTEGER) : getTierForPoints(user.totalPoints);
         return (
-          <Pressable key={user.uid} style={[styles.podiumCard, index === 0 && styles.podiumLeader]} onPress={() => onSelectUser(user)}>
+          <Pressable key={user.uid} style={[styles.podiumCard, { backgroundColor: tier.frameBackground, borderColor: tier.frameColor }, index === 0 && styles.podiumLeader]} onPress={() => onSelectUser(user)}>
+            <View style={[styles.podiumShine, { backgroundColor: tier.frameAccent }]} />
             <MedalIcon index={index} size={index === 0 ? 76 : 58} />
             <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={index === 0 ? 58 : 44} />
             <Text style={[styles.podiumRank, index === 0 && styles.podiumLeaderText]}>#{index + 1}</Text>
             <Text style={[styles.podiumName, index === 0 && styles.podiumLeaderText]} numberOfLines={1}>{user.displayName}</Text>
-            <Text style={[styles.podiumMeta, { color: index === 0 ? "#d7bd57" : tier.color }]}>{user.totalPoints} pt</Text>
+            <Text style={[styles.podiumMeta, { color: index === 0 ? "#d7bd57" : tier.frameColor }]}>{tier.prestige}</Text>
           </Pressable>
         );
       })}
@@ -97,10 +98,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fdfefb",
     borderColor: "#d7e1d9",
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 2,
     elevation: 2,
     flex: 1,
     minHeight: 148,
+    overflow: "hidden",
     padding: 10,
     shadowColor: "#102018",
     shadowOffset: { width: 0, height: 2 },
@@ -108,8 +110,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6
   },
   podiumLeader: {
-    backgroundColor: "#102018",
-    borderColor: "#d7bd57"
+    backgroundColor: "#102018"
+  },
+  podiumShine: {
+    height: 40,
+    opacity: 0.52,
+    position: "absolute",
+    right: -20,
+    top: -20,
+    transform: [{ rotate: "45deg" }],
+    width: 40
   },
   podiumRank: {
     color: "#17211c",

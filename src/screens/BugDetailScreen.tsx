@@ -126,6 +126,7 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
           ))}
         </View>
         <TextInput
+          accessibilityLabel="Comment text"
           multiline
           maxLength={500}
           placeholder="Commentaar"
@@ -133,7 +134,7 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
           value={commentText}
           onChangeText={setCommentText}
         />
-        <Pressable style={sharedStyles.button} disabled={commentBusy} onPress={submitComment}>
+        <Pressable accessibilityLabel="Post comment" style={sharedStyles.button} disabled={commentBusy} onPress={submitComment}>
           {commentBusy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>Reactie plaatsen</Text>}
         </Pressable>
         {comments.length ? (

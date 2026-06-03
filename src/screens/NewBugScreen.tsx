@@ -184,10 +184,10 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
           </Pressable>
         </View>
       )}
-      <Pressable style={sharedStyles.secondaryButton} onPress={pickImage}>
+      <Pressable accessibilityLabel="Choose screenshot" style={sharedStyles.secondaryButton} onPress={pickImage}>
         <Text style={sharedStyles.secondaryButtonText}>Screenshot kiezen</Text>
       </Pressable>
-      <Pressable style={sharedStyles.button} disabled={busy} onPress={save}>
+      <Pressable accessibilityLabel="Save bug" style={sharedStyles.button} disabled={busy} onPress={save}>
         {busy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>Opslaan</Text>}
       </Pressable>
       {!!error && <Text style={sharedStyles.error}>{error}</Text>}

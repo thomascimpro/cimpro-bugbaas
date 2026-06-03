@@ -4,6 +4,7 @@ import { ActivityIndicator, Animated, Pressable, SafeAreaView, StyleSheet, Text,
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import { AppBackground } from "../components/AppBackground";
 import { BugArtImage } from "../components/BugArtImage";
+import { WalkingBugsLayer } from "../components/WalkingBugsLayer";
 import { sharedStyles } from "./sharedStyles";
 
 const splashBadge = require("../../assets/generated/bugbaas-splash-badge-hd.png");
@@ -106,6 +107,7 @@ export function LoginScreen({ error, loading, onGoogleSubmit, onSubmit }: Props)
   return (
     <SafeAreaView style={styles.screen}>
       <AppBackground />
+      <WalkingBugsLayer />
       <View style={styles.card}>
         <Animated.Image accessibilityLabel="CimPro BugBaas logo" resizeMode="contain" source={splashBadge} style={[styles.badge, { transform: [{ scale: badgeScale }] }]} />
         <View style={styles.brandRow}>

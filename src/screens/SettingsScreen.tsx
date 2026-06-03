@@ -15,9 +15,10 @@ type Props = {
   settings: NotificationSettings;
   onBack: () => void;
   onChange: (settings: NotificationSettings) => void;
+  onShowHelp: () => void;
 };
 
-export function SettingsScreen({ settings, onBack, onChange }: Props) {
+export function SettingsScreen({ settings, onBack, onChange, onShowHelp }: Props) {
   function toggle(type: NotificationType) {
     onChange({ ...settings, [type]: !settings[type] });
   }
@@ -42,6 +43,9 @@ export function SettingsScreen({ settings, onBack, onChange }: Props) {
           );
         })}
       </View>
+      <Pressable style={styles.helpButton} onPress={onShowHelp}>
+        <Text style={styles.helpButtonText}>Help bekijken</Text>
+      </Pressable>
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
         <Text style={sharedStyles.secondaryButtonText}>Terug</Text>
       </Pressable>
@@ -56,6 +60,18 @@ const styles = StyleSheet.create({
   list: {
     gap: 10,
     marginBottom: 14
+  },
+  helpButton: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    justifyContent: "center",
+    marginBottom: 10,
+    minHeight: 50
+  },
+  helpButtonText: {
+    color: "#ffffff",
+    fontWeight: "900"
   },
   row: {
     alignItems: "center",

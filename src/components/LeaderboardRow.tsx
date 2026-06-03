@@ -14,7 +14,8 @@ export function LeaderboardRow({ index, user, onPress }: { index: number; user: 
   const extraBadges = user.badges.length - visibleBadges.length;
 
   return (
-    <Pressable style={[styles.row, isLeader && styles.leader]} onPress={onPress}>
+    <Pressable style={[styles.row, { backgroundColor: tier.frameBackground, borderColor: tier.frameColor }, isLeader && styles.leader]} onPress={onPress}>
+      <View style={[styles.shine, { backgroundColor: tier.frameAccent }]} />
       <View style={styles.rankSlot}>
         <MedalIcon index={index} size={index < 3 ? 52 : 38} />
       </View>
@@ -24,7 +25,8 @@ export function LeaderboardRow({ index, user, onPress }: { index: number; user: 
           <Text style={styles.name} numberOfLines={1}>{user.displayName}</Text>
           <Text style={[styles.status, isLeader && styles.leaderStatus]}>{status}</Text>
         </View>
-        <Text style={[styles.meta, { color: tier.color }]}>{title} - {user.bugCount} bugs</Text>
+        <Text style={[styles.meta, { color: tier.color }]}>{tier.prestigeLevel} - {title}</Text>
+        <Text style={styles.subMeta}>{user.bugCount} bugs - {tier.rewardText}</Text>
         <View style={styles.badgeRow}>
           {visibleBadges.length ? (
             <>
@@ -60,12 +62,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fdfefb",
     borderColor: "#d7e1d9",
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 2,
     elevation: 2,
     flexDirection: "row",
     gap: 10,
     minHeight: 116,
     marginBottom: 10,
+    overflow: "hidden",
     padding: 12,
     shadowColor: "#102018",
     shadowOffset: { width: 0, height: 2 },
@@ -73,9 +76,16 @@ const styles = StyleSheet.create({
     shadowRadius: 6
   },
   leader: {
-    backgroundColor: "#fff9e8",
-    borderColor: "#d7bd57",
     borderWidth: 2
+  },
+  shine: {
+    height: 44,
+    opacity: 0.55,
+    position: "absolute",
+    right: -22,
+    top: -22,
+    transform: [{ rotate: "45deg" }],
+    width: 44
   },
   rankSlot: {
     alignItems: "center",
@@ -113,6 +123,12 @@ const styles = StyleSheet.create({
   meta: {
     fontWeight: "800",
     marginTop: 2
+  },
+  subMeta: {
+    color: "#52665d",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 1
   },
   badgeRow: {
     flexDirection: "row",

@@ -36,6 +36,8 @@ export const bugArt = {
 
 export type BugArtId = keyof typeof bugArt;
 
+export const allBugArtIds = Object.keys(bugArt) as BugArtId[];
+
 export const tierBugArtIds: BugArtId[] = [
   "zilvervisje",
   "mier",

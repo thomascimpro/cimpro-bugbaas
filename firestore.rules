@@ -127,11 +127,13 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.uid == userId
-        && request.resource.data.email == request.auth.token.email;
+        && request.resource.data.email == request.auth.token.email
+        && (!request.resource.data.keys().hasAny(['active']) || request.resource.data.active == true);
       allow update: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.uid == resource.data.uid
-        && request.resource.data.email == resource.data.email;
+        && request.resource.data.email == resource.data.email
+        && (!request.resource.data.keys().hasAny(['active']) || request.resource.data.active == true);
       allow delete: if false;
 
       match /bugdex/{bugId} {

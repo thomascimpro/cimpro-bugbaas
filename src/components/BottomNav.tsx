@@ -4,20 +4,19 @@ import type { RouteName } from "../../App";
 import { BugArtId } from "../services/bugArt";
 import { BugArtImage } from "./BugArtImage";
 
-type NavRoute = "home" | "bugs" | "new" | "bugdex" | "leaderboard" | "settings";
+type NavRoute = "home" | "bugs" | "new" | "bugdex" | "leaderboard";
 
 type Props = {
   activeRoute: RouteName;
   onNavigate: (route: NavRoute) => void;
 };
 
-const items: Array<{ route: NavRoute; label: string; bugId?: BugArtId; icon?: string }> = [
+const items: Array<{ route: NavRoute; label: string; bugId: BugArtId }> = [
   { route: "home", label: "Home", bugId: "zilvervisje" },
   { route: "bugs", label: "Bugs", bugId: "pissebed" },
   { route: "new", label: "Meld", bugId: "mier" },
   { route: "bugdex", label: "BugDex", bugId: "lieveheersbeestje" },
-  { route: "leaderboard", label: "Rank", bugId: "goliathkever" },
-  { route: "settings", label: "Instel", icon: "⚙" }
+  { route: "leaderboard", label: "Rank", bugId: "goliathkever" }
 ];
 
 export function BottomNav({ activeRoute, onNavigate }: Props) {
@@ -28,7 +27,7 @@ export function BottomNav({ activeRoute, onNavigate }: Props) {
         const primary = item.route === "new";
         return (
           <Pressable key={item.route} style={[styles.item, primary && styles.primaryItem, active && styles.activeItem, primary && active && styles.activePrimary]} onPress={() => onNavigate(item.route)}>
-            {item.bugId ? <BugArtImage bugId={item.bugId} size={primary ? 40 : active ? 28 : 24} /> : <Text style={[styles.icon, active && styles.activeLabel]}>{item.icon}</Text>}
+            <BugArtImage bugId={item.bugId} size={primary ? 40 : active ? 28 : 24} />
             <Text style={[styles.label, primary && styles.primaryLabel, active && styles.activeLabel, primary && active && styles.activePrimaryLabel]}>{item.label}</Text>
           </Pressable>
         );
@@ -90,12 +89,6 @@ const styles = StyleSheet.create({
     color: "#52665d",
     fontSize: 9,
     fontWeight: "800"
-  },
-  icon: {
-    color: "#52665d",
-    fontSize: 22,
-    fontWeight: "900",
-    lineHeight: 24
   },
   primaryLabel: {
     color: "#ffffff",

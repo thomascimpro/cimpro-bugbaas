@@ -5,7 +5,11 @@ export type User = {
   uid: string;
   displayName: string;
   email: string;
+  active?: boolean;
+  testAccount?: boolean;
   nameSet?: boolean;
+  helpSeen?: boolean;
+  splatCount?: number;
   totalPoints: number;
   bugCount: number;
   title: string;
