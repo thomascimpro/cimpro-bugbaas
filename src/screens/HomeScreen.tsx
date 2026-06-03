@@ -21,6 +21,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [bugs, setBugs] = useState<BugReport[]>([]);
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
+  const [showAllTiers, setShowAllTiers] = useState(false);
   const leaders = users.slice(0, 3);
   const userRank = Math.max(1, users.findIndex((item) => item.uid === user.uid) + 1);
   const dexCount = inventory.length;
@@ -61,7 +62,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
           <Text style={styles.statLabel}>{tier.title}</Text>
         </View>
       </View>
-      <View style={styles.stage}>
+      <View style={[styles.stage, styles.stageHidden]}>
         {userTiers.map((item) => {
           const current = item.title === tier.title;
           return (
@@ -78,6 +79,26 @@ export function HomeScreen({ user, onNavigate }: Props) {
       <View style={styles.tierWrap}>
         <TierBadge points={user.totalPoints} />
       </View>
+      <Pressable style={styles.tierToggle} onPress={() => setShowAllTiers((current) => !current)}>
+        <Text style={styles.tierToggleText}>Alle tiers bekijken</Text>
+        <Text style={styles.tierToggleIcon}>{showAllTiers ? "^" : "v"}</Text>
+      </Pressable>
+      {showAllTiers && (
+        <View style={styles.stage}>
+          {userTiers.map((item) => {
+            const current = item.title === tier.title;
+            return (
+              <View key={item.title} style={[styles.stageTierItem, { backgroundColor: item.frameBackground, borderColor: item.frameColor }, current && styles.stageTierItemActive]}>
+                <View style={[styles.stageShine, { backgroundColor: item.frameAccent }]} />
+                <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={Math.max(34, item.bugSize * 0.58)} />
+                <View style={[styles.stageMedal, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
+                  <Text style={[styles.stageStar, { color: item.frameColor }]}>*</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
       <Pressable style={styles.rankingCard} onPress={() => onNavigate("leaderboard")}>
         <View style={styles.rankingHeader}>
           <Text style={styles.sectionTitle}>Top</Text>
@@ -241,6 +262,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12
   },
+  stageHidden: {
+    display: "none"
+  },
   stageTierItem: {
     alignItems: "center",
     backgroundColor: "#fdfefb",
@@ -285,6 +309,28 @@ const styles = StyleSheet.create({
   },
   tierWrap: {
     marginBottom: 12
+  },
+  tierToggle: {
+    alignItems: "center",
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12
+  },
+  tierToggleText: {
+    color: "#102018",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  tierToggleIcon: {
+    color: "#15724f",
+    fontSize: 18,
+    fontWeight: "900"
   },
   rankingCard: {
     backgroundColor: "#102018",

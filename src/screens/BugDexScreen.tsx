@@ -44,7 +44,9 @@ export function BugDexScreen({ user, onBack }: Props) {
   const unlockedEntries = inventory.map((item) => entryByBugId(item.bugId)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const featuredEntries = unlockedEntries.slice(0, 3);
   const headerEntry = unlockedEntries[unlockedEntries.length - 1];
-  const dexCards = bugDexEntries.map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }));
+  const dexCards = bugDexEntries
+    .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }))
+    .filter((item): item is { entry: BugDexEntry; index: number; inventoryItem: BugDexInventoryItem } => Boolean(item.inventoryItem));
   const duplicateCount = inventory.reduce((total, item) => total + Math.max(0, item.count - 1), 0);
   const duplicateInventory = inventory.filter((item) => item.count > 1);
   const recipientDuplicateInventory = recipientInventory.filter((item) => item.count > 1);
@@ -130,7 +132,13 @@ export function BugDexScreen({ user, onBack }: Props) {
           <Text style={[sharedStyles.title, styles.headerTitle]}>BugDex</Text>
           <Text style={styles.headerMeta}>{unlockedCount}/{totalCount} ontdekt - {progress}%</Text>
         </View>
-        <BugArtImage bugId={headerEntry?.id ?? tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={74} />
+        {headerEntry ? (
+          <BugArtImage bugId={headerEntry.id} size={74} />
+        ) : (
+          <View style={styles.headerEmptyIcon}>
+            <Text style={styles.headerEmptyText}>?</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.preview}>
@@ -270,30 +278,27 @@ export function BugDexScreen({ user, onBack }: Props) {
       </View>
 
       <View style={styles.grid}>
-        {dexCards.map(({ entry, index, inventoryItem }) => {
+        {dexCards.length ? dexCards.map(({ entry, index, inventoryItem }) => {
           const color = rarityColors[entry.rarity];
-          const unlocked = Boolean(inventoryItem);
           const requiredCount = combineRequiredCount(entry.rarity);
-          const canCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
+          const canCombine = Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
           return (
-            <View key={entry.id} style={[styles.card, !unlocked && styles.lockedCard, { borderColor: unlocked ? color : "#cbd8d1" }]}>
+            <View key={entry.id} style={[styles.card, { borderColor: color }]}>
               <View style={styles.cardTop}>
-                <View style={[styles.numberPill, { backgroundColor: unlocked ? color : "#87958e" }]}>
+                <View style={[styles.numberPill, { backgroundColor: color }]}>
                   <Text style={styles.numberText}>{String(index + 1).padStart(2, "0")}</Text>
                 </View>
-                <Text style={[styles.rarity, { color: unlocked ? color : "#87958e" }]}>{unlocked ? entry.rarity : "???"}</Text>
+                <Text style={[styles.rarity, { color }]}>{entry.rarity}</Text>
               </View>
-              <View style={[styles.bugWrap, !unlocked && styles.lockedBugWrap]}>
-                {unlocked ? <BugArtImage bugId={entry.id} size={70} /> : <Text style={styles.lockedMark}>?</Text>}
+              <View style={styles.bugWrap}>
+                <BugArtImage bugId={entry.id} size={70} />
               </View>
               <View style={styles.nameRow}>
-                <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? entry.name : "Onbekend"}</Text>
-                {unlocked && inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
+                <Text style={styles.name} numberOfLines={1}>{entry.name}</Text>
+                {inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
               </View>
-              <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? entry.title : "Nog niet ontdekt"}</Text>
-              <Text style={[styles.note, !unlocked && styles.lockedText]}>
-                {unlocked ? entry.note : "Gebruik de app om deze bug te vinden."}
-              </Text>
+              <Text style={styles.title}>{entry.title}</Text>
+              <Text style={styles.note}>{entry.note}</Text>
               {canCombine && (
                 <Pressable style={styles.combineButton} disabled={combineBusyId === entry.id} onPress={() => combine(entry.id)}>
                   <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : `Combine x${requiredCount}`}</Text>
@@ -301,7 +306,12 @@ export function BugDexScreen({ user, onBack }: Props) {
               )}
             </View>
           );
-        })}
+        }) : (
+          <View style={styles.emptyDexCard}>
+            <Text style={styles.emptyDexTitle}>BugDex is leeg</Text>
+            <Text style={styles.emptyDexText}>Gebruik de app om je eerste bug te vinden.</Text>
+          </View>
+        )}
       </View>
 
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
@@ -360,6 +370,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "900"
   },
+  headerEmptyIcon: {
+    alignItems: "center",
+    backgroundColor: "#294338",
+    borderRadius: 8,
+    height: 74,
+    justifyContent: "center",
+    width: 74
+  },
+  headerEmptyText: {
+    color: "#dce9df",
+    fontSize: 38,
+    fontWeight: "900"
+  },
   progressTrack: {
     backgroundColor: "#dbe8de",
     borderRadius: 8,
@@ -376,6 +399,7 @@ const styles = StyleSheet.create({
     borderColor: "#d7e1d9",
     borderRadius: 8,
     borderWidth: 1,
+    display: "none",
     marginBottom: 12,
     padding: 12
   },
