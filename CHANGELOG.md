@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.4
+
+- App checkt bij opstarten of er een nieuwere GitHub Release beschikbaar is.
+- Nieuwe versie melding verdwijnt automatisch na een paar seconden.
+- Eigen bugs verwijderen toegevoegd met bevestigingspopup.
+- Bij verwijderen worden bugpunten en bugcount ingetrokken.
+- Firestore rules staan delete alleen toe voor de originele melder.
+
 ## 1.0.3
 
 - Daily login geeft nu altijd een beloning: punten of een lage BugDex bug.

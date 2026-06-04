@@ -1,7 +1,7 @@
-import { collection, doc, getDocs, orderBy, query, runTransaction, setDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, orderBy, query, runTransaction, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 import { BugComment, BugReport, BugStatus, NewBugInput, User } from "../types";
-import { calculateBugPoints } from "./pointsService";
+import { badgesForUser, calculateBugPoints, titleForPoints } from "./pointsService";
 import { applyUserPoints } from "./userService";
 
 const demoBugs: BugReport[] = [];
@@ -130,6 +130,53 @@ export async function toggleBugUpvote(bug: BugReport, user: User): Promise<BugRe
       updatedAt: next.updatedAt
     });
     return next;
+  });
+}
+
+export async function deleteOwnBug(bug: BugReport, user: User): Promise<void> {
+  const current = normalizeBug(bug);
+  if (current.reporterId !== user.uid) throw new Error("Je kunt alleen je eigen bugs verwijderen.");
+
+  if (!isFirebaseConfigured) {
+    const index = demoBugs.findIndex((item) => item.id === current.id);
+    if (index >= 0) demoBugs.splice(index, 1);
+    for (let i = demoComments.length - 1; i >= 0; i -= 1) {
+      if (demoComments[i].bugId === current.id) demoComments.splice(i, 1);
+    }
+    await applyUserPoints(user.uid, -current.points, -1);
+    return;
+  }
+
+  const bugRef = doc(db, "bugs", current.id);
+  const userRef = doc(db, "users", user.uid);
+  const commentSnapshot = await getDocs(collection(db, "bugs", current.id, "comments"));
+  for (let index = 0; index < commentSnapshot.docs.length; index += 450) {
+    const batch = writeBatch(db);
+    commentSnapshot.docs.slice(index, index + 450).forEach((item) => batch.delete(item.ref));
+    await batch.commit();
+  }
+
+  await runTransaction(db, async (transaction) => {
+    const bugSnapshot = await transaction.get(bugRef);
+    if (!bugSnapshot.exists()) throw new Error("Bug niet gevonden.");
+    const fresh = normalizeBug(bugSnapshot.data() as BugReport, bugSnapshot.id);
+    if (fresh.reporterId !== user.uid) throw new Error("Je kunt alleen je eigen bugs verwijderen.");
+
+    const userSnapshot = await transaction.get(userRef);
+    if (!userSnapshot.exists()) throw new Error("Gebruiker niet gevonden.");
+    const currentUser = userSnapshot.data() as User;
+    const totalPoints = Math.max(0, currentUser.totalPoints - fresh.points);
+    const bugCount = Math.max(0, currentUser.bugCount - 1);
+    const updatedUser = { ...currentUser, totalPoints, bugCount, title: titleForPoints(totalPoints) };
+    updatedUser.badges = badgesForUser(updatedUser);
+
+    transaction.update(userRef, {
+      totalPoints,
+      bugCount,
+      title: updatedUser.title,
+      badges: updatedUser.badges
+    });
+    transaction.delete(bugRef);
   });
 }
 

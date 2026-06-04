@@ -1,5 +1,6 @@
+import Constants from "expo-constants";
 import React, { useEffect, useState } from "react";
-import { Pressable, SafeAreaView, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { AppNotification, BugComment, NotificationSettings, User } from "./src/types";
 import { ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, updateUserDisplayName } from "./src/services/userService";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -22,6 +23,7 @@ import { InAppNotificationToast } from "./src/components/InAppNotificationToast"
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
 import { listBugs } from "./src/services/bugService";
 import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, rollBugDexDrop } from "./src/services/bugDexService";
+import { checkLatestVersion, VersionNotice } from "./src/services/versionService";
 import {
   defaultNotificationSettings,
   getNotificationSettings,
@@ -45,6 +47,7 @@ export default function App() {
   const [notification, setNotification] = useState<AppNotification | null>(null);
   const [helpVisible, setHelpVisible] = useState(false);
   const [splatBonusVisible, setSplatBonusVisible] = useState(false);
+  const [versionNotice, setVersionNotice] = useState<VersionNotice | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
@@ -66,6 +69,18 @@ export default function App() {
       }
     });
   }, []);
+
+  useEffect(() => {
+    const currentVersion = String(Constants.expoConfig?.version || "");
+    if (!currentVersion) return;
+    void checkLatestVersion(currentVersion).then(setVersionNotice).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!versionNotice) return;
+    const timeout = setTimeout(() => setVersionNotice(null), 4800);
+    return () => clearTimeout(timeout);
+  }, [versionNotice]);
 
   useEffect(() => {
     if (!user) return;
@@ -210,8 +225,25 @@ export default function App() {
     if (nextUser.uid !== user?.uid) rewardActivity("profile_view");
   }
 
+  if (authLoading) {
+    return (
+      <SafeAreaView style={styles.shell}>
+        <AppBackground />
+        <View style={styles.loadingScreen}>
+          <ActivityIndicator color="#15724f" size="large" />
+        </View>
+        <VersionToast notice={versionNotice} />
+      </SafeAreaView>
+    );
+  }
+
   if (!user) {
-    return <LoginScreen error={authError} loading={authLoading} onGoogleSubmit={handleGoogleLogin} onSubmit={handleLogin} />;
+    return (
+      <View style={styles.fullScreen}>
+        <LoginScreen error={authError} loading={authLoading} onGoogleSubmit={handleGoogleLogin} onSubmit={handleLogin} />
+        <VersionToast notice={versionNotice} />
+      </View>
+    );
   }
 
   return (
@@ -263,6 +295,11 @@ export default function App() {
               setSelectedBug(bug);
               void refreshUser();
             }}
+            onDeleted={() => {
+              setSelectedBug(null);
+              void refreshUser();
+              setRoute("bugs");
+            }}
           />
         )}
         {route === "leaderboard" && <LeaderboardScreen onBack={() => setRoute("home")} onSelectUser={openUserProfile} />}
@@ -299,10 +336,7 @@ export default function App() {
           onTouchEnd={openSettings}
         >
           <View style={[styles.settingsSurface, route === "settings" && styles.settingsButtonActive]}>
-            <View style={[styles.settingsLine, route === "settings" && styles.settingsLineActive]} />
-            <View style={[styles.settingsDot, route === "settings" && styles.settingsDotActive, styles.settingsDotTop]} />
-            <View style={[styles.settingsLine, route === "settings" && styles.settingsLineActive]} />
-            <View style={[styles.settingsDot, route === "settings" && styles.settingsDotActive, styles.settingsDotBottom]} />
+            <Text style={[styles.settingsGear, route === "settings" && styles.settingsGearActive]}>⚙</Text>
           </View>
         </Pressable>
       </View>
@@ -312,7 +346,18 @@ export default function App() {
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
       <BugSplatBonusOverlay visible={splatBonusVisible} onSplat={() => void handleBugSplat()} onSkip={() => setSplatBonusVisible(false)} />
+      <VersionToast notice={versionNotice} />
     </SafeAreaView>
+  );
+}
+
+function VersionToast({ notice }: { notice: VersionNotice | null }) {
+  if (!notice) return null;
+  return (
+    <View style={styles.versionToast}>
+      <Text style={styles.versionToastTitle}>Nieuwe versie beschikbaar</Text>
+      <Text style={styles.versionToastText}>Versie {notice.latestVersion} staat op GitHub Releases.</Text>
+    </View>
   );
 }
 
@@ -321,20 +366,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#eef4ed"
   },
+  fullScreen: {
+    flex: 1
+  },
   content: {
     flex: 1,
     position: "relative",
     zIndex: 0
   },
+  loadingScreen: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center"
+  },
   settingsButton: {
     alignItems: "center",
     elevation: 30,
-    height: 76,
+    height: 52,
     justifyContent: "center",
     position: "absolute",
-    right: 0,
-    top: 16,
-    width: 76,
+    right: 12,
+    top: 12,
+    width: 52,
     zIndex: 1000
   },
   settingsSurface: {
@@ -355,38 +408,37 @@ const styles = StyleSheet.create({
     backgroundColor: "#102018",
     borderColor: "#d7bd57"
   },
-  settingsGlyph: {
-    gap: 6,
-    width: 23
+  settingsGear: {
+    color: "#102018",
+    fontSize: 30,
+    fontWeight: "900",
+    lineHeight: 36
   },
-  settingsLine: {
+  settingsGearActive: {
+    color: "#d7bd57"
+  },
+  versionToast: {
     backgroundColor: "#102018",
-    borderRadius: 8,
-    height: 3,
-    width: 23
-  },
-  settingsLineActive: {
-    backgroundColor: "#ffffff"
-  },
-  settingsDot: {
-    backgroundColor: "#15724f",
-    borderColor: "#fdfefb",
+    borderColor: "#d7bd57",
     borderRadius: 8,
     borderWidth: 1,
-    height: 9,
+    left: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     position: "absolute",
-    width: 9
+    right: 18,
+    top: 18,
+    zIndex: 2000
   },
-  settingsDotActive: {
-    backgroundColor: "#d7bd57",
-    borderColor: "#102018"
+  versionToastTitle: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900"
   },
-  settingsDotTop: {
-    right: 3,
-    top: -3
-  },
-  settingsDotBottom: {
-    left: 3,
-    top: 12
+  versionToastText: {
+    color: "#dbe8de",
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 2
   }
 });

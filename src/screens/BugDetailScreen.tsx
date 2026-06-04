@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { StatusBadge } from "../components/StatusBadge";
-import { addBugComment, listBugComments, toggleBugUpvote, updateBugStatus } from "../services/bugService";
+import { addBugComment, deleteOwnBug, listBugComments, toggleBugUpvote, updateBugStatus } from "../services/bugService";
 import { getUserById } from "../services/userService";
 import { upvotePointValue } from "../services/userService";
 import { BugComment, BugReport, BugStatus, User } from "../types";
@@ -18,11 +18,13 @@ type Props = {
   onBugChanged: (bug: BugReport) => void;
   onCommentAdded?: (comment: BugComment) => void;
   onOpenProfile: (user: User) => void;
+  onDeleted: () => void;
 };
 
-export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdded, onOpenProfile }: Props) {
+export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdded, onOpenProfile, onDeleted }: Props) {
   const [busy, setBusy] = useState(false);
   const [voteBusy, setVoteBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [commentBusy, setCommentBusy] = useState(false);
   const [comments, setComments] = useState<BugComment[]>([]);
   const [commentText, setCommentText] = useState("");
@@ -84,6 +86,27 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
     const profile = await getUserById(uid);
     if (profile) onOpenProfile(profile);
     else setError("Profiel niet gevonden.");
+  }
+
+  function confirmDelete() {
+    if (!canUpdateStatus || deleteBusy) return;
+    Alert.alert("Bug verwijderen", "Deze bug wordt verwijderd en de punten worden ingetrokken.", [
+      { text: "Annuleer", style: "cancel" },
+      { text: "Verwijder", style: "destructive", onPress: () => void removeBug() }
+    ]);
+  }
+
+  async function removeBug() {
+    setDeleteBusy(true);
+    setError("");
+    try {
+      await deleteOwnBug(bug, user);
+      onDeleted();
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "Bug verwijderen mislukt.");
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   return (
@@ -171,6 +194,9 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
           </Pressable>
           <Pressable style={sharedStyles.dangerButton} onPress={() => changeStatus("Dubbel")}>
             <Text style={sharedStyles.buttonText}>Markeer als dubbel</Text>
+          </Pressable>
+          <Pressable style={styles.deleteButton} disabled={deleteBusy} onPress={confirmDelete}>
+            {deleteBusy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>Verwijder bug</Text>}
           </Pressable>
         </>
       )}
@@ -334,5 +360,9 @@ const styles = StyleSheet.create({
     color: "#77847f",
     fontWeight: "800",
     marginTop: 10
+  },
+  deleteButton: {
+    ...sharedStyles.dangerButton,
+    marginTop: 8
   }
 });

@@ -134,7 +134,7 @@ service cloud.firestore {
         && request.resource.data.uid == resource.data.uid
         && request.resource.data.email == resource.data.email
         && (!request.resource.data.keys().hasAny(['active']) || request.resource.data.active == true);
-      allow delete: if false;
+      allow delete: if signedIn() && resource.data.reporterId == request.auth.uid;
 
       match /bugdex/{bugId} {
         allow read: if signedIn();
@@ -197,7 +197,7 @@ service cloud.firestore {
       allow read: if signedIn();
       allow create: if signedIn() && validBugCreate();
       allow update: if signedIn() && (reporterBugUpdate() || upvoteUpdate());
-      allow delete: if false;
+      allow delete: if signedIn() && resource.data.reporterId == request.auth.uid;
 
       match /comments/{commentId} {
         allow read: if signedIn();
@@ -209,7 +209,9 @@ service cloud.firestore {
           && request.resource.data.text.size() <= 500
           && request.resource.data.reaction is string
           && request.resource.data.createdAt is string;
-        allow update, delete: if false;
+        allow update: if false;
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/bugs/$(bugId)).data.reporterId == request.auth.uid;
       }
     }
 
