@@ -21,9 +21,6 @@ export function TierBadge({ points, compact = false, rank }: Props) {
     <View style={[styles.card, compact && styles.compact, { backgroundColor: tier.frameBackground, borderColor: tier.frameColor }]}>
       <View style={[styles.frameGlow, { backgroundColor: tier.frameAccent }]} />
       <View style={[styles.innerFrame, { borderColor: tier.frameAccent }]}>
-        <View style={[styles.cornerPlate, { backgroundColor: tier.frameAccent, borderColor: tier.frameColor }]}>
-          <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={compact ? 30 : 38} />
-        </View>
         <View style={[styles.circuitLine, styles.circuitTop, { backgroundColor: tier.frameColor }]} />
         <View style={[styles.circuitLine, styles.circuitBottom, { backgroundColor: tier.frameColor }]} />
         <View style={[styles.medal, { backgroundColor: tier.frameAccent, borderColor: tier.frameColor }]}>
@@ -84,18 +81,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minWidth: 104,
     overflow: "visible"
-  },
-  cornerPlate: {
-    alignItems: "center",
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 48,
-    justifyContent: "center",
-    left: -1,
-    position: "absolute",
-    top: -1,
-    width: 58,
-    zIndex: 2
   },
   circuitLine: {
     height: 2,
