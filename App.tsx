@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { AppNotification, BugComment, NotificationSettings, User } from "./src/types";
-import { ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, updateUserDisplayName } from "./src/services/userService";
+import { applyUserPoints, ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, updateUserDisplayName } from "./src/services/userService";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { BugListScreen } from "./src/screens/BugListScreen";
@@ -18,6 +18,7 @@ import { BottomNav } from "./src/components/BottomNav";
 import { WalkingBugsLayer } from "./src/components/WalkingBugsLayer";
 import { BugDexUnlockModal } from "./src/components/BugDexUnlockModal";
 import { BugSplatBonusOverlay } from "./src/components/BugSplatBonusOverlay";
+import { ForegroundCatchBug } from "./src/components/ForegroundCatchBug";
 import { DisplayNameModal } from "./src/components/DisplayNameModal";
 import { InAppNotificationToast } from "./src/components/InAppNotificationToast";
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
@@ -52,6 +53,16 @@ export default function App() {
   const [versionNotice, setVersionNotice] = useState<VersionNotice | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
+  const foregroundBugEnabled = Boolean(
+    user
+    && user.nameSet === true
+    && ["home", "bugs", "new", "bugdex", "leaderboard"].includes(route)
+    && !bugDexDrop
+    && !notification
+    && !helpVisible
+    && !splatBonusVisible
+    && !versionNotice
+  );
 
   useEffect(() => {
     return subscribeAuth(async (nextUser) => {
@@ -180,6 +191,16 @@ export default function App() {
       if (result.milestone) void maybeShowBugDexDrop(rollBugDexDrop(result.user, "bug_splat"));
     } catch {
       // Background splat rewards should never interrupt normal app use.
+    }
+  }
+
+  async function handleForegroundBugCaught() {
+    if (!user) return;
+    try {
+      const updated = await applyUserPoints(user.uid, 1, 0);
+      if (updated) setUser(updated);
+    } catch {
+      // Foreground catch rewards should never interrupt normal app use.
     }
   }
 
@@ -351,6 +372,7 @@ export default function App() {
       </View>
       <BottomNav activeRoute={route} onNavigate={navigateMain} />
       <InAppNotificationToast notification={notification} onClose={closeNotification} onOpen={openNotification} />
+      <ForegroundCatchBug enabled={foregroundBugEnabled} onCaught={() => void handleForegroundBugCaught()} />
       <BugDexUnlockModal drop={bugDexDrop} onClose={() => setBugDexDrop(null)} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
