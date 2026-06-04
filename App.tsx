@@ -194,10 +194,10 @@ export default function App() {
     }
   }
 
-  async function handleForegroundBugCaught() {
+  async function handleForegroundBugCaught(xp: number) {
     if (!user) return;
     try {
-      const updated = await applyUserPoints(user.uid, 1, 0);
+      const updated = await applyUserPoints(user.uid, xp, 0);
       if (updated) setUser(updated);
     } catch {
       // Foreground catch rewards should never interrupt normal app use.
@@ -372,7 +372,7 @@ export default function App() {
       </View>
       <BottomNav activeRoute={route} onNavigate={navigateMain} />
       <InAppNotificationToast notification={notification} onClose={closeNotification} onOpen={openNotification} />
-      <ForegroundCatchBug enabled={foregroundBugEnabled} onCaught={() => void handleForegroundBugCaught()} />
+      <ForegroundCatchBug enabled={foregroundBugEnabled} onCaught={(xp) => void handleForegroundBugCaught(xp)} />
       <BugDexUnlockModal drop={bugDexDrop} onClose={() => setBugDexDrop(null)} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />

@@ -158,7 +158,7 @@ export const userTiers: UserTier[] = [
     frameAccent: "#f5eeff",
     frameBackground: "#f6f1ff",
     rewardText: "Crown frame",
-    bugArtId: "titanus-kever",
+    bugArtId: "atlaskever",
     insect: "ladybug",
     bugSize: 112,
     evolutionLevel: 5

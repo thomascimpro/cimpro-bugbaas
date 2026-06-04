@@ -8,21 +8,28 @@ type SpawnRarity = "common" | "rare" | "epic";
 type ActiveBug = {
   id: number;
   bugId: BugArtId;
+  durationMs: number;
   direction: "left" | "right";
   lane: number;
   rarity: SpawnRarity;
   requiredTaps: number;
+  rewardXp: number;
   size: number;
 };
 
 type Props = {
   enabled: boolean;
-  onCaught: () => void;
+  onCaught: (xp: number) => void;
 };
 
 const spawnCheckMs = 60000;
 const spawnChance = 0.28;
-const visibleMs = 7200;
+
+const raritySettings: Record<SpawnRarity, { durationMs: number; rewardXp: number; requiredTaps: number; size: number }> = {
+  common: { durationMs: 7200, rewardXp: 1, requiredTaps: 1, size: 64 },
+  rare: { durationMs: 5600, rewardXp: 4, requiredTaps: 2, size: 78 },
+  epic: { durationMs: 4200, rewardXp: 10, requiredTaps: 4, size: 94 }
+};
 
 const commonBugs: BugArtId[] = ["zilvervisje", "fruitvlieg", "mier", "pissebed", "mot", "boekluis"];
 const rareBugs: BugArtId[] = ["pauwspin", "bidsprinkhaan", "schildwants", "tijgerkever", "smaragdlibel"];
@@ -70,13 +77,13 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     setHits(0);
 
     Animated.timing(progress, {
-      duration: visibleMs,
+      duration: activeBug.durationMs,
       easing: Easing.inOut(Easing.quad),
       toValue: 1,
       useNativeDriver: true
     }).start();
 
-    clearTimer.current = setTimeout(clearActiveBug, visibleMs);
+    clearTimer.current = setTimeout(clearActiveBug, activeBug.durationMs);
   }, [activeBug, progress, poof]);
 
   const transform = useMemo(() => {
@@ -105,14 +112,17 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
   function spawnBug() {
     const rarity = pickRarity();
     const bugId = pickBugId(rarity);
+    const settings = raritySettings[rarity];
     setActiveBug({
       id: Date.now(),
       bugId,
+      durationMs: settings.durationMs,
       direction: Math.random() > 0.5 ? "right" : "left",
       lane: 0.18 + Math.random() * 0.52,
       rarity,
-      requiredTaps: rarity === "epic" ? 3 : rarity === "rare" ? 2 : 1,
-      size: rarity === "epic" ? 62 : rarity === "rare" ? 54 : 46
+      requiredTaps: settings.requiredTaps,
+      rewardXp: settings.rewardXp,
+      size: settings.size
     });
   }
 
@@ -135,7 +145,7 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     }
 
     setCaught(true);
-    onCaught();
+    onCaught(activeBug.rewardXp);
     Animated.timing(poof, {
       duration: 220,
       easing: Easing.out(Easing.quad),
@@ -164,7 +174,7 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
         <Pressable hitSlop={28} onPress={tapBug} style={[styles.hitbox, { minHeight: activeBug.size + 44, minWidth: activeBug.size + 62 }]}>
           {caught ? (
             <View style={[styles.poof, { height: activeBug.size + 26, width: activeBug.size + 26 }]}>
-              <Text style={styles.poofText}>+1 XP</Text>
+              <Text style={styles.poofText}>+{activeBug.rewardXp} XP</Text>
             </View>
           ) : (
             <>
@@ -180,8 +190,8 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
 
 function pickRarity(): SpawnRarity {
   const roll = Math.random();
-  if (roll < 0.06) return "epic";
-  if (roll < 0.28) return "rare";
+  if (roll < 0.05) return "epic";
+  if (roll < 0.22) return "rare";
   return "common";
 }
 
