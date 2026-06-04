@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { getTierForPoints } from "../services/pointsService";
+import { bugDexEntries } from "../services/pointsService";
 import { User } from "../types";
 import { BugArtImage } from "./BugArtImage";
 import { MedalIcon } from "./MedalIcon";
@@ -25,8 +26,8 @@ export function LeaderboardRow({ index, user, onPress }: { index: number; user: 
           <Text style={styles.name} numberOfLines={1}>{user.displayName}</Text>
           <Text style={[styles.status, isLeader && styles.leaderStatus]}>{status}</Text>
         </View>
-        <Text style={[styles.meta, { color: tier.color }]}>{tier.prestigeLevel} - {title}</Text>
-        <Text style={styles.subMeta}>{user.bugCount} bugs - {tier.rewardText}</Text>
+        <Text style={[styles.meta, { color: tier.color }]}>{title}</Text>
+        <Text style={styles.subMeta}>{user.bugCount} bugs - BugDex {user.bugDexCount ?? 0}/{bugDexEntries.length}</Text>
         <View style={styles.badgeRow}>
           {visibleBadges.length ? (
             <>

@@ -91,6 +91,19 @@ export async function listBugDexInventory(user: User): Promise<BugDexInventoryIt
   return snapshot.docs.map((item) => item.data() as BugDexInventoryItem).filter((item) => item.count > 0);
 }
 
+export async function countBugDexInventory(userOrUid: Pick<User, "uid"> | string): Promise<number> {
+  const uid = typeof userOrUid === "string" ? userOrUid : userOrUid.uid;
+  if (!isFirebaseConfigured) {
+    return Array.from(demoInventory.get(uid)?.values() ?? []).filter((item) => item.count > 0).length;
+  }
+
+  const snapshot = await getDocs(collection(db, "users", uid, "bugdex"));
+  return snapshot.docs.filter((item) => {
+    const data = item.data() as BugDexInventoryItem;
+    return data.count > 0;
+  }).length;
+}
+
 export async function claimDailyLoginBug(user: User): Promise<BugDexDropResult | null> {
   const day = localDayId();
   const previousDay = localDayId(addDays(new Date(), -1));

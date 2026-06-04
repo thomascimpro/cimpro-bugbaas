@@ -1,8 +1,8 @@
 import Constants from "expo-constants";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Linking, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { AppNotification, BugComment, NotificationSettings, User } from "./src/types";
-import { ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, updateUserDisplayName } from "./src/services/userService";
+import { ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, updateUserDisplayName } from "./src/services/userService";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { BugListScreen } from "./src/screens/BugListScreen";
@@ -27,11 +27,13 @@ import { checkLatestVersion, VersionNotice } from "./src/services/versionService
 import {
   defaultNotificationSettings,
   getNotificationSettings,
+  initializePhoneNotifications,
   markNotificationRead,
   notifyBugUpdate,
   notifyComment,
   notifyNewBug,
   saveNotificationSettings,
+  showPhoneNotification,
   subscribeUserNotifications
 } from "./src/services/notificationService";
 
@@ -85,6 +87,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     void getNotificationSettings(user).then(setNotificationSettings);
+    void initializePhoneNotifications().catch(() => undefined);
   }, [user?.uid]);
 
   useEffect(() => {
@@ -94,7 +97,10 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return () => undefined;
-    return subscribeUserNotifications(user, notificationSettings, setNotification);
+    return subscribeUserNotifications(user, notificationSettings, (nextNotification) => {
+      setNotification(nextNotification);
+      void showPhoneNotification(nextNotification).catch(() => undefined);
+    });
   }, [notificationSettings, user]);
 
   async function handleLogin(email: string, password: string, createAccount: boolean, displayName?: string) {
@@ -146,7 +152,8 @@ export default function App() {
 
   async function refreshUser() {
     if (!user) return;
-    const updated = await getUserById(user.uid);
+    const synced = await syncEngagementPoints(user);
+    const updated = await getUserById(synced.uid);
     if (updated) setUser(updated);
   }
 
@@ -284,6 +291,7 @@ export default function App() {
             onCommentAdded={(comment: BugComment) => {
               void notifyComment(selectedBug, comment, user).catch(() => undefined);
               rewardActivity("comment");
+              void refreshUser();
             }}
             onBugChanged={(bug) => {
               if (selectedBug?.status !== bug.status) {
@@ -308,6 +316,7 @@ export default function App() {
             user={user}
             onBack={() => setRoute("home")}
             onLogout={handleLogout}
+            onUpdateDisplayName={handleDisplayNameSave}
             onSelectBug={(bug) => {
               setSelectedBug(bug);
               setRoute("detail");
@@ -353,11 +362,14 @@ export default function App() {
 
 function VersionToast({ notice }: { notice: VersionNotice | null }) {
   if (!notice) return null;
+  const openUpdate = () => {
+    void Linking.openURL(notice.apkUrl ?? notice.releaseUrl).catch(() => undefined);
+  };
   return (
-    <View style={styles.versionToast}>
+    <Pressable accessibilityLabel="Open latest release" style={styles.versionToast} onPress={openUpdate}>
       <Text style={styles.versionToastTitle}>Nieuwe versie beschikbaar</Text>
-      <Text style={styles.versionToastText}>Versie {notice.latestVersion} staat op GitHub Releases.</Text>
-    </View>
+      <Text style={styles.versionToastText}>Tik voor versie {notice.latestVersion}.</Text>
+    </Pressable>
   );
 }
 
@@ -372,7 +384,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     position: "relative",
-    zIndex: 0
+    zIndex: 1
   },
   loadingScreen: {
     alignItems: "center",

@@ -59,12 +59,12 @@ export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
             duration: track.duration,
             easing: Easing.linear,
             toValue: 1,
-            useNativeDriver: true
+            useNativeDriver: false
           }),
           Animated.timing(track.progress, {
             duration: 0,
             toValue: 0,
-            useNativeDriver: true
+            useNativeDriver: false
           })
         ])
       );
@@ -99,7 +99,7 @@ export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
       <View style={styles.backdrop}>
         <View style={styles.header}>
           <Text style={styles.title}>Splat bonus</Text>
-          <Text style={styles.meta}>{splatCount}/{tracks.length}</Text>
+          <Text style={styles.meta}>{splatCount}</Text>
         </View>
         {tracks.map((track, index) => {
           const translateX = track.progress.interpolate({
@@ -125,7 +125,7 @@ export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
                 }
               ]}
             >
-              <Pressable hitSlop={14} onPress={() => tapBug(index, track)} style={[styles.hitbox, { minHeight: track.size + 24, minWidth: track.size * 1.9 }]}>
+              <Pressable hitSlop={24} onPress={() => tapBug(index, track)} style={[styles.hitbox, { minHeight: track.size + 44, minWidth: track.size * 2.5 }]}>
                 {splatted[index] ? (
                   <SplatMark size={track.size + 24} />
                 ) : (

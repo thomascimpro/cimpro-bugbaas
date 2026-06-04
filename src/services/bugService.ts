@@ -1,8 +1,8 @@
-import { collection, doc, getDocs, orderBy, query, runTransaction, setDoc, updateDoc, writeBatch } from "firebase/firestore";
-import { db, isFirebaseConfigured } from "../firebase";
+import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { auth, db, isFirebaseConfigured } from "../firebase";
 import { BugComment, BugReport, BugStatus, NewBugInput, User } from "../types";
 import { badgesForUser, calculateBugPoints, titleForPoints } from "./pointsService";
-import { applyUserPoints } from "./userService";
+import { applyUserPoints, commentPointValue, syncEngagementPoints, upvoteGivenPointValue } from "./userService";
 
 const demoBugs: BugReport[] = [];
 const demoComments: BugComment[] = [];
@@ -15,6 +15,32 @@ function normalizeBug(bug: BugReport, fallbackId = bug.id): BugReport {
     upvoteUserIds,
     upvoteCount: typeof bug.upvoteCount === "number" ? bug.upvoteCount : upvoteUserIds.length
   };
+}
+
+async function currentUserIsTestAccount(): Promise<boolean> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return false;
+  const snapshot = await getDoc(doc(db, "users", uid));
+  return snapshot.exists() && Boolean((snapshot.data() as User).testAccount);
+}
+
+async function filterBugsForCurrentUser(bugs: BugReport[]): Promise<BugReport[]> {
+  if (!isFirebaseConfigured) {
+    return bugs.filter((bug) => bug.reporterTestAccount !== true);
+  }
+
+  const [currentIsTest, userSnapshot] = await Promise.all([
+    currentUserIsTestAccount(),
+    getDocs(collection(db, "users"))
+  ]);
+  const usersById = new Map(userSnapshot.docs.map((item) => [item.id, item.data() as User]));
+
+  return bugs.filter((bug) => {
+    const reporter = usersById.get(bug.reporterId);
+    const reporterIsTest = bug.reporterTestAccount === true || reporter?.testAccount === true;
+    const reporterIsActiveRealUser = Boolean(reporter) && reporter?.active !== false && reporter?.testAccount !== true && bug.reporterTestAccount !== true;
+    return currentIsTest ? reporterIsTest || !reporter : reporterIsActiveRealUser;
+  });
 }
 
 export async function createBug(input: NewBugInput, user: User): Promise<BugReport> {
@@ -37,6 +63,7 @@ export async function createBug(input: NewBugInput, user: User): Promise<BugRepo
     status: "Nieuw",
     reporterId: user.uid,
     reporterName: user.displayName,
+    reporterTestAccount: user.testAccount === true,
     points,
     upvoteCount: 0,
     upvoteUserIds: [],
@@ -61,11 +88,13 @@ export async function createBug(input: NewBugInput, user: User): Promise<BugRepo
 
 export async function listBugs(status?: BugStatus): Promise<BugReport[]> {
   if (!isFirebaseConfigured) {
-    return demoBugs.filter((bug) => !status || bug.status === status);
+    const visibleBugs = await filterBugsForCurrentUser(demoBugs);
+    return visibleBugs.filter((bug) => !status || bug.status === status);
   }
   const snapshot = await getDocs(query(collection(db, "bugs"), orderBy("createdAt", "desc")));
   const bugs = snapshot.docs.map((item) => normalizeBug(item.data() as BugReport, item.id));
-  return bugs.filter((bug) => !status || bug.status === status);
+  const visibleBugs = await filterBugsForCurrentUser(bugs);
+  return visibleBugs.filter((bug) => !status || bug.status === status);
 }
 
 export async function updateBugStatus(bug: BugReport, status: BugStatus): Promise<BugReport> {
@@ -105,11 +134,12 @@ export async function toggleBugUpvote(bug: BugReport, user: User): Promise<BugRe
   if (!isFirebaseConfigured) {
     const index = demoBugs.findIndex((item) => item.id === current.id);
     if (index >= 0) demoBugs[index] = updated;
+    await applyUserPoints(user.uid, hasVoted ? -upvoteGivenPointValue : upvoteGivenPointValue, 0);
     return updated;
   }
 
   const bugRef = doc(db, "bugs", current.id);
-  return runTransaction(db, async (transaction) => {
+  const nextBug = await runTransaction(db, async (transaction) => {
     const snapshot = await transaction.get(bugRef);
     if (!snapshot.exists()) throw new Error("Bug niet gevonden.");
     const fresh = normalizeBug(snapshot.data() as BugReport, snapshot.id);
@@ -131,6 +161,8 @@ export async function toggleBugUpvote(bug: BugReport, user: User): Promise<BugRe
     });
     return next;
   });
+  await syncEngagementPoints(user);
+  return nextBug;
 }
 
 export async function deleteOwnBug(bug: BugReport, user: User): Promise<void> {
@@ -207,11 +239,13 @@ export async function addBugComment(bug: BugReport, user: User, text: string, re
 
   if (!isFirebaseConfigured) {
     demoComments.push(baseComment);
+    await applyUserPoints(user.uid, commentPointValue, 0);
     return baseComment;
   }
 
   const ref = doc(collection(db, "bugs", bug.id, "comments"));
   const comment = { ...baseComment, id: ref.id };
   await setDoc(ref, comment);
+  await syncEngagementPoints(user);
   return comment;
 }

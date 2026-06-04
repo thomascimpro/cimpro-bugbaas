@@ -1,3 +1,5 @@
+import * as Notifications from "expo-notifications";
+import { Platform } from "react-native";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 import { AppNotification, BugComment, BugReport, NotificationSettings, NotificationType, User } from "../types";
@@ -12,6 +14,16 @@ export const defaultNotificationSettings: NotificationSettings = {
 };
 
 const demoNotifications = new Map<string, AppNotification[]>();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true
+  })
+});
 
 function nowIso() {
   return new Date().toISOString();
@@ -31,6 +43,32 @@ export async function getNotificationSettings(user: User): Promise<NotificationS
 export async function saveNotificationSettings(user: User, settings: NotificationSettings): Promise<void> {
   if (!isFirebaseConfigured) return;
   await setDoc(doc(db, "users", user.uid, "settings", "notifications"), settings);
+}
+
+export async function initializePhoneNotifications(): Promise<void> {
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("bugbaas", {
+      name: "BugBaas",
+      importance: Notifications.AndroidImportance.DEFAULT
+    });
+  }
+  await Notifications.requestPermissionsAsync();
+}
+
+export async function showPhoneNotification(notification: AppNotification): Promise<void> {
+  const permissions = await Notifications.getPermissionsAsync();
+  if (!permissions.granted) return;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: notification.title,
+      body: notification.body,
+      data: {
+        bugId: notification.bugId ?? "",
+        type: notification.type
+      }
+    },
+    trigger: null
+  });
 }
 
 export async function markNotificationRead(user: User, notificationId: string): Promise<void> {

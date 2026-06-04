@@ -8,6 +8,7 @@ import { BugReport, BugSeverity, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
 const severities: BugSeverity[] = ["Laag", "Normaal", "Hoog", "Kritiek"];
+const projectOptions = ["TBox", "TConnect", "SkySpark", "Infinite", "VTScada", "Alert", "Anders"];
 const maxScreenshotSize = 640;
 const screenshotQuality = 0.35;
 const draftKey = "bugbaas:new-bug-draft";
@@ -31,6 +32,7 @@ type Props = {
 export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
   const [title, setTitle] = useState("");
   const [project, setProject] = useState("");
+  const [projectOpen, setProjectOpen] = useState(false);
   const [severity, setSeverity] = useState<BugSeverity>("Normaal");
   const [description, setDescription] = useState("");
   const [steps, setSteps] = useState("");
@@ -163,7 +165,26 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
       <Text style={sharedStyles.label}>Titel</Text>
       <TextInput style={sharedStyles.input} value={title} onChangeText={setTitle} />
       <Text style={sharedStyles.label}>Systeem/project</Text>
-      <TextInput style={sharedStyles.input} value={project} onChangeText={setProject} />
+      <Pressable style={styles.selectButton} onPress={() => setProjectOpen((current) => !current)}>
+        <Text style={[styles.selectText, !project && styles.selectPlaceholder]}>{project || "Kies systeem/product"}</Text>
+        <Text style={styles.selectChevron}>{projectOpen ? "^" : "v"}</Text>
+      </Pressable>
+      {projectOpen && (
+        <View style={styles.selectMenu}>
+          {projectOptions.map((item) => (
+            <Pressable
+              key={item}
+              style={[styles.selectOption, project === item && styles.selectOptionActive]}
+              onPress={() => {
+                setProject(item);
+                setProjectOpen(false);
+              }}
+            >
+              <Text style={[styles.selectOptionText, project === item && styles.selectOptionTextActive]}>{item}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <Text style={sharedStyles.label}>Urgentie</Text>
       <View style={sharedStyles.row}>
         {severities.map((item) => (
@@ -246,5 +267,53 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "900"
+  },
+  selectButton: {
+    alignItems: "center",
+    backgroundColor: "#fdfefb",
+    borderColor: "#c8d5ce",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    minHeight: 52,
+    paddingHorizontal: 12
+  },
+  selectText: {
+    color: "#17211c",
+    fontWeight: "900"
+  },
+  selectPlaceholder: {
+    color: "#77847f"
+  },
+  selectChevron: {
+    color: "#15724f",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  selectMenu: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#c8d5ce",
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 6,
+    marginBottom: 10,
+    padding: 8
+  },
+  selectOption: {
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 10
+  },
+  selectOptionActive: {
+    backgroundColor: "#15724f"
+  },
+  selectOptionText: {
+    color: "#17211c",
+    fontWeight: "900"
+  },
+  selectOptionTextActive: {
+    color: "#ffffff"
   }
 });

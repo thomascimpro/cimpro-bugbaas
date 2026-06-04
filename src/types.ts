@@ -10,6 +10,9 @@ export type User = {
   nameSet?: boolean;
   helpSeen?: boolean;
   splatCount?: number;
+  bugDexCount?: number;
+  commentPointCount?: number;
+  upvoteGivenPointCount?: number;
   totalPoints: number;
   bugCount: number;
   title: string;
@@ -27,6 +30,7 @@ export type BugReport = {
   status: BugStatus;
   reporterId: string;
   reporterName: string;
+  reporterTestAccount?: boolean;
   points: number;
   upvoteCount: number;
   upvoteUserIds: string[];

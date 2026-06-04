@@ -1,4 +1,5 @@
 export type VersionNotice = {
+  apkUrl?: string;
   latestVersion: string;
   releaseUrl: string;
 };
@@ -9,11 +10,12 @@ export async function checkLatestVersion(currentVersion: string): Promise<Versio
   const response = await fetch(latestReleaseUrl);
   if (!response.ok) return null;
 
-  const release = await response.json() as { tag_name?: string; html_url?: string };
+  const release = await response.json() as { assets?: Array<{ browser_download_url?: string; name?: string }>; tag_name?: string; html_url?: string };
   const latestVersion = cleanVersion(release.tag_name ?? "");
   if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) return null;
 
   return {
+    apkUrl: release.assets?.find((asset) => asset.name?.toLowerCase().endsWith(".apk"))?.browser_download_url,
     latestVersion,
     releaseUrl: release.html_url ?? "https://github.com/thomascimpro/cimpro-bugbaas/releases/latest"
   };

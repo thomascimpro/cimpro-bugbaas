@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
+import { DisplayNameModal } from "../components/DisplayNameModal";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { StatusBadge } from "../components/StatusBadge";
 import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
-import { getTierForPoints, userTiers } from "../services/pointsService";
-import { splatRewardEvery, upvotePointValue } from "../services/userService";
+import { bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
+import { upvotePointValue } from "../services/userService";
 import { BugReport, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
@@ -15,14 +16,16 @@ type Props = {
   isOwnProfile?: boolean;
   onBack: () => void;
   onLogout?: () => void;
+  onUpdateDisplayName?: (displayName: string) => Promise<void>;
   onSelectBug?: (bug: BugReport) => void;
 };
 
-export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onSelectBug }: Props) {
+export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onUpdateDisplayName, onSelectBug }: Props) {
   const tier = getTierForPoints(user.totalPoints);
   const badges = user.badges.length ? user.badges : ["Nog geen badges"];
   const badgeCount = user.badges.length;
   const [bugs, setBugs] = useState<BugReport[]>([]);
+  const [editNameVisible, setEditNameVisible] = useState(false);
   const [loadingBugs, setLoadingBugs] = useState(true);
 
   useEffect(() => {
@@ -39,6 +42,11 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onS
           <Text style={styles.kicker}>{isOwnProfile ? "Profiel" : "Collega"}</Text>
           <Text style={styles.name} numberOfLines={1}>{user.displayName}</Text>
           {isOwnProfile && <Text style={styles.email} numberOfLines={1}>{user.email}</Text>}
+          {isOwnProfile && onUpdateDisplayName && (
+            <Pressable style={styles.nameButton} onPress={() => setEditNameVisible(true)}>
+              <Text style={styles.nameButtonText}>Naam wijzigen</Text>
+            </Pressable>
+          )}
         </View>
         <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={tier.bugSize + 22} />
       </View>
@@ -53,8 +61,8 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onS
           <Text style={styles.label}>Bugs</Text>
         </View>
         <View style={styles.stat}>
-          <Text style={styles.value}>{badgeCount}</Text>
-          <Text style={styles.label}>Badges</Text>
+          <Text style={styles.value}>{user.bugDexCount ?? 0}/{bugDexEntries.length}</Text>
+          <Text style={styles.label}>BugDex</Text>
         </View>
       </View>
 
@@ -86,16 +94,8 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onS
           <Text style={[styles.statusValue, { color: tier.color }]}>{tier.title}</Text>
         </View>
         <View style={styles.statusLine}>
-          <Text style={styles.statusLabel}>Prestige</Text>
-          <Text style={[styles.statusValue, { color: tier.frameColor }]}>{tier.prestigeLevel}</Text>
-        </View>
-        <View style={styles.statusLine}>
-          <Text style={styles.statusLabel}>Frame</Text>
-          <Text style={[styles.statusValue, { color: tier.frameColor }]}>{tier.rewardText}</Text>
-        </View>
-        <View style={styles.statusLine}>
           <Text style={styles.statusLabel}>Splats</Text>
-          <Text style={styles.statusValue}>{(user.splatCount ?? 0) % splatRewardEvery}/{splatRewardEvery}</Text>
+          <Text style={styles.statusValue}>{user.splatCount ?? 0}</Text>
         </View>
       </View>
 
@@ -140,6 +140,16 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onS
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
         <Text style={sharedStyles.secondaryButtonText}>Terug</Text>
       </Pressable>
+      {isOwnProfile && onUpdateDisplayName && (
+        <DisplayNameModal
+          user={user}
+          visible={editNameVisible}
+          onSave={async (displayName) => {
+            await onUpdateDisplayName(displayName);
+            setEditNameVisible(false);
+          }}
+        />
+      )}
     </ScrollView>
   );
 }
@@ -178,6 +188,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     marginTop: 5
+  },
+  nameButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#fdfefb",
+    borderRadius: 8,
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 7
+  },
+  nameButtonText: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
   },
   stats: {
     flexDirection: "row",
