@@ -31,7 +31,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   useEffect(() => {
     setLoadingBugs(true);
     listBugs()
-      .then((items) => setBugs(items.filter((bug) => bug.reporterId === user.uid)))
+      .then((items) => setBugs(items.filter((bug) => (bug.reportType ?? "bug") === "bug" && bug.reporterId === user.uid)))
       .finally(() => setLoadingBugs(false));
   }, [user.uid]);
 
@@ -144,6 +144,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
         <DisplayNameModal
           user={user}
           visible={editNameVisible}
+          onCancel={() => setEditNameVisible(false)}
           onSave={async (displayName) => {
             await onUpdateDisplayName(displayName);
             setEditNameVisible(false);

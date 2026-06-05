@@ -22,14 +22,14 @@ const missionPool: MissionTemplate[] = [
     title: "Meld 2 bugs",
     target: 2,
     reward: "+20 missiepunten",
-    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart)).length
+    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart)).length
   },
   {
     id: "screenshot-proof",
     title: "Meld bug met screenshot",
     target: 1,
     reward: "Screenshot badge",
-    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart) && !!bug.screenshotDataUrl).length
+    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart) && !!bug.screenshotDataUrl).length
   },
   {
     id: "team-votes",
@@ -37,7 +37,7 @@ const missionPool: MissionTemplate[] = [
     target: 2,
     reward: "+10 bonuspunten",
     progressFor: (user, bugs, weekStart) => bugs
-      .filter((bug) => bug.reporterId === user.uid && isThisWeek(bug.updatedAt, weekStart))
+      .filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.updatedAt, weekStart))
       .reduce((total, bug) => total + (bug.upvoteCount ?? 0), 0)
   },
   {
@@ -45,14 +45,14 @@ const missionPool: MissionTemplate[] = [
     title: "Laat 1 bug fixen",
     target: 1,
     reward: "Fix streak",
-    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => bug.reporterId === user.uid && bug.status === "Gefixt" && isThisWeek(bug.updatedAt, weekStart)).length
+    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && bug.status === "Gefixt" && isThisWeek(bug.updatedAt, weekStart)).length
   },
   {
     id: "critical-eye",
     title: "Vind hoge urgentie",
     target: 1,
     reward: "Scherp oog",
-    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart) && (bug.severity === "Hoog" || bug.severity === "Kritiek")).length
+    progressFor: (user, bugs, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart) && (bug.severity === "Hoog" || bug.severity === "Kritiek")).length
   }
 ];
 
@@ -90,6 +90,10 @@ function weekNumber(date: Date): number {
   next.setUTCDate(next.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(next.getUTCFullYear(), 0, 1));
   return Math.ceil((((next.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function isBugReport(bug: BugReport): boolean {
+  return (bug.reportType ?? "bug") === "bug";
 }
 
 function isThisWeek(value: string, weekStart: Date): boolean {

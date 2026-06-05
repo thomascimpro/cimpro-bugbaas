@@ -19,7 +19,7 @@ type ActiveBug = {
 
 type Props = {
   enabled: boolean;
-  onCaught: (xp: number) => void;
+  onCaught: (xp: number, bugId: BugArtId, rarity: SpawnRarity) => void;
 };
 
 const spawnCheckMs = 60000;
@@ -44,6 +44,7 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
   const poof = useRef(new Animated.Value(0)).current;
   const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeRef = useRef<ActiveBug | null>(null);
+  const hitsRef = useRef(0);
 
   useEffect(() => {
     activeRef.current = activeBug;
@@ -75,6 +76,7 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     poof.setValue(0);
     setCaught(false);
     setHits(0);
+    hitsRef.current = 0;
 
     Animated.timing(progress, {
       duration: activeBug.durationMs,
@@ -134,18 +136,20 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     setActiveBug(null);
     setCaught(false);
     setHits(0);
+    hitsRef.current = 0;
   }
 
   function tapBug() {
     if (!activeBug || caught) return;
-    const nextHits = hits + 1;
+    const nextHits = hitsRef.current + 1;
+    hitsRef.current = nextHits;
     if (nextHits < activeBug.requiredTaps) {
       setHits(nextHits);
       return;
     }
 
     setCaught(true);
-    onCaught(activeBug.rewardXp);
+    onCaught(activeBug.rewardXp, activeBug.bugId, activeBug.rarity);
     Animated.timing(poof, {
       duration: 220,
       easing: Easing.out(Easing.quad),
@@ -171,7 +175,7 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
           }
         ]}
       >
-        <Pressable hitSlop={28} onPress={tapBug} style={[styles.hitbox, { minHeight: activeBug.size + 44, minWidth: activeBug.size + 62 }]}>
+        <Pressable hitSlop={42} onPress={tapBug} style={[styles.hitbox, { minHeight: activeBug.size + 90, minWidth: activeBug.size + 130 }]}>
           {caught ? (
             <View style={[styles.poof, { height: activeBug.size + 26, width: activeBug.size + 26 }]}>
               <Text style={styles.poofText}>+{activeBug.rewardXp} XP</Text>

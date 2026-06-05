@@ -40,9 +40,14 @@ export function HomeScreen({ user, onNavigate }: Props) {
         <View style={styles.heroText}>
           <View style={styles.heroNameRow}>
             <Text style={[sharedStyles.title, styles.heroTitle]} numberOfLines={1}>{user.displayName}</Text>
-            <Pressable style={styles.profilePill} onPress={() => onNavigate("profile")}>
-              <Text style={styles.profileText}>Profiel</Text>
-            </Pressable>
+            <View style={styles.heroActions}>
+              <Pressable style={styles.profilePill} onPress={() => onNavigate("profile")}>
+                <Text style={styles.profileText}>Profiel</Text>
+              </Pressable>
+              <Pressable style={styles.settingsPill} onPress={() => onNavigate("settings")}>
+                <Text style={styles.settingsText}>Instellingen</Text>
+              </Pressable>
+            </View>
           </View>
           <Text style={styles.scoreText}>{user.title}</Text>
         </View>
@@ -212,8 +217,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6
   },
+  heroActions: {
+    alignItems: "stretch",
+    gap: 6
+  },
   profileText: {
     color: "#102018",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  settingsPill: {
+    backgroundColor: "rgba(253,254,251,0.14)",
+    borderColor: "rgba(253,254,251,0.34)",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6
+  },
+  settingsText: {
+    color: "#ffffff",
     fontSize: 12,
     fontWeight: "900"
   },

@@ -1,6 +1,6 @@
 import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDoc, updateDoc, writeBatch } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../firebase";
-import { BugComment, BugReport, BugStatus, NewBugInput, User } from "../types";
+import { BugComment, BugReport, BugStatus, NewBugInput, ReportType, User } from "../types";
 import { badgesForUser, calculateBugPoints, titleForPoints } from "./pointsService";
 import { applyUserPoints, commentPointValue, syncEngagementPoints, upvoteGivenPointValue } from "./userService";
 
@@ -12,9 +12,18 @@ function normalizeBug(bug: BugReport, fallbackId = bug.id): BugReport {
   return {
     ...bug,
     id: bug.id || fallbackId,
+    reportType: bug.reportType ?? "bug",
     upvoteUserIds,
     upvoteCount: typeof bug.upvoteCount === "number" ? bug.upvoteCount : upvoteUserIds.length
   };
+}
+
+function calculateReportPoints(reportType: ReportType, severity: NewBugInput["severity"], status: BugStatus): number {
+  if (reportType === "bug") return calculateBugPoints(severity, status);
+  if (status === "Afgekeurd" || status === "Dubbel") return 0;
+  if (reportType === "workaround") return 8;
+  if (reportType === "tip") return 6;
+  return 5;
 }
 
 async function currentUserIsTestAccount(): Promise<boolean> {
@@ -52,9 +61,11 @@ export async function createBug(input: NewBugInput, user: User): Promise<BugRepo
   }
 
   const now = new Date().toISOString();
-  const points = calculateBugPoints(input.severity, "Nieuw");
+  const reportType = input.reportType ?? "bug";
+  const points = calculateReportPoints(reportType, input.severity, "Nieuw");
   const baseBug: BugReport = {
     id: `bug-${Date.now()}`,
+    reportType,
     title: input.title.trim(),
     project: input.project.trim(),
     severity: input.severity,
@@ -74,7 +85,7 @@ export async function createBug(input: NewBugInput, user: User): Promise<BugRepo
   if (!isFirebaseConfigured) {
     const bug = { ...baseBug, screenshotDataUrl: input.screenshotDataUrl };
     demoBugs.unshift(bug);
-    await applyUserPoints(user.uid, points, 1);
+    await applyUserPoints(user.uid, points, reportType === "bug" ? 1 : 0);
     return bug;
   }
 
@@ -82,7 +93,7 @@ export async function createBug(input: NewBugInput, user: User): Promise<BugRepo
   const bug: BugReport = { ...baseBug, id: docRef.id };
   if (input.screenshotDataUrl) bug.screenshotDataUrl = input.screenshotDataUrl;
   await setDoc(docRef, bug);
-  await applyUserPoints(user.uid, points, 1);
+  await applyUserPoints(user.uid, points, reportType === "bug" ? 1 : 0);
   return bug;
 }
 
@@ -99,7 +110,7 @@ export async function listBugs(status?: BugStatus): Promise<BugReport[]> {
 
 export async function updateBugStatus(bug: BugReport, status: BugStatus): Promise<BugReport> {
   const current = normalizeBug(bug);
-  const nextPoints = calculateBugPoints(current.severity, status);
+  const nextPoints = calculateReportPoints(current.reportType ?? "bug", current.severity, status);
   const updated = { ...current, status, points: nextPoints, updatedAt: new Date().toISOString() };
   await applyUserPoints(current.reporterId, nextPoints - current.points, 0);
 
@@ -175,7 +186,7 @@ export async function deleteOwnBug(bug: BugReport, user: User): Promise<void> {
     for (let i = demoComments.length - 1; i >= 0; i -= 1) {
       if (demoComments[i].bugId === current.id) demoComments.splice(i, 1);
     }
-    await applyUserPoints(user.uid, -current.points, -1);
+    await applyUserPoints(user.uid, -current.points, current.reportType === "bug" ? -1 : 0);
     return;
   }
 
@@ -198,7 +209,7 @@ export async function deleteOwnBug(bug: BugReport, user: User): Promise<void> {
     if (!userSnapshot.exists()) throw new Error("Gebruiker niet gevonden.");
     const currentUser = userSnapshot.data() as User;
     const totalPoints = Math.max(0, currentUser.totalPoints - fresh.points);
-    const bugCount = Math.max(0, currentUser.bugCount - 1);
+    const bugCount = Math.max(0, currentUser.bugCount - (fresh.reportType === "bug" ? 1 : 0));
     const updatedUser = { ...currentUser, totalPoints, bugCount, title: titleForPoints(totalPoints) };
     updatedUser.badges = badgesForUser(updatedUser);
 

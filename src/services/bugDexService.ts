@@ -241,6 +241,16 @@ export async function rollBugDexDrop(user: User, source: BugDexDropSource): Prom
   });
 }
 
+export async function rollSpecificBugDexDrop(user: User, bugId: string, source: BugDexDropSource, chance = 0.16): Promise<BugDexDropResult | null> {
+  const entry = entryByBugId(bugId);
+  if (!entry || Math.random() > chance) return null;
+  return grantSpecificBug(user, entry, source);
+}
+
+export async function grantBugDexReward(user: User, source: BugDexDropSource): Promise<BugDexDropResult> {
+  return grantSpecificBug(user, pickEntry(source), source);
+}
+
 export async function combineBugDexDuplicates(user: User, bugId: string): Promise<BugDexDropResult> {
   const sourceEntry = entryByBugId(bugId);
   if (!sourceEntry) throw new Error("Bug niet gevonden.");

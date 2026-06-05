@@ -4,16 +4,23 @@ import * as ImageManipulator from "expo-image-manipulator";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { createBug } from "../services/bugService";
-import { BugReport, BugSeverity, User } from "../types";
+import { BugReport, BugSeverity, ReportType, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
 const severities: BugSeverity[] = ["Laag", "Normaal", "Hoog", "Kritiek"];
 const projectOptions = ["TBox", "TConnect", "SkySpark", "Infinite", "VTScada", "Alert", "Anders"];
+const reportTypes: Array<{ value: ReportType; label: string; description: string }> = [
+  { value: "bug", label: "Bug", description: "Iets werkt niet goed" },
+  { value: "tip", label: "Tip", description: "Handige kennis delen" },
+  { value: "workaround", label: "Trick", description: "Omweg die nu helpt" },
+  { value: "idea", label: "Idee", description: "Feedback of verbetering" }
+];
 const maxScreenshotSize = 640;
 const screenshotQuality = 0.35;
 const draftKey = "bugbaas:new-bug-draft";
 
 type BugDraft = {
+  reportType?: ReportType;
   title: string;
   project: string;
   severity: BugSeverity;
@@ -30,6 +37,8 @@ type Props = {
 };
 
 export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
+  const [reportType, setReportType] = useState<ReportType>("bug");
+  const [typeOpen, setTypeOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [project, setProject] = useState("");
   const [projectOpen, setProjectOpen] = useState(false);
@@ -43,7 +52,9 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
   const [draftReady, setDraftReady] = useState(false);
   const [pendingDraft, setPendingDraft] = useState<BugDraft | null>(null);
 
-  const draft: BugDraft = { title, project, severity, description, steps, screenshotPreviewUri, screenshotDataUrl };
+  const selectedReportType = reportTypes.find((item) => item.value === reportType) ?? reportTypes[0];
+  const isBug = reportType === "bug";
+  const draft: BugDraft = { reportType, title, project, severity, description, steps, screenshotPreviewUri, screenshotDataUrl };
   const hasDraftContent = Boolean(title.trim() || project.trim() || description.trim() || steps.trim() || screenshotDataUrl);
 
   useEffect(() => {
@@ -70,9 +81,10 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
     }
 
     void AsyncStorage.setItem(draftKey, JSON.stringify(draft));
-  }, [description, draftReady, hasDraftContent, pendingDraft, project, screenshotDataUrl, screenshotPreviewUri, severity, steps, title]);
+  }, [description, draftReady, hasDraftContent, pendingDraft, project, reportType, screenshotDataUrl, screenshotPreviewUri, severity, steps, title]);
 
   function applyDraft(nextDraft: BugDraft) {
+    setReportType(nextDraft.reportType ?? "bug");
     setTitle(nextDraft.title);
     setProject(nextDraft.project);
     setSeverity(nextDraft.severity);
@@ -84,6 +96,8 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
   }
 
   function clearForm() {
+    setReportType("bug");
+    setTypeOpen(false);
     setTitle("");
     setProject("");
     setSeverity("Normaal");
@@ -135,7 +149,7 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
     setBusy(true);
     setError("");
     try {
-      const bug = await createBug({ title, project, severity, description, steps, screenshotDataUrl }, user);
+      const bug = await createBug({ reportType, title, project, severity: isBug ? severity : "Laag", description, steps, screenshotDataUrl }, user);
       await AsyncStorage.removeItem(draftKey);
       clearForm();
       onSaved(bug);
@@ -148,7 +162,7 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
-      <Text style={sharedStyles.title}>Nieuwe bug</Text>
+      <Text style={sharedStyles.title}>Nieuwe melding</Text>
       {pendingDraft && (
         <View style={styles.draftCard}>
           <Text style={styles.draftTitle}>Concept gevonden</Text>
@@ -160,6 +174,31 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
               <Text style={sharedStyles.secondaryButtonText}>Nieuw</Text>
             </Pressable>
           </View>
+        </View>
+      )}
+      <Text style={sharedStyles.label}>Type</Text>
+      <Pressable style={styles.selectButton} onPress={() => setTypeOpen((current) => !current)}>
+        <View>
+          <Text style={styles.selectText}>{selectedReportType.label}</Text>
+          <Text style={styles.selectDescription}>{selectedReportType.description}</Text>
+        </View>
+        <Text style={styles.selectChevron}>{typeOpen ? "^" : "v"}</Text>
+      </Pressable>
+      {typeOpen && (
+        <View style={styles.selectMenu}>
+          {reportTypes.map((item) => (
+            <Pressable
+              key={item.value}
+              style={[styles.selectOption, reportType === item.value && styles.selectOptionActive]}
+              onPress={() => {
+                setReportType(item.value);
+                setTypeOpen(false);
+              }}
+            >
+              <Text style={[styles.selectOptionText, reportType === item.value && styles.selectOptionTextActive]}>{item.label}</Text>
+              <Text style={[styles.selectOptionMeta, reportType === item.value && styles.selectOptionTextActive]}>{item.description}</Text>
+            </Pressable>
+          ))}
         </View>
       )}
       <Text style={sharedStyles.label}>Titel</Text>
@@ -185,17 +224,21 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
           ))}
         </View>
       )}
-      <Text style={sharedStyles.label}>Urgentie</Text>
-      <View style={sharedStyles.row}>
-        {severities.map((item) => (
-          <Pressable key={item} style={severity === item ? sharedStyles.button : sharedStyles.secondaryButton} onPress={() => setSeverity(item)}>
-            <Text style={severity === item ? sharedStyles.buttonText : sharedStyles.secondaryButtonText}>{item}</Text>
-          </Pressable>
-        ))}
-      </View>
+      {isBug && (
+        <>
+          <Text style={sharedStyles.label}>Urgentie</Text>
+          <View style={sharedStyles.row}>
+            {severities.map((item) => (
+              <Pressable key={item} style={severity === item ? sharedStyles.button : sharedStyles.secondaryButton} onPress={() => setSeverity(item)}>
+                <Text style={severity === item ? sharedStyles.buttonText : sharedStyles.secondaryButtonText}>{item}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      )}
       <Text style={sharedStyles.label}>Beschrijving</Text>
       <TextInput multiline style={[sharedStyles.input, { minHeight: 90 }]} value={description} onChangeText={setDescription} />
-      <Text style={sharedStyles.label}>Stappen om te reproduceren</Text>
+      <Text style={sharedStyles.label}>{isBug ? "Stappen om te reproduceren" : "Extra uitleg"}</Text>
       <TextInput multiline style={[sharedStyles.input, { minHeight: 90 }]} value={steps} onChangeText={setSteps} />
       {screenshotPreviewUri && (
         <View style={styles.previewWrap}>
@@ -284,6 +327,12 @@ const styles = StyleSheet.create({
     color: "#17211c",
     fontWeight: "900"
   },
+  selectDescription: {
+    color: "#53645d",
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 2
+  },
   selectPlaceholder: {
     color: "#77847f"
   },
@@ -312,6 +361,12 @@ const styles = StyleSheet.create({
   selectOptionText: {
     color: "#17211c",
     fontWeight: "900"
+  },
+  selectOptionMeta: {
+    color: "#53645d",
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 2
   },
   selectOptionTextActive: {
     color: "#ffffff"

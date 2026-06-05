@@ -1,7 +1,7 @@
 import Constants from "expo-constants";
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Linking, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
-import { AppNotification, BugComment, NotificationSettings, User } from "./src/types";
+import { AppNotification, BugComment, BugReport, BugSeverity, NotificationSettings, User } from "./src/types";
 import { applyUserPoints, ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, updateUserDisplayName } from "./src/services/userService";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
@@ -12,7 +12,6 @@ import { LeaderboardScreen } from "./src/screens/LeaderboardScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { BugDexScreen } from "./src/screens/BugDexScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
-import { BugReport } from "./src/types";
 import { AppBackground } from "./src/components/AppBackground";
 import { BottomNav } from "./src/components/BottomNav";
 import { WalkingBugsLayer } from "./src/components/WalkingBugsLayer";
@@ -23,7 +22,7 @@ import { DisplayNameModal } from "./src/components/DisplayNameModal";
 import { InAppNotificationToast } from "./src/components/InAppNotificationToast";
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
 import { listBugs } from "./src/services/bugService";
-import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, rollBugDexDrop } from "./src/services/bugDexService";
+import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, grantBugDexReward, rollBugDexDrop, rollSpecificBugDexDrop } from "./src/services/bugDexService";
 import { checkLatestVersion, VersionNotice } from "./src/services/versionService";
 import {
   defaultNotificationSettings,
@@ -46,6 +45,7 @@ export default function App() {
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [bugDexDrop, setBugDexDrop] = useState<BugDexDropResult | null>(null);
+  const [bugDexDropQueue, setBugDexDropQueue] = useState<BugDexDropResult[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings);
   const [notification, setNotification] = useState<AppNotification | null>(null);
   const [helpVisible, setHelpVisible] = useState(false);
@@ -183,15 +183,39 @@ export default function App() {
     try {
       const drop = await dropPromise;
       if (drop?.updatedUser) setUser(drop.updatedUser);
-      if (drop) setBugDexDrop(drop);
+      if (drop) showBugDexDrop(drop);
     } catch {
       // BugDex rewards should never block core app actions.
     }
   }
 
+  function showBugDexDrop(drop: BugDexDropResult) {
+    setBugDexDrop((current) => {
+      if (current) {
+        setBugDexDropQueue((queue) => [...queue, drop]);
+        return current;
+      }
+      return drop;
+    });
+  }
+
+  function closeBugDexDrop() {
+    const [nextDrop, ...remaining] = bugDexDropQueue;
+    setBugDexDrop(nextDrop ?? null);
+    setBugDexDropQueue(remaining);
+  }
+
   function rewardActivity(source: BugDexDropSource) {
     if (!user) return;
     void maybeShowBugDexDrop(rollBugDexDrop(user, source));
+  }
+
+  function rewardBugFixed(bug: BugReport) {
+    if (!user) return;
+    const attempts = fixedRewardAttempts(bug.severity);
+    for (let index = 0; index < attempts; index += 1) {
+      void maybeShowBugDexDrop(grantBugDexReward(user, "bug_fixed"));
+    }
   }
 
   async function handleBugSplat() {
@@ -205,13 +229,19 @@ export default function App() {
     }
   }
 
-  async function handleForegroundBugCaught(xp: number) {
+  async function handleForegroundBugCaught(xp: number, bugId: string, rarity: "common" | "rare" | "epic") {
     if (!user) return;
     try {
       const updated = await applyUserPoints(user.uid, xp, 0);
       const splatResult = await recordBugSplat(updated ?? user);
       setUser(splatResult.user);
-      if (splatResult.milestone) void maybeShowBugDexDrop(rollBugDexDrop(splatResult.user, "bug_splat"));
+      const catchChance = rarity === "common" ? 0.18 : rarity === "rare" ? 0.14 : 0.1;
+      const caughtBugDrop = await rollSpecificBugDexDrop(splatResult.user, bugId, "bug_splat", catchChance);
+      if (caughtBugDrop) {
+        showBugDexDrop(caughtBugDrop);
+      } else if (splatResult.milestone) {
+        void maybeShowBugDexDrop(rollBugDexDrop(splatResult.user, "bug_splat"));
+      }
     } catch {
       // Foreground catch rewards should never interrupt normal app use.
     }
@@ -242,12 +272,6 @@ export default function App() {
     setSelectedBug(null);
     setSelectedUser(null);
     setRoute(nextRoute);
-  }
-
-  function openSettings() {
-    setSelectedBug(null);
-    setSelectedUser(null);
-    setRoute("settings");
   }
 
   function showHelpTour() {
@@ -310,8 +334,12 @@ export default function App() {
             onSaved={(bug) => {
               void notifyNewBug(bug, user).catch(() => undefined);
               void refreshUser();
-              rewardActivity("bug_reported");
-              setSplatBonusVisible(true);
+              if ((bug.reportType ?? "bug") === "bug") {
+                rewardActivity("bug_reported");
+                setSplatBonusVisible(true);
+              } else {
+                rewardActivity("comment");
+              }
               setRoute("home");
             }}
           />
@@ -330,7 +358,8 @@ export default function App() {
             onBugChanged={(bug) => {
               if (selectedBug?.status !== bug.status) {
                 void notifyBugUpdate(selectedBug, bug, user).catch(() => undefined);
-                rewardActivity(bug.status === "Gefixt" ? "bug_fixed" : "status_update");
+                if (bug.status === "Gefixt") rewardBugFixed(bug);
+                else rewardActivity("status_update");
               } else if ((selectedBug?.upvoteCount ?? 0) !== (bug.upvoteCount ?? 0) && user.uid !== bug.reporterId) {
                 rewardActivity("upvote_given");
               }
@@ -372,21 +401,11 @@ export default function App() {
         {route === "settings" && (
           <SettingsScreen settings={notificationSettings} onBack={() => setRoute("home")} onChange={updateNotificationSettings} onShowHelp={showHelpTour} />
         )}
-        <Pressable
-          accessibilityLabel="Instellingen"
-          style={styles.settingsButton}
-          onPress={openSettings}
-          onTouchEnd={openSettings}
-        >
-          <View style={[styles.settingsSurface, route === "settings" && styles.settingsButtonActive]}>
-            <Text style={[styles.settingsGear, route === "settings" && styles.settingsGearActive]}>⚙</Text>
-          </View>
-        </Pressable>
       </View>
       <BottomNav activeRoute={route} onNavigate={navigateMain} />
       <InAppNotificationToast notification={notification} onClose={closeNotification} onOpen={openNotification} />
-      <ForegroundCatchBug enabled={foregroundBugEnabled} onCaught={(xp) => void handleForegroundBugCaught(xp)} />
-      <BugDexUnlockModal drop={bugDexDrop} onClose={() => setBugDexDrop(null)} />
+      <ForegroundCatchBug enabled={foregroundBugEnabled} onCaught={(xp, bugId, rarity) => void handleForegroundBugCaught(xp, bugId, rarity)} />
+      <BugDexUnlockModal drop={bugDexDrop} onClose={closeBugDexDrop} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
       <BugSplatBonusOverlay visible={splatBonusVisible} onSplat={() => void handleBugSplat()} onSkip={() => setSplatBonusVisible(false)} />
@@ -408,6 +427,12 @@ function VersionToast({ notice }: { notice: VersionNotice | null }) {
   );
 }
 
+function fixedRewardAttempts(severity: BugSeverity): number {
+  if (severity === "Kritiek") return 3;
+  if (severity === "Hoog") return 2;
+  return 1;
+}
+
 const styles = StyleSheet.create({
   shell: {
     flex: 1,
@@ -425,44 +450,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center"
-  },
-  settingsButton: {
-    alignItems: "center",
-    elevation: 30,
-    height: 52,
-    justifyContent: "center",
-    position: "absolute",
-    right: 12,
-    top: 12,
-    width: 52,
-    zIndex: 1000
-  },
-  settingsSurface: {
-    alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#c8d5ce",
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 48,
-    justifyContent: "center",
-    shadowColor: "#102018",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    width: 48
-  },
-  settingsButtonActive: {
-    backgroundColor: "#102018",
-    borderColor: "#d7bd57"
-  },
-  settingsGear: {
-    color: "#102018",
-    fontSize: 30,
-    fontWeight: "900",
-    lineHeight: 36
-  },
-  settingsGearActive: {
-    color: "#d7bd57"
   },
   versionToast: {
     backgroundColor: "#102018",

@@ -157,8 +157,10 @@ async function notifyRecipients(
 
 export async function notifyNewBug(bug: BugReport, actor: User): Promise<void> {
   const users = await listUsers();
+  const reportType = bug.reportType ?? "bug";
+  const title = reportType === "bug" ? "Nieuwe bug" : reportType === "tip" ? "Nieuwe tip" : reportType === "workaround" ? "Nieuwe trick" : "Nieuw idee";
   await notifyRecipients(users, actor, "new_bug", {
-    title: "Nieuwe bug",
+    title,
     body: `${actor.displayName}: ${bug.title}`,
     bugId: bug.id
   });
@@ -180,7 +182,7 @@ export async function notifyBugUpdate(previousBug: BugReport, nextBug: BugReport
   if (previousBug.status === nextBug.status || nextBug.reporterId === actor.uid) return;
   await createNotification(nextBug.reporterId, {
     type: "bug_update",
-    title: "Bug update",
+    title: "Melding update",
     body: `${nextBug.title}: ${nextBug.status}`,
     actorId: actor.uid,
     actorName: actor.displayName,

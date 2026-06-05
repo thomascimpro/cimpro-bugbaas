@@ -1,5 +1,6 @@
 export type BugStatus = "Nieuw" | "Bevestigd" | "In behandeling" | "Gefixt" | "Afgekeurd" | "Dubbel";
 export type BugSeverity = "Laag" | "Normaal" | "Hoog" | "Kritiek";
+export type ReportType = "bug" | "tip" | "workaround" | "idea";
 
 export type User = {
   uid: string;
@@ -21,6 +22,7 @@ export type User = {
 
 export type BugReport = {
   id: string;
+  reportType?: ReportType;
   title: string;
   project: string;
   severity: BugSeverity;
@@ -90,6 +92,7 @@ export type TradeRequest = {
 };
 
 export type NewBugInput = {
+  reportType: ReportType;
   title: string;
   project: string;
   severity: BugSeverity;

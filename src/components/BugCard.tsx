@@ -1,6 +1,7 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { BugReport } from "../types";
+import { BugReport, ReportType } from "../types";
+import { BugArtId } from "../services/bugArt";
 import { BugArtImage } from "./BugArtImage";
 import { SeverityBadge } from "./SeverityBadge";
 import { StatusBadge } from "./StatusBadge";
@@ -12,7 +13,16 @@ const bugArtBySeverity = {
   Kritiek: ["schorpioen", "neushoornkever", "goliathkever"]
 } as const;
 
+const reportTypeMeta: Record<ReportType, { label: string; color: string; background: string; art?: BugArtId }> = {
+  bug: { label: "BUG", color: "#b83227", background: "#fff1ef" },
+  tip: { label: "TIP", color: "#15724f", background: "#e9f6ef", art: "gaasvlieg" },
+  workaround: { label: "TRICK", color: "#6b4bb3", background: "#f0ecff", art: "pissebed" },
+  idea: { label: "IDEE", color: "#986b08", background: "#fff7d7", art: "juweelkever" }
+};
+
 function bugArtForReport(bug: BugReport) {
+  const reportType = bug.reportType ?? "bug";
+  if (reportType !== "bug") return reportTypeMeta[reportType].art ?? "zilvervisje";
   const options = bugArtBySeverity[bug.severity];
   const seed = `${bug.id}${bug.title}${bug.project}`.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
   return options[seed % options.length];
@@ -20,9 +30,11 @@ function bugArtForReport(bug: BugReport) {
 
 export function BugCard({ bug, onPress }: { bug: BugReport; onPress: () => void }) {
   const upvotes = bug.upvoteCount ?? 0;
+  const reportType = bug.reportType ?? "bug";
+  const meta = reportTypeMeta[reportType];
 
   return (
-    <Pressable style={styles.card} onPress={onPress}>
+    <Pressable style={[styles.card, { borderColor: meta.color }]} onPress={onPress}>
       <View style={styles.artPanel}>
         <BugArtImage bugId={bugArtForReport(bug)} size={74} />
       </View>
@@ -34,8 +46,15 @@ export function BugCard({ bug, onPress }: { bug: BugReport; onPress: () => void 
         <Text style={styles.title} numberOfLines={2}>{bug.title}</Text>
         <Text style={styles.meta} numberOfLines={1}>{bug.reporterName}</Text>
         <View style={styles.row}>
-          <SeverityBadge severity={bug.severity} />
-          <StatusBadge status={bug.status} />
+          <View style={[styles.typeBadge, { backgroundColor: meta.background, borderColor: meta.color }]}>
+            <Text style={[styles.typeBadgeText, { color: meta.color }]}>{meta.label}</Text>
+          </View>
+          {reportType === "bug" && (
+            <>
+              <SeverityBadge severity={bug.severity} />
+              <StatusBadge status={bug.status} />
+            </>
+          )}
         </View>
         <View style={styles.footer}>
           <Text style={styles.upvotes}>+{upvotes}</Text>
@@ -120,6 +139,18 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
     marginTop: 10
+  },
+  typeBadge: {
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 30,
+    paddingHorizontal: 10
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: "900"
   },
   date: {
     color: "#77847f",

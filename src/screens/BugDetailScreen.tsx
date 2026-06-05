@@ -5,11 +5,17 @@ import { StatusBadge } from "../components/StatusBadge";
 import { addBugComment, deleteOwnBug, listBugComments, toggleBugUpvote, updateBugStatus } from "../services/bugService";
 import { getUserById } from "../services/userService";
 import { upvotePointValue } from "../services/userService";
-import { BugComment, BugReport, BugStatus, User } from "../types";
+import { BugComment, BugReport, BugStatus, ReportType, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
 const statuses: BugStatus[] = ["Bevestigd", "In behandeling", "Gefixt", "Afgekeurd", "Dubbel"];
 const reactions = ["🐞", "🪲", "🐛", "💥", "🔥", "🎉"];
+const reportTypeMeta: Record<ReportType, { label: string; color: string; background: string }> = {
+  bug: { label: "BUG", color: "#b83227", background: "#fff1ef" },
+  tip: { label: "TIP", color: "#15724f", background: "#e9f6ef" },
+  workaround: { label: "TRICK", color: "#6b4bb3", background: "#f0ecff" },
+  idea: { label: "IDEE", color: "#986b08", background: "#fff7d7" }
+};
 
 type Props = {
   bug: BugReport;
@@ -30,7 +36,10 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
   const [commentText, setCommentText] = useState("");
   const [selectedReaction, setSelectedReaction] = useState("🐞");
   const [error, setError] = useState("");
-  const canUpdateStatus = user.uid === bug.reporterId;
+  const reportType = bug.reportType ?? "bug";
+  const isBug = reportType === "bug";
+  const typeMeta = reportTypeMeta[reportType];
+  const canUpdateStatus = user.uid === bug.reporterId && isBug;
   const canUpvote = user.uid !== bug.reporterId;
   const hasVoted = bug.upvoteUserIds?.includes(user.uid) ?? false;
   const upvoteCount = bug.upvoteCount ?? 0;
@@ -89,8 +98,8 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
   }
 
   function confirmDelete() {
-    if (!canUpdateStatus || deleteBusy) return;
-    Alert.alert("Bug verwijderen", "Deze bug wordt verwijderd en de punten worden ingetrokken.", [
+    if (user.uid !== bug.reporterId || deleteBusy) return;
+    Alert.alert("Melding verwijderen", "Deze melding wordt verwijderd en de punten worden ingetrokken.", [
       { text: "Annuleer", style: "cancel" },
       { text: "Verwijder", style: "destructive", onPress: () => void removeBug() }
     ]);
@@ -114,8 +123,15 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
       <Text style={sharedStyles.title}>{bug.title}</Text>
       <Text style={sharedStyles.subtitle}>{bug.project} - {bug.reporterName}</Text>
       <View style={sharedStyles.row}>
-        <SeverityBadge severity={bug.severity} />
-        <StatusBadge status={bug.status} />
+        <View style={[styles.typeBadge, { backgroundColor: typeMeta.background, borderColor: typeMeta.color }]}>
+          <Text style={[styles.typeBadgeText, { color: typeMeta.color }]}>{typeMeta.label}</Text>
+        </View>
+        {isBug && (
+          <>
+            <SeverityBadge severity={bug.severity} />
+            <StatusBadge status={bug.status} />
+          </>
+        )}
       </View>
       <View style={styles.upvotePanel}>
         <View style={styles.upvoteStat}>
@@ -130,14 +146,14 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
           {voteBusy ? (
             <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text style={styles.plusButtonText}>{canUpvote ? (hasVoted ? "Gestemd" : "+1") : "Eigen bug"}</Text>
+            <Text style={styles.plusButtonText}>{canUpvote ? (hasVoted ? "Gestemd" : "+1") : "Eigen melding"}</Text>
           )}
         </Pressable>
       </View>
       <Text style={sharedStyles.label}>Beschrijving</Text>
       <Text style={sharedStyles.subtitle}>{bug.description}</Text>
-      <Text style={sharedStyles.label}>Reproduceerstappen</Text>
-      <Text style={sharedStyles.subtitle}>{bug.steps || "Niet ingevuld. Spannend, maar minder handig."}</Text>
+      <Text style={sharedStyles.label}>{isBug ? "Reproduceerstappen" : "Extra uitleg"}</Text>
+      <Text style={sharedStyles.subtitle}>{bug.steps || "Niet ingevuld."}</Text>
       {bug.screenshotDataUrl && <Image source={{ uri: bug.screenshotDataUrl }} style={{ height: 220, borderRadius: 8, marginBottom: 14 }} />}
       <View style={styles.commentsCard}>
         <Text style={styles.sectionTitle}>Reacties</Text>
@@ -196,9 +212,14 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
             <Text style={sharedStyles.buttonText}>Markeer als dubbel</Text>
           </Pressable>
           <Pressable style={styles.deleteButton} disabled={deleteBusy} onPress={confirmDelete}>
-            {deleteBusy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>Verwijder bug</Text>}
+            {deleteBusy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>Verwijder melding</Text>}
           </Pressable>
         </>
+      )}
+      {!canUpdateStatus && user.uid === bug.reporterId && (
+        <Pressable style={styles.deleteButton} disabled={deleteBusy} onPress={confirmDelete}>
+          {deleteBusy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>Verwijder melding</Text>}
+        </Pressable>
       )}
       {!!error && <Text style={sharedStyles.error}>{error}</Text>}
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
@@ -225,6 +246,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginBottom: 12
+  },
+  typeBadge: {
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 30,
+    paddingHorizontal: 10
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: "900"
   },
   profileLink: {
     color: "#15724f",

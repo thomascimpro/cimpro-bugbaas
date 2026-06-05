@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { User } from "../types";
 
@@ -6,12 +6,19 @@ type Props = {
   user: User | null;
   visible: boolean;
   onSave: (displayName: string) => Promise<void>;
+  onCancel?: () => void;
 };
 
-export function DisplayNameModal({ user, visible, onSave }: Props) {
+export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!visible) return;
+    setDisplayName("");
+    setError("");
+  }, [visible]);
 
   async function submit() {
     setBusy(true);
@@ -25,8 +32,14 @@ export function DisplayNameModal({ user, visible, onSave }: Props) {
     }
   }
 
+  function cancel() {
+    setDisplayName("");
+    setError("");
+    onCancel?.();
+  }
+
   return (
-    <Modal transparent animationType="fade" visible={visible} onRequestClose={() => undefined}>
+    <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel ? cancel : (() => undefined)}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <Text style={styles.title}>Naam in de app</Text>
@@ -42,6 +55,11 @@ export function DisplayNameModal({ user, visible, onSave }: Props) {
           <Pressable style={styles.button} disabled={busy} onPress={submit}>
             {busy ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.buttonText}>Opslaan</Text>}
           </Pressable>
+          {onCancel && (
+            <Pressable style={styles.cancelButton} disabled={busy} onPress={cancel}>
+              <Text style={styles.cancelButtonText}>Annuleer</Text>
+            </Pressable>
+          )}
           {!!error && <Text style={styles.error}>{error}</Text>}
         </View>
       </View>
@@ -96,6 +114,20 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#ffffff",
+    fontWeight: "900"
+  },
+  cancelButton: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#cfd8d3",
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: "center",
+    marginTop: 10,
+    minHeight: 48
+  },
+  cancelButtonText: {
+    color: "#102018",
     fontWeight: "900"
   },
   error: {
