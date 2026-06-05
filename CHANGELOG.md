@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.8
+
+- Bug Radar widget gebruikt nu 12 radarframes voor een soepelere scan-animatie.
+- Radar finds worden via random roll-checks gepland, met avond- en weekendkans en maximaal 3 verspreide finds per dag.
+- Gevonden radarbug blijft op de widget staan tot je de widget aantikt.
+- Epische en legendarische radarbugs krijgen nu een duidelijke HD aura zonder rarity-tekst.
+- BugDex unlock popup toont extra premium styling en HD aura-art voor epische en legendarische drops.
+
 ## 1.2.7
 
 - Bug Radar widget-signalen kunnen nu soms random buiten kantooruren verschijnen.

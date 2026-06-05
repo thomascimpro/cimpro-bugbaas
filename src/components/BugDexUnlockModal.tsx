@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { BugDexDropResult } from "../services/bugDexService";
 import { bugDexFacts, BugDexRarity } from "../services/pointsService";
 import { BugArtImage } from "./BugArtImage";
@@ -14,6 +14,35 @@ const rarityColors: Record<BugDexRarity, string> = {
   Zeldzaam: "#15724f",
   Episch: "#356d7c",
   Legendarisch: "#b83227"
+};
+
+const premiumRarityStyles: Record<"Episch" | "Legendarisch", {
+  accent: string;
+  auraSource: ImageSourcePropType;
+  background: string;
+  border: string;
+  glow: string;
+  label: string;
+  text: string;
+}> = {
+  Episch: {
+    accent: "#47b7d0",
+    auraSource: require("../../assets/generated/bugdex_popup_aura_epic.png"),
+    background: "#eefaff",
+    border: "#1d839b",
+    glow: "#78e7ff",
+    label: "EPISCHE VONDST",
+    text: "#0d5263"
+  },
+  Legendarisch: {
+    accent: "#f5b84b",
+    auraSource: require("../../assets/generated/bugdex_popup_aura_legendary.png"),
+    background: "#fff8e8",
+    border: "#d84b35",
+    glow: "#ffd66b",
+    label: "LEGENDARISCH",
+    text: "#8a271c"
+  }
 };
 
 export function BugDexUnlockModal({ drop, onClose }: Props) {
@@ -45,6 +74,9 @@ export function BugDexUnlockModal({ drop, onClose }: Props) {
   const isPointsReward = drop.rewardType === "points";
   const isDailyReward = drop.source === "daily_login";
   const rarityColor = isPointsReward ? "#d7bd57" : rarityColors[drop.entry.rarity];
+  const premiumStyle = !isPointsReward && (drop.entry.rarity === "Episch" || drop.entry.rarity === "Legendarisch")
+    ? premiumRarityStyles[drop.entry.rarity]
+    : null;
   const bugFact = isPointsReward ? "Daily login" : bugDexFacts[drop.entry.id] ?? drop.entry.note;
   const title = isDailyReward ? "Daily bonus" : drop.source === "combine" ? "Combine gelukt" : drop.isNew ? "Bug unlocked" : "Dubbele bug";
   const subtitle = isPointsReward
@@ -57,23 +89,44 @@ export function BugDexUnlockModal({ drop, onClose }: Props) {
   const streakText = isDailyReward && drop.streakDay
     ? `Dag ${drop.streakDay} streak - nog ${drop.daysUntilBetterReward ?? 0} dagen voor betere reward`
     : "";
-  const glowScale = glow.interpolate({ inputRange: [0, 1], outputRange: [1, 1.12] });
-  const glowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.75] });
+  const glowScale = glow.interpolate({ inputRange: [0, 1], outputRange: [1, premiumStyle ? 1.24 : 1.12] });
+  const ringScale = glow.interpolate({ inputRange: [0, 1], outputRange: [0.9, premiumStyle ? 1.38 : 1.16] });
+  const glowOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [premiumStyle ? 0.42 : 0.35, premiumStyle ? 0.9 : 0.75] });
+  const ringOpacity = glow.interpolate({ inputRange: [0, 1], outputRange: [0.28, premiumStyle ? 0.72 : 0.35] });
 
   return (
     <Modal transparent animationType="fade" visible={Boolean(drop)} onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Animated.View style={[styles.card, { borderColor: rarityColor, transform: [{ scale }] }]}>
-          <Text style={styles.kicker}>{title}</Text>
-          <Text style={styles.subtitle}>{subtitle}</Text>
+        <Animated.View style={[
+          styles.card,
+          premiumStyle && styles.premiumCard,
+          premiumStyle && { backgroundColor: premiumStyle.background, borderColor: premiumStyle.border },
+          !premiumStyle && { borderColor: rarityColor },
+          { transform: [{ scale }] }
+        ]}>
+          {premiumStyle && <View style={[styles.premiumTopBar, { backgroundColor: premiumStyle.accent }]} />}
+          {premiumStyle && (
+            <View style={[styles.rarityBadge, { backgroundColor: premiumStyle.border }]}>
+              <Text style={styles.rarityBadgeText}>{premiumStyle.label}</Text>
+            </View>
+          )}
+          <Text style={[styles.kicker, premiumStyle && { color: premiumStyle.text }]}>{title}</Text>
+          <Text style={[styles.subtitle, premiumStyle && { color: premiumStyle.text }]}>{subtitle}</Text>
           <View style={styles.artStage}>
-            <Animated.View style={[styles.glow, { backgroundColor: rarityColor, opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
+            {premiumStyle && (
+              <>
+                <Image accessibilityIgnoresInvertColors source={premiumStyle.auraSource} style={styles.premiumAuraImage} />
+                <Animated.View style={[styles.burstRing, { borderColor: premiumStyle.border, opacity: ringOpacity, transform: [{ scale: ringScale }] }]} />
+                <Animated.View style={[styles.burstRingAlt, { borderColor: premiumStyle.accent, opacity: ringOpacity, transform: [{ scale: glowScale }] }]} />
+              </>
+            )}
+            <Animated.View style={[styles.glow, { backgroundColor: premiumStyle?.glow ?? rarityColor, opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
             {isPointsReward ? <Text style={styles.pointsReward}>+{drop.points}</Text> : <BugArtImage bugId={drop.entry.id} size={138} />}
           </View>
-          <Text style={styles.name}>{isPointsReward ? "Punten gevonden" : drop.entry.name}</Text>
-          <Text style={styles.meta}>{bugFact}</Text>
+          <Text style={[styles.name, premiumStyle && { color: premiumStyle.text }]}>{isPointsReward ? "Punten gevonden" : drop.entry.name}</Text>
+          <Text style={[styles.meta, premiumStyle && { color: premiumStyle.text }]}>{bugFact}</Text>
           {!!streakText && <Text style={styles.streak}>{streakText}</Text>}
-          <Pressable style={styles.button} onPress={onClose}>
+          <Pressable style={[styles.button, premiumStyle && { backgroundColor: premiumStyle.border }]} onPress={onClose}>
             <Text style={styles.buttonText}>Mooi</Text>
           </Pressable>
         </Animated.View>
@@ -99,12 +152,41 @@ const styles = StyleSheet.create({
     padding: 22,
     width: "100%"
   },
+  premiumCard: {
+    borderWidth: 4,
+    elevation: 10,
+    paddingTop: 24,
+    shadowColor: "#102018",
+    shadowOffset: { height: 10, width: 0 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18
+  },
+  premiumTopBar: {
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    height: 8,
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0
+  },
   kicker: {
     color: "#15724f",
     fontSize: 16,
     fontWeight: "900",
     marginBottom: 4,
     textTransform: "uppercase"
+  },
+  rarityBadge: {
+    borderRadius: 999,
+    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 7
+  },
+  rarityBadgeText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900"
   },
   subtitle: {
     color: "#53645d",
@@ -124,6 +206,25 @@ const styles = StyleSheet.create({
     height: 156,
     position: "absolute",
     width: 156
+  },
+  premiumAuraImage: {
+    height: 192,
+    position: "absolute",
+    width: 192
+  },
+  burstRing: {
+    borderRadius: 88,
+    borderWidth: 4,
+    height: 176,
+    position: "absolute",
+    width: 176
+  },
+  burstRingAlt: {
+    borderRadius: 72,
+    borderWidth: 3,
+    height: 144,
+    position: "absolute",
+    width: 144
   },
   name: {
     color: "#102018",

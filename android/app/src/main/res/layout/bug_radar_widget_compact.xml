@@ -9,7 +9,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:autoStart="true"
-    android:flipInterval="700">
+    android:flipInterval="300">
 
     <ImageView
       android:layout_width="match_parent"
@@ -38,12 +38,76 @@
       android:contentDescription="@null"
       android:scaleType="centerCrop"
       android:src="@drawable/bug_radar_frame_3" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_4" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_5" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_6" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_7" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_8" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_9" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_10" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_11" />
   </ViewFlipper>
 
   <TextView
     android:id="@+id/radarStatus"
     android:layout_width="1dp"
     android:layout_height="1dp"
+    android:visibility="gone" />
+
+  <View
+    android:id="@+id/radarRarityAura"
+    android:layout_width="72dp"
+    android:layout_height="72dp"
+    android:layout_gravity="center"
+    android:background="@drawable/bug_radar_aura_epic_art"
     android:visibility="gone" />
 
   <ImageView

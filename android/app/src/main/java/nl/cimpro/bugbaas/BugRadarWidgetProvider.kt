@@ -17,24 +17,57 @@ import kotlin.random.Random
 
 class BugRadarWidgetProvider : AppWidgetProvider() {
   override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
+    val bug = activeRadarBug(context)
     for (appWidgetId in appWidgetIds) {
-      updateWidget(context, appWidgetManager, appWidgetId, null)
+      updateWidget(context, appWidgetManager, appWidgetId, bug)
     }
-    scheduleNextSignal(context)
+    if (bug == null) scheduleNextSignal(context)
   }
 
   override fun onReceive(context: Context, intent: Intent) {
     super.onReceive(context, intent)
-    if (intent.action != actionSignal) return
+    when (intent.action) {
+      actionSignal -> handleRadarRoll(context)
+      actionOpenBug -> handleOpenBug(context)
+    }
+  }
+
+  private fun handleRadarRoll(context: Context) {
+    val manager = AppWidgetManager.getInstance(context)
+    val widgetIds = manager.getAppWidgetIds(ComponentName(context, BugRadarWidgetProvider::class.java))
+
+    activeRadarBug(context)?.let { bug ->
+      for (widgetId in widgetIds) updateWidget(context, manager, widgetId, bug)
+      return
+    }
+
+    val now = Calendar.getInstance()
+    if (shouldSpawnOnRoll(context, now)) {
+      val bug = pickRadarBug()
+      saveActiveRadarBug(context, bug)
+      for (widgetId in widgetIds) updateWidget(context, manager, widgetId, bug)
+      noteSignal(context, now)
+      return
+    }
+
+    scheduleNextSignal(context)
+  }
+
+  private fun handleOpenBug(context: Context) {
+    val bug = activeRadarBug(context) ?: return
+    clearActiveRadarBug(context)
 
     val manager = AppWidgetManager.getInstance(context)
     val widgetIds = manager.getAppWidgetIds(ComponentName(context, BugRadarWidgetProvider::class.java))
-    val bug = pickRadarBug()
-    for (widgetId in widgetIds) {
-      updateWidget(context, manager, widgetId, bug)
-    }
-    noteSignal(context)
+    for (widgetId in widgetIds) updateWidget(context, manager, widgetId, null)
     scheduleNextSignal(context)
+
+    val intent = Intent(context, MainActivity::class.java).apply {
+      action = Intent.ACTION_VIEW
+      data = Uri.parse("bugbaas://radar?bugId=${Uri.encode(bug.id)}")
+      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+    }
+    context.startActivity(intent)
   }
 
   override fun onAppWidgetOptionsChanged(
@@ -44,7 +77,7 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     newOptions: Bundle
   ) {
     super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
-    updateWidget(context, appWidgetManager, appWidgetId, null)
+    updateWidget(context, appWidgetManager, appWidgetId, activeRadarBug(context))
   }
 
   private fun updateWidget(context: Context, manager: AppWidgetManager, widgetId: Int, bug: RadarBug?) {
@@ -54,24 +87,31 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     views.setViewVisibility(R.id.radarStatus, if (bug == null && !compact) View.VISIBLE else View.GONE)
     views.setViewVisibility(R.id.radarBugImage, if (bug == null) View.GONE else View.VISIBLE)
     views.setViewVisibility(R.id.radarLabel, if (bug == null || compact) View.GONE else View.VISIBLE)
+    val auraRes = bug?.let { rarityAuraRes(it.rarity) }
+    views.setViewVisibility(R.id.radarRarityAura, if (auraRes == null) View.GONE else View.VISIBLE)
+    if (auraRes != null) {
+      views.setInt(R.id.radarRarityAura, "setBackgroundResource", auraRes)
+    }
     if (bug != null) {
       views.setImageViewResource(R.id.radarBugImage, bug.imageRes)
       views.setTextViewText(R.id.radarBugName, bug.name)
     }
 
-    val intent = Intent(context, MainActivity::class.java).apply {
-      if (bug != null) {
-        action = Intent.ACTION_VIEW
-        data = Uri.parse("bugbaas://radar?bugId=${Uri.encode(bug.id)}")
-      }
-      flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-    }
     val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     } else {
       PendingIntent.FLAG_UPDATE_CURRENT
     }
-    views.setOnClickPendingIntent(R.id.widgetRoot, PendingIntent.getActivity(context, widgetId, intent, flags))
+    val pendingIntent = if (bug == null) {
+      val intent = Intent(context, MainActivity::class.java).apply {
+        this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+      }
+      PendingIntent.getActivity(context, widgetId, intent, flags)
+    } else {
+      val intent = Intent(context, BugRadarWidgetProvider::class.java).apply { action = actionOpenBug }
+      PendingIntent.getBroadcast(context, openRequestCode + widgetId, intent, flags)
+    }
+    views.setOnClickPendingIntent(R.id.widgetRoot, pendingIntent)
     manager.updateAppWidget(widgetId, views)
   }
 
@@ -90,7 +130,7 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
       PendingIntent.FLAG_UPDATE_CURRENT
     }
     val pendingIntent = PendingIntent.getBroadcast(context, signalRequestCode, intent, flags)
-    val triggerAt = nextSignalTime(context)
+    val triggerAt = nextRollTime(context)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
       alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
     } else {
@@ -98,7 +138,7 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     }
   }
 
-  private fun nextSignalTime(context: Context): Long {
+  private fun nextRollTime(context: Context): Long {
     val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     val now = Calendar.getInstance()
     val today = dayId(now)
@@ -109,16 +149,14 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
       earliest.set(Calendar.HOUR_OF_DAY, 0)
       earliest.set(Calendar.MINUTE, 0)
     } else {
-      earliest.add(Calendar.MINUTE, minMinutesBetweenSignals)
+      earliest.add(Calendar.MINUTE, Random.nextInt(minRollMinutes, maxRollMinutes + 1))
     }
     earliest.set(Calendar.SECOND, 0)
     earliest.set(Calendar.MILLISECOND, 0)
-
-    val outsideOfficeHours = Random.nextInt(100) < outsideOfficeHoursChancePercent
-    return randomSignalTimeAfter(earliest, outsideOfficeHours)
+    return nextRollWindowTime(earliest)
   }
 
-  private fun randomSignalTimeAfter(from: Calendar, outsideOfficeHours: Boolean): Long {
+  private fun nextRollWindowTime(from: Calendar): Long {
     val day = from.clone() as Calendar
     day.set(Calendar.HOUR_OF_DAY, 0)
     day.set(Calendar.MINUTE, 0)
@@ -126,7 +164,7 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     day.set(Calendar.MILLISECOND, 0)
 
     repeat(signalLookaheadDays) {
-      val windows = signalWindows(day, outsideOfficeHours)
+      val windows = rollWindows(day)
         .mapNotNull { windowBounds(from, day, it.first, it.second) }
       if (windows.isNotEmpty()) {
         val window = windows.random()
@@ -136,17 +174,13 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     }
 
     val fallback = from.clone() as Calendar
-    fallback.add(Calendar.MINUTE, minMinutesBetweenSignals)
+    fallback.add(Calendar.MINUTE, minRollMinutes)
     return fallback.timeInMillis
   }
 
-  private fun signalWindows(day: Calendar, outsideOfficeHours: Boolean): List<Pair<Int, Int>> {
-    if (!isWorkday(day)) return if (outsideOfficeHours) listOf(weekendStartHour to eveningEndHour) else emptyList()
-    return if (outsideOfficeHours) {
-      listOf(morningStartHour to workdayStartHour, workdayEndHour to eveningEndHour)
-    } else {
-      listOf(workdayStartHour to workdayEndHour)
-    }
+  private fun rollWindows(day: Calendar): List<Pair<Int, Int>> {
+    if (!isWorkday(day)) return listOf(weekendStartHour to eveningEndHour)
+    return listOf(workdayStartHour to workdayEndHour, workdayEndHour to eveningEndHour)
   }
 
   private fun windowBounds(from: Calendar, day: Calendar, startHour: Int, endHour: Int): Pair<Long, Long>? {
@@ -158,13 +192,56 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     return if (startMillis < end.timeInMillis) startMillis to end.timeInMillis else null
   }
 
-  private fun noteSignal(context: Context) {
+  private fun shouldSpawnOnRoll(context: Context, now: Calendar): Boolean {
     val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-    val today = dayId(Calendar.getInstance())
+    val today = dayId(now)
+    val count = if (prefs.getInt(prefDay, -1) == today) prefs.getInt(prefCount, 0) else 0
+    if (count >= dailySignalCount) return false
+
+    val lastSignalAt = prefs.getLong(prefLastSignalAt, 0L)
+    if (lastSignalAt > 0L && now.timeInMillis - lastSignalAt < minMinutesBetweenSignals * 60_000L) return false
+
+    val chance = rollChancePercent(now)
+    return chance > 0 && Random.nextInt(100) < chance
+  }
+
+  private fun rollChancePercent(now: Calendar): Int {
+    val hour = now.get(Calendar.HOUR_OF_DAY)
+    if (!isWorkday(now)) return if (hour in weekendStartHour until eveningEndHour) weekendRollChancePercent else 0
+    return when (hour) {
+      in workdayStartHour until workdayEndHour -> officeRollChancePercent
+      in workdayEndHour until eveningEndHour -> eveningRollChancePercent
+      else -> 0
+    }
+  }
+
+  private fun activeRadarBug(context: Context): RadarBug? {
+    val bugId = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE).getString(prefActiveBugId, null)
+    return bugId?.let { findRadarBug(it) }
+  }
+
+  private fun saveActiveRadarBug(context: Context, bug: RadarBug) {
+    context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+      .edit()
+      .putString(prefActiveBugId, bug.id)
+      .apply()
+  }
+
+  private fun clearActiveRadarBug(context: Context) {
+    context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+      .edit()
+      .remove(prefActiveBugId)
+      .apply()
+  }
+
+  private fun noteSignal(context: Context, now: Calendar) {
+    val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
+    val today = dayId(now)
     val currentCount = if (prefs.getInt(prefDay, -1) == today) prefs.getInt(prefCount, 0) else 0
     prefs.edit()
       .putInt(prefDay, today)
       .putInt(prefCount, currentCount + 1)
+      .putLong(prefLastSignalAt, now.timeInMillis)
       .apply()
   }
 
@@ -183,6 +260,18 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     return candidates.randomOrNull() ?: radarBugs.random()
   }
 
+  private fun findRadarBug(id: String): RadarBug? {
+    return radarBugs.firstOrNull { it.id == id }
+  }
+
+  private fun rarityAuraRes(rarity: String): Int? {
+    return when (rarity) {
+      "Episch" -> R.drawable.bug_radar_aura_epic_art
+      "Legendarisch" -> R.drawable.bug_radar_aura_legendary_art
+      else -> null
+    }
+  }
+
   private fun pickRarity(): String {
     val roll = Random.nextInt(100)
     return when {
@@ -196,17 +285,24 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
   private data class RadarBug(val id: String, val name: String, val rarity: String, val imageRes: Int)
 
   companion object {
+    private const val actionOpenBug = "nl.cimpro.bugbaas.action.OPEN_BUG_RADAR_SIGNAL"
     private const val actionSignal = "nl.cimpro.bugbaas.action.BUG_RADAR_SIGNAL"
     private const val dailySignalCount = 3
     private const val eveningEndHour = 22
-    private const val minMinutesBetweenSignals = 60
-    private const val morningStartHour = 7
-    private const val outsideOfficeHoursChancePercent = 30
+    private const val eveningRollChancePercent = 25
+    private const val maxRollMinutes = 120
+    private const val minMinutesBetweenSignals = 180
+    private const val minRollMinutes = 70
+    private const val officeRollChancePercent = 55
+    private const val openRequestCode = 5200
     private const val prefsName = "bug_radar_widget"
+    private const val prefActiveBugId = "active_bug_id"
     private const val prefCount = "signal_count"
     private const val prefDay = "signal_day"
+    private const val prefLastSignalAt = "last_signal_at"
     private const val signalLookaheadDays = 14
     private const val signalRequestCode = 4242
+    private const val weekendRollChancePercent = 35
     private const val weekendStartHour = 10
     private const val workdayEndHour = 17
     private const val workdayStartHour = 9

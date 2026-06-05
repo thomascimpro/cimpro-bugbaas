@@ -2,6 +2,45 @@
 
 Praktische stappen om een nieuwe interne APK en GitHub Release snel te maken.
 
+## Snelle releaseflow
+
+1. Check status en laatste versie:
+
+```powershell
+git status --short
+git tag --list "v*" --sort=-v:refname | Select-Object -First 5
+```
+
+2. Bump de patchversie overal:
+
+```powershell
+npm.cmd version 1.2.8 --no-git-tag-version
+```
+
+Pas daarna `app.json` en `android/app/build.gradle` aan, inclusief een hogere `versionCode`.
+
+3. Voeg direct een korte `CHANGELOG.md` sectie toe en gebruik die later als GitHub release notes.
+
+4. Run checks in deze vaste volgorde:
+
+```powershell
+npm.cmd run typecheck
+.\android\gradlew.bat -p android :app:assembleRelease --no-daemon --console=plain
+```
+
+5. Kopieer de APK naar `dist`, controleer `aapt2 dump badging` en noteer de SHA256.
+
+6. Stage alleen release-relevante runtime bestanden. Laat `tmp`, `screenshots`, losse bronafbeeldingen en previews buiten git.
+
+7. Commit, tag, push en maak de GitHub Release met dezelfde changelogtekst.
+
+Snelheidsafspraken:
+
+- Gebruik `npm.cmd`, niet `npm`, zodat PowerShell policy geen vertraging geeft.
+- Zet JDK 21 en Android SDK env vars voor de build in dezelfde shell.
+- Start geen emulator als `adb devices` leeg is; vermeld dat kort als testbeperking.
+- Controleer `master...origin/master` en bestaande tag voordat je commit/tag/push doet.
+
 ## Vereiste lokale setup
 
 Gebruik Java 11 of hoger. Voor deze app werkte JDK 21 goed.
