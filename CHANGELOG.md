@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.2
+
+- Foreground catch bugs bewegen smoother en minder robotisch met native transform-animatie.
+- HP-taps zijn betrouwbaarder: een fysieke tap kan niet meer meerdere hits tegelijk tellen.
+- Android adaptive launcher icon toegevoegd zodat Pixel geen witte legacy-rand meer toont.
+- E-mail login-toggle groter gemaakt voor betrouwbaarder tappen.
+
 ## 1.2.1
 
 - Android native launcher icons bijgewerkt, zodat het nieuwe HD logo ook op telefoons zichtbaar wordt.

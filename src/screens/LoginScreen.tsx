@@ -214,7 +214,8 @@ const styles = StyleSheet.create({
   emailToggle: {
     alignItems: "center",
     marginBottom: 10,
-    marginTop: 14
+    marginTop: 14,
+    paddingVertical: 10
   },
   emailToggleText: {
     color: "#15724f",
