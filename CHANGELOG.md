@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0
+
+- Bug Radar widget gebruikt nu 24 radarframes in plaats van 12.
+- Scan-animatie is vloeiender met een korter frame-interval, zonder de totale rotatiesnelheid te verhogen.
+- Radarframes blijven AppWidget-safe en zijn gecontroleerd met Android debug/release builds.
+
 ## 1.2.9
 
 - Bug Radar widget gefixt: de rarity-aura gebruikt nu een AppWidget-safe `ImageView` in plaats van een unsupported generic `View`.

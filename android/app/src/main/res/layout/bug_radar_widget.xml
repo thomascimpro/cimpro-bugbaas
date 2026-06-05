@@ -9,7 +9,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:autoStart="true"
-    android:flipInterval="300">
+    android:flipInterval="150">
 
     <ImageView
       android:layout_width="match_parent"
@@ -94,6 +94,90 @@
       android:contentDescription="@null"
       android:scaleType="centerCrop"
       android:src="@drawable/bug_radar_frame_11" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_12" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_13" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_14" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_15" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_16" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_17" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_18" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_19" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_20" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_21" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_22" />
+
+    <ImageView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:contentDescription="@null"
+      android:scaleType="centerCrop"
+      android:src="@drawable/bug_radar_frame_23" />
   </ViewFlipper>
 
   <TextView
