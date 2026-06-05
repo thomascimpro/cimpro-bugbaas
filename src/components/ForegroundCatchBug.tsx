@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { BugArtId } from "../services/bugArt";
+import { allBugArtIds, BugArtId } from "../services/bugArt";
+import { bugDexEntries } from "../services/pointsService";
 import { BugArtImage } from "./BugArtImage";
 
-type SpawnRarity = "common" | "rare" | "epic";
+type SpawnRarity = "common" | "rare" | "epic" | "legendary";
 
 type ActiveBug = {
   id: number;
@@ -17,32 +18,64 @@ type ActiveBug = {
   requiredTaps: number;
   rewardXp: number;
   size: number;
+  stepBob: number;
   verticalDrift: number;
+  wiggle: number;
 };
 
 type Props = {
   enabled: boolean;
+  forcedBugId?: BugArtId | null;
   onCaught: (xp: number, bugId: BugArtId, rarity: SpawnRarity) => void;
+  onForcedBugConsumed?: () => void;
 };
 
 const spawnCheckMs = 60000;
 const spawnChance = 0.28;
-const catchDurationMs = 20000;
+const catchDurationMs = 30000;
 const tapDebounceMs = 140;
-const movementInput = [0, 0.05, 0.1, 0.16, 0.22, 0.3, 0.38, 0.46, 0.55, 0.64, 0.72, 0.8, 0.88, 0.94, 1];
-const crawlFractions = [0.12, 0.2, 0.18, 0.31, 0.38, 0.46, 0.42, 0.57, 0.68, 0.63, 0.79, 0.88, 0.7, 0.36, 0.12];
+const movementInput = [0, 0.066, 0.133, 0.2, 0.266, 0.333, 0.4, 0.466, 0.533, 0.6, 0.666, 0.733, 0.8, 0.866, 0.933, 1];
+const crawlFractions = [0.16, 0.2, 0.27, 0.35, 0.44, 0.53, 0.62, 0.71, 0.8, 0.86, 0.8, 0.71, 0.62, 0.5, 0.32, 0.16];
 
-const raritySettings: Record<SpawnRarity, { motionCycleMs: number; rewardXp: number; requiredTaps: number; size: number; verticalDrift: number }> = {
-  common: { motionCycleMs: 6200, rewardXp: 1, requiredTaps: 2, size: 64, verticalDrift: 0.18 },
-  rare: { motionCycleMs: 5000, rewardXp: 4, requiredTaps: 4, size: 78, verticalDrift: 0.28 },
-  epic: { motionCycleMs: 4100, rewardXp: 10, requiredTaps: 6, size: 94, verticalDrift: 0.38 }
+const raritySettings: Record<SpawnRarity, { motionCycleMs: number; rewardXp: number; requiredTaps: number; size: number; stepBob: number; verticalDrift: number; wiggle: number }> = {
+  common: { motionCycleMs: 7600, rewardXp: 1, requiredTaps: 3, size: 68, stepBob: 4, verticalDrift: 0.1, wiggle: 0.015 },
+  rare: { motionCycleMs: 6400, rewardXp: 4, requiredTaps: 5, size: 74, stepBob: 5, verticalDrift: 0.16, wiggle: 0.028 },
+  epic: { motionCycleMs: 5400, rewardXp: 9, requiredTaps: 7, size: 82, stepBob: 6, verticalDrift: 0.24, wiggle: 0.04 },
+  legendary: { motionCycleMs: 4600, rewardXp: 15, requiredTaps: 9, size: 90, stepBob: 7, verticalDrift: 0.3, wiggle: 0.055 }
 };
 
-const commonBugs: BugArtId[] = ["zilvervisje", "fruitvlieg", "mier", "pissebed", "mot", "boekluis"];
-const rareBugs: BugArtId[] = ["pauwspin", "bidsprinkhaan", "schildwants", "tijgerkever", "smaragdlibel"];
-const epicBugs: BugArtId[] = ["schorpioen", "orchidee-bidsprinkhaan", "neushoornkever", "goudwesp"];
+const rarityLabels: Record<SpawnRarity, "Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch"> = {
+  common: "Gewoon",
+  rare: "Zeldzaam",
+  epic: "Episch",
+  legendary: "Legendarisch"
+};
 
-export function ForegroundCatchBug({ enabled, onCaught }: Props) {
+const rarityByLabel = Object.fromEntries(
+  (Object.keys(rarityLabels) as SpawnRarity[]).map((rarity) => [rarityLabels[rarity], rarity])
+) as Record<"Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch", SpawnRarity>;
+
+const rarityByBugId = Object.fromEntries(
+  bugDexEntries.map((entry) => [entry.id, rarityByLabel[entry.rarity]])
+) as Record<string, SpawnRarity>;
+
+const fallbackBugPools: Record<SpawnRarity, BugArtId[]> = {
+  common: ["zilvervisje", "fruitvlieg", "bladluis", "mier", "mot", "boekluis"],
+  rare: ["pissebed", "schildwants", "houtmier", "loopkever", "waterkever", "soldaatje"],
+  epic: ["kakkerlak", "boktor", "duizendpoot", "tijgerkever", "bidsprinkhaan", "zebra-springspin"],
+  legendary: ["schorpioen", "neushoornkever", "atlaskever", "pauwspin", "smaragdlibel", "goudwesp"]
+};
+
+const availableBugIds = new Set<string>(allBugArtIds);
+const bugPools = (Object.keys(rarityLabels) as SpawnRarity[]).reduce((pools, rarity) => {
+  const pool = bugDexEntries
+    .filter((entry) => entry.rarity === rarityLabels[rarity] && availableBugIds.has(entry.id))
+    .map((entry) => entry.id as BugArtId);
+  pools[rarity] = pool.length > 0 ? pool : fallbackBugPools[rarity];
+  return pools;
+}, {} as Record<SpawnRarity, BugArtId[]>);
+
+export function ForegroundCatchBug({ enabled, forcedBugId, onCaught, onForcedBugConsumed }: Props) {
   const { height, width } = useWindowDimensions();
   const [activeBug, setActiveBug] = useState<ActiveBug | null>(null);
   const [hits, setHits] = useState(0);
@@ -111,6 +144,13 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     };
   }, [activeBug, hitFeedback, progress, poof]);
 
+  useEffect(() => {
+    if (!enabled || !forcedBugId) return;
+    clearActiveBug();
+    spawnBug(forcedBugId);
+    onForcedBugConsumed?.();
+  }, [enabled, forcedBugId, onForcedBugConsumed]);
+
   const translateX = useMemo(() => {
     if (!activeBug) return 0;
     const hitboxWidth = activeBug.size + 130;
@@ -118,7 +158,8 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     const maxLeft = Math.max(minLeft, width - hitboxWidth - 10);
     const range = maxLeft - minLeft;
     const fractions = crawlFractions.map((fraction, index) => {
-      const shifted = clamp(fraction + activeBug.pathShift * (index % 3 === 0 ? 1 : -0.6), 0.08, 0.92);
+      const legWiggle = index % 2 === 0 ? activeBug.wiggle : -activeBug.wiggle * 0.65;
+      const shifted = clamp(fraction + activeBug.pathShift + legWiggle, 0.08, 0.92);
       return activeBug.direction === "right" ? shifted : 1 - shifted;
     });
     return progress.interpolate({
@@ -137,19 +178,20 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     const drift = activeBug.verticalDrift;
     const fractions = [
       center,
+      center + drift * 0.08,
+      center - drift * 0.04,
       center + drift * 0.16,
-      center + drift * 0.05,
-      center + drift * 0.52,
-      center - drift * 0.32,
-      center - drift * 0.2,
-      center + drift * 0.74,
-      center + drift * 0.2,
-      center - drift * 0.58,
-      center - drift * 0.44,
-      center + drift * 0.36,
-      center + drift * 0.1,
+      center - drift * 0.1,
+      center + drift * 0.24,
       center - drift * 0.18,
-      center + drift * 0.28,
+      center + drift * 0.32,
+      center - drift * 0.26,
+      center + drift * 0.2,
+      center - drift * 0.12,
+      center + drift * 0.1,
+      center - drift * 0.06,
+      center + drift * 0.04,
+      center - drift * 0.02,
       center
     ];
     return progress.interpolate({
@@ -160,15 +202,16 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
 
   const transform = useMemo(() => {
     if (!activeBug) return [];
+    const bob = activeBug.stepBob;
     const crawlBob = progress.interpolate({
       inputRange: movementInput,
-      outputRange: [0, -4, 1, -8, 0, -5, 2, -9, 1, -6, 0, -7, 1, -3, 0]
+      outputRange: [0, -bob * 0.45, 0, -bob, 1, -bob * 0.7, 0, -bob * 1.1, 1, -bob * 0.85, 0, -bob * 0.65, 1, -bob * 0.4, 0, 0]
     });
     const rotate = progress.interpolate({
       inputRange: movementInput,
       outputRange: activeBug.direction === "right"
-        ? ["82deg", "96deg", "88deg", "76deg", "102deg", "84deg", "108deg", "80deg", "96deg", "74deg", "104deg", "86deg", "116deg", "92deg", "82deg"]
-        : ["-82deg", "-96deg", "-88deg", "-76deg", "-102deg", "-84deg", "-108deg", "-80deg", "-96deg", "-74deg", "-104deg", "-86deg", "-116deg", "-92deg", "-82deg"]
+        ? ["80deg", "84deg", "88deg", "82deg", "90deg", "86deg", "94deg", "88deg", "96deg", "90deg", "84deg", "80deg", "86deg", "92deg", "84deg", "80deg"]
+        : ["-80deg", "-84deg", "-88deg", "-82deg", "-90deg", "-86deg", "-94deg", "-88deg", "-96deg", "-90deg", "-84deg", "-80deg", "-86deg", "-92deg", "-84deg", "-80deg"]
     });
     const scale = poof.interpolate({
       inputRange: [0, 1],
@@ -185,9 +228,9 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
     return [{ translateX }, { translateY }, { translateY: crawlBob }, { translateX: hitShake }, { rotate }, { scale }, { scale: hitScale }];
   }, [activeBug, hitFeedback, poof, progress, translateX, translateY]);
 
-  function spawnBug() {
-    const rarity = pickRarity();
-    const bugId = pickBugId(rarity);
+  function spawnBug(forcedId?: BugArtId) {
+    const rarity = forcedId ? rarityByBugId[forcedId] ?? "common" : pickRarity();
+    const bugId = forcedId ?? pickBugId(rarity);
     const settings = raritySettings[rarity];
     setActiveBug({
       id: Date.now(),
@@ -201,7 +244,9 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
       requiredTaps: settings.requiredTaps,
       rewardXp: settings.rewardXp,
       size: settings.size,
-      verticalDrift: settings.verticalDrift
+      stepBob: settings.stepBob,
+      verticalDrift: settings.verticalDrift,
+      wiggle: settings.wiggle
     });
   }
 
@@ -299,13 +344,14 @@ export function ForegroundCatchBug({ enabled, onCaught }: Props) {
 
 function pickRarity(): SpawnRarity {
   const roll = Math.random();
-  if (roll < 0.05) return "epic";
-  if (roll < 0.22) return "rare";
+  if (roll < 0.02) return "legendary";
+  if (roll < 0.1) return "epic";
+  if (roll < 0.35) return "rare";
   return "common";
 }
 
 function pickBugId(rarity: SpawnRarity): BugArtId {
-  const pool = rarity === "epic" ? epicBugs : rarity === "rare" ? rareBugs : commonBugs;
+  const pool = bugPools[rarity];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 

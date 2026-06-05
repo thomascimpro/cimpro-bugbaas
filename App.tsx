@@ -21,6 +21,7 @@ import { ForegroundCatchBug } from "./src/components/ForegroundCatchBug";
 import { DisplayNameModal } from "./src/components/DisplayNameModal";
 import { InAppNotificationToast } from "./src/components/InAppNotificationToast";
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
+import { allBugArtIds, BugArtId } from "./src/services/bugArt";
 import { listBugs } from "./src/services/bugService";
 import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, grantBugDexReward, rollBugDexDrop, rollSpecificBugDexDrop } from "./src/services/bugDexService";
 import { checkLatestVersion, VersionNotice } from "./src/services/versionService";
@@ -51,6 +52,7 @@ export default function App() {
   const [helpVisible, setHelpVisible] = useState(false);
   const [splatBonusVisible, setSplatBonusVisible] = useState(false);
   const [versionNotice, setVersionNotice] = useState<VersionNotice | null>(null);
+  const [pendingRadarBugId, setPendingRadarBugId] = useState<BugArtId | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
   const appState = useRef(AppState.currentState);
@@ -88,6 +90,21 @@ export default function App() {
     const currentVersion = String(Constants.expoConfig?.version || "");
     if (!currentVersion) return;
     void checkLatestVersion(currentVersion).then(setVersionNotice).catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    const openRadarBug = (url: string | null) => {
+      const bugId = radarBugIdFromUrl(url);
+      if (!bugId) return;
+      setSelectedBug(null);
+      setSelectedUser(null);
+      setRoute("home");
+      setPendingRadarBugId(bugId);
+    };
+
+    void Linking.getInitialURL().then(openRadarBug).catch(() => undefined);
+    const subscription = Linking.addEventListener("url", (event) => openRadarBug(event.url));
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
@@ -229,14 +246,13 @@ export default function App() {
     }
   }
 
-  async function handleForegroundBugCaught(xp: number, bugId: string, rarity: "common" | "rare" | "epic") {
+  async function handleForegroundBugCaught(xp: number, bugId: string, rarity: "common" | "rare" | "epic" | "legendary") {
     if (!user) return;
     try {
       const updated = await applyUserPoints(user.uid, xp, 0);
       const splatResult = await recordBugSplat(updated ?? user);
       setUser(splatResult.user);
-      const catchChance = rarity === "common" ? 0.18 : rarity === "rare" ? 0.14 : 0.1;
-      const caughtBugDrop = await rollSpecificBugDexDrop(splatResult.user, bugId, "bug_splat", catchChance);
+      const caughtBugDrop = await rollSpecificBugDexDrop(splatResult.user, bugId, "bug_splat", 1);
       if (caughtBugDrop) {
         showBugDexDrop(caughtBugDrop);
       } else if (splatResult.milestone) {
@@ -404,7 +420,12 @@ export default function App() {
       </View>
       <BottomNav activeRoute={route} onNavigate={navigateMain} />
       <InAppNotificationToast notification={notification} onClose={closeNotification} onOpen={openNotification} />
-      <ForegroundCatchBug enabled={foregroundBugEnabled} onCaught={(xp, bugId, rarity) => void handleForegroundBugCaught(xp, bugId, rarity)} />
+      <ForegroundCatchBug
+        enabled={foregroundBugEnabled}
+        forcedBugId={pendingRadarBugId}
+        onCaught={(xp, bugId, rarity) => void handleForegroundBugCaught(xp, bugId, rarity)}
+        onForcedBugConsumed={() => setPendingRadarBugId(null)}
+      />
       <BugDexUnlockModal drop={bugDexDrop} onClose={closeBugDexDrop} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
@@ -431,6 +452,14 @@ function fixedRewardAttempts(severity: BugSeverity): number {
   if (severity === "Kritiek") return 3;
   if (severity === "Hoog") return 2;
   return 1;
+}
+
+function radarBugIdFromUrl(url: string | null): BugArtId | null {
+  if (!url?.startsWith("bugbaas://radar")) return null;
+  const match = url.match(/[?&]bugId=([^&]+)/);
+  if (!match) return null;
+  const bugId = decodeURIComponent(match[1]);
+  return allBugArtIds.includes(bugId as BugArtId) ? bugId as BugArtId : null;
 }
 
 const styles = StyleSheet.create({

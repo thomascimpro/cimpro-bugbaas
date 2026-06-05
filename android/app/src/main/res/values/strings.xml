@@ -1,3 +1,4 @@
 <resources>
   <string name="app_name">CimPro BugBaas</string>
+  <string name="bug_radar_widget_description">Bug Radar</string>
 </resources>

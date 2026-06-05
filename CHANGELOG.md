@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.4
+
+- Android Bug Radar widget toegevoegd: toont een radar bug en opent exact die foreground catch.
+- Foreground catches unlocken nu altijd exact de gevangen BugDex bug.
+- Alle 117 BugDex bugs kunnen als foreground/radar bug spawnen, verdeeld per rarity.
+- BugDex rarities herverdeeld op visuele indruk: kleine/plain bugs lager, grote/glanzende/hoornbugs hoger.
+- Catch window verhoogd van 20 naar 30 seconden.
+
 ## 1.2.3
 
 - Foreground catch bugs tonen geen cirkel meer na een hit.
