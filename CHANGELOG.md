@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.6
+
+- Bug Radar widget gebruikt nu HD bitmap radarframes in plaats van de oude vector-radar.
+- Widget heeft een simpele radar scan-animatie via framewissel.
+- Widget schaalt nu vanaf 1x1 tot 2x2 en groter met een aparte compacte layout.
+- Bij een gevonden bug toont de widget de echte BugDex afbeelding op de radar.
+
 ## 1.2.5
 
 - Bug Radar widget compacter gemaakt met full-widget radar en echte BugDex afbeelding bij een gevonden bug.

@@ -42,21 +42,14 @@
 
   <TextView
     android:id="@+id/radarStatus"
-    android:layout_width="match_parent"
-    android:layout_height="24dp"
-    android:layout_gravity="bottom"
-    android:background="@drawable/bug_radar_label_background"
-    android:gravity="center"
-    android:maxLines="1"
-    android:text="SCANNING"
-    android:textColor="#B7E7CB"
-    android:textSize="11sp"
-    android:textStyle="bold" />
+    android:layout_width="1dp"
+    android:layout_height="1dp"
+    android:visibility="gone" />
 
   <ImageView
     android:id="@+id/radarBugImage"
-    android:layout_width="96dp"
-    android:layout_height="78dp"
+    android:layout_width="52dp"
+    android:layout_height="46dp"
     android:layout_gravity="center"
     android:contentDescription="@null"
     android:scaleType="fitCenter"
@@ -65,25 +58,14 @@
 
   <LinearLayout
     android:id="@+id/radarLabel"
-    android:layout_width="match_parent"
-    android:layout_height="24dp"
-    android:layout_gravity="bottom"
-    android:background="@drawable/bug_radar_label_background"
-    android:gravity="center"
-    android:orientation="horizontal"
-    android:paddingLeft="8dp"
-    android:paddingRight="8dp"
+    android:layout_width="1dp"
+    android:layout_height="1dp"
     android:visibility="gone">
 
     <TextView
       android:id="@+id/radarBugName"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:ellipsize="end"
-      android:gravity="center"
-      android:maxLines="1"
-      android:textColor="#FFFFFF"
-      android:textSize="12sp"
-      android:textStyle="bold" />
+      android:layout_width="1dp"
+      android:layout_height="1dp"
+      android:visibility="gone" />
   </LinearLayout>
 </FrameLayout>

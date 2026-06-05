@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.view.View
 import android.widget.RemoteViews
 import java.util.Calendar
@@ -36,15 +37,26 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     scheduleNextSignal(context)
   }
 
+  override fun onAppWidgetOptionsChanged(
+    context: Context,
+    appWidgetManager: AppWidgetManager,
+    appWidgetId: Int,
+    newOptions: Bundle
+  ) {
+    super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+    updateWidget(context, appWidgetManager, appWidgetId, null)
+  }
+
   private fun updateWidget(context: Context, manager: AppWidgetManager, widgetId: Int, bug: RadarBug?) {
-    val views = RemoteViews(context.packageName, R.layout.bug_radar_widget)
-    views.setImageViewResource(R.id.radarBackground, if (bug == null) R.drawable.bug_radar_scan_animation else R.drawable.ic_bug_radar)
+    val compact = isCompactWidget(manager.getAppWidgetOptions(widgetId))
+    val layout = if (compact) R.layout.bug_radar_widget_compact else R.layout.bug_radar_widget
+    val views = RemoteViews(context.packageName, layout)
+    views.setViewVisibility(R.id.radarStatus, if (bug == null && !compact) View.VISIBLE else View.GONE)
     views.setViewVisibility(R.id.radarBugImage, if (bug == null) View.GONE else View.VISIBLE)
-    views.setViewVisibility(R.id.radarLabel, if (bug == null) View.GONE else View.VISIBLE)
+    views.setViewVisibility(R.id.radarLabel, if (bug == null || compact) View.GONE else View.VISIBLE)
     if (bug != null) {
       views.setImageViewResource(R.id.radarBugImage, bug.imageRes)
       views.setTextViewText(R.id.radarBugName, bug.name)
-      views.setTextViewText(R.id.radarRarity, bug.rarity)
     }
 
     val intent = Intent(context, MainActivity::class.java).apply {
@@ -61,6 +73,12 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     }
     views.setOnClickPendingIntent(R.id.widgetRoot, PendingIntent.getActivity(context, widgetId, intent, flags))
     manager.updateAppWidget(widgetId, views)
+  }
+
+  private fun isCompactWidget(options: Bundle): Boolean {
+    val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 0)
+    val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
+    return minWidth in 1..109 || minHeight in 1..109
   }
 
   private fun scheduleNextSignal(context: Context) {
