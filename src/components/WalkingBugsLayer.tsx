@@ -106,7 +106,7 @@ export function WalkingBugsLayer({ onSplat }: Props) {
     <View pointerEvents="box-none" style={styles.layer}>
       {tracks.map((track, index) => {
         const side = index % 2 === 0 ? 1 : -1;
-        const translateX = track.progress.interpolate({
+        const left = track.progress.interpolate({
           inputRange: crawlInput,
           outputRange:
             track.direction === "right"
@@ -153,9 +153,10 @@ export function WalkingBugsLayer({ onSplat }: Props) {
             style={[
               styles.bug,
               {
+                left,
                 top: height * track.top,
                 opacity: gone[index] ? 0 : splatted[index] ? 0.78 : track.opacity,
-                transform: [{ translateX }, { translateY }, { rotate }]
+                transform: [{ translateY }, { rotate }]
               }
             ]}
           >

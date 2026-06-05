@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.8
+
+- Foreground catch bugs zijn nu een korte challenge in plaats van een simpele tap.
+- Catch bugs blijven maximaal 20 seconden in beeld en bewegen sneller binnen het scherm.
+- Moeilijkheid schaalt per rarity: betere bugs bewegen lastiger en vragen meer taps.
+- Android tap-hitboxes volgen nu de zichtbare bugpositie tijdens beweging.
+- Background walking bugs zijn betrouwbaarder over het hele scherm te splatten.
+
 ## 1.0.4
 
 - App checkt bij opstarten of er een nieuwere GitHub Release beschikbaar is.
