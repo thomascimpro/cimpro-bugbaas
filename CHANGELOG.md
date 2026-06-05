@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+- Android native launcher icons bijgewerkt, zodat het nieuwe HD logo ook op telefoons zichtbaar wordt.
+- Login-scherm badge bijgewerkt naar hetzelfde nieuwe HD logo.
+- Splashscreen resources opnieuw gegenereerd vanuit het nieuwe app-logo.
+
 ## 1.2.0
 
 - Nieuw HD app-logo met een bug hunter die softwarebugs in een pc vangt.
