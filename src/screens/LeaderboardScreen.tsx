@@ -13,6 +13,12 @@ type Props = {
   onSelectUser: (user: User) => void;
 };
 
+const podiumStyles = [
+  { border: "#d7bd57", background: "#fff7d6", shine: "#f4d76a", text: "#6f560c" },
+  { border: "#b9c1c8", background: "#f3f6f7", shine: "#dfe5e8", text: "#4d5960" },
+  { border: "#b87842", background: "#fff0df", shine: "#e2a56d", text: "#6e3f1e" }
+];
+
 export function LeaderboardScreen({ onBack: _onBack, onSelectUser }: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +34,9 @@ export function LeaderboardScreen({ onBack: _onBack, onSelectUser }: Props) {
           <Text style={[sharedStyles.title, styles.headerTitle]}>Ranglijst</Text>
           <Text style={styles.headerSubtitle}>Top bugjagers van CimPro</Text>
         </View>
-        <BugArtImage bugId="goliathkever" size={72} />
+        <View style={styles.headerBugWrap}>
+          <BugArtImage bugId="atlaskever" size={76} />
+        </View>
       </View>
       {loading ? <ActivityIndicator /> : (
         <FlatList
@@ -50,13 +58,15 @@ function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: U
     <View style={styles.podium}>
       {users.map((user, index) => {
         const tier = index === 0 ? getTierForPoints(Number.MAX_SAFE_INTEGER) : getTierForPoints(user.totalPoints);
+        const medal = podiumStyles[index] ?? podiumStyles[0];
         return (
-          <Pressable key={user.uid} style={[styles.podiumCard, { backgroundColor: tier.frameBackground, borderColor: tier.frameColor }, index === 0 && styles.podiumLeader]} onPress={() => onSelectUser(user)}>
-            <View style={[styles.podiumShine, { backgroundColor: tier.frameAccent }]} />
+          <Pressable key={user.uid} style={[styles.podiumCard, { backgroundColor: medal.background, borderColor: medal.border }, index === 0 && styles.podiumLeader]} onPress={() => onSelectUser(user)}>
+            <View style={[styles.podiumShine, { backgroundColor: medal.shine }]} />
             <MedalIcon index={index} size={index === 0 ? 76 : 58} />
             <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={index === 0 ? 58 : 44} />
-            <Text style={[styles.podiumRank, index === 0 && styles.podiumLeaderText]}>#{index + 1}</Text>
-            <Text style={[styles.podiumName, index === 0 && styles.podiumLeaderText]} numberOfLines={1}>{user.displayName}</Text>
+            <Text style={[styles.podiumRank, { color: medal.text }]}>#{index + 1}</Text>
+            <Text style={[styles.podiumName, { color: medal.text }]} numberOfLines={1}>{user.displayName}</Text>
+            <Text style={styles.podiumPoints}>{user.totalPoints} pt</Text>
           </Pressable>
         );
       })}
@@ -67,10 +77,10 @@ function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: U
 const styles = StyleSheet.create({
   header: {
     alignItems: "center",
-    backgroundColor: "#102018",
-    borderColor: "#294338",
+    backgroundColor: "#0d1d15",
+    borderColor: "#d7bd57",
     borderRadius: 8,
-    borderWidth: 1,
+    borderWidth: 2,
     flexDirection: "row",
     gap: 12,
     marginBottom: 14,
@@ -87,29 +97,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "800"
   },
+  headerBugWrap: {
+    alignItems: "center",
+    backgroundColor: "rgba(215,189,87,0.16)",
+    borderColor: "rgba(215,189,87,0.45)",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 86,
+    justifyContent: "center",
+    width: 86
+  },
   podium: {
     flexDirection: "row",
     gap: 8,
-    marginBottom: 12
+    marginBottom: 14
   },
   podiumCard: {
     alignItems: "center",
     backgroundColor: "#fdfefb",
     borderColor: "#d7e1d9",
     borderRadius: 8,
-    borderWidth: 2,
-    elevation: 2,
+    borderWidth: 3,
+    elevation: 3,
     flex: 1,
-    minHeight: 148,
+    minHeight: 166,
     overflow: "hidden",
     padding: 10,
     shadowColor: "#102018",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8
   },
   podiumLeader: {
-    backgroundColor: "#102018"
+    minHeight: 178
   },
   podiumShine: {
     height: 40,
@@ -133,8 +153,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
     maxWidth: "100%"
   },
-  podiumLeaderText: {
-    color: "#ffffff"
+  podiumPoints: {
+    color: "#52665d",
+    fontSize: 11,
+    fontWeight: "900",
+    marginTop: 3
   },
   listContent: {
     paddingBottom: 120

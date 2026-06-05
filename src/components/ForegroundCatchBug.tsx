@@ -26,9 +26,9 @@ const spawnCheckMs = 60000;
 const spawnChance = 0.28;
 
 const raritySettings: Record<SpawnRarity, { durationMs: number; rewardXp: number; requiredTaps: number; size: number }> = {
-  common: { durationMs: 7200, rewardXp: 1, requiredTaps: 1, size: 64 },
-  rare: { durationMs: 5600, rewardXp: 4, requiredTaps: 2, size: 78 },
-  epic: { durationMs: 4200, rewardXp: 10, requiredTaps: 4, size: 94 }
+  common: { durationMs: 8600, rewardXp: 1, requiredTaps: 1, size: 64 },
+  rare: { durationMs: 6800, rewardXp: 4, requiredTaps: 2, size: 78 },
+  epic: { durationMs: 5200, rewardXp: 10, requiredTaps: 4, size: 94 }
 };
 
 const commonBugs: BugArtId[] = ["zilvervisje", "fruitvlieg", "mier", "pissebed", "mot", "boekluis"];
