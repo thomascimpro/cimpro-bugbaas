@@ -9,6 +9,7 @@ release/*.apk
 *.hprof
 *.tmp
 .tmp-*
+tmp/
 pixel8-*.png
 apk-window.xml
 firebase-debug.log

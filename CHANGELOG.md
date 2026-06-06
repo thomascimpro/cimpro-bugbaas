@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.4
+
+- Health Connect koppeling gefixt met verplichte permission-rationale route.
+- Beweeg radar leest nu ook Health Connect stappen en rekent die om naar loopafstand.
+- Pixel 8 widget-test bevestigd: gevonden radarbugs tonen een bug-afbeelding en openen als foreground catch.
+
 ## 1.3.3
 
 - Beweeg radar labels volledig Nederlands gemaakt: Lopen, Hardlopen en Fietsen.

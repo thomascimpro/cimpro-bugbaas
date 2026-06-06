@@ -15,6 +15,7 @@ import androidx.health.connect.client.PermissionController
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
+import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.facebook.react.bridge.Arguments
@@ -134,6 +135,8 @@ class BugBaasNativeModule(private val reactContext: ReactApplicationContext) : R
             "cycling" -> cyclingMeters += distance
           }
         }
+        val stepMeters = stepMetersForRange(client, start, end)
+        walkingMeters = maxOf(walkingMeters, stepMeters)
 
         val result = Arguments.createMap()
         result.putBoolean("available", true)
@@ -194,6 +197,16 @@ class BugBaasNativeModule(private val reactContext: ReactApplicationContext) : R
     ).records.sumOf { it.distance.inMeters }
   }
 
+  private suspend fun stepMetersForRange(client: HealthConnectClient, start: Instant, end: Instant): Double {
+    val steps = client.readRecords(
+      ReadRecordsRequest(
+        recordType = StepsRecord::class,
+        timeRangeFilter = TimeRangeFilter.between(start, end)
+      )
+    ).records.sumOf { it.count }
+    return steps * estimatedMetersPerStep
+  }
+
   private fun exerciseBucket(type: Int): String? {
     return when (type) {
       ExerciseSessionRecord.EXERCISE_TYPE_WALKING,
@@ -209,11 +222,13 @@ class BugBaasNativeModule(private val reactContext: ReactApplicationContext) : R
   private fun healthPermissions(): Set<String> {
     return setOf(
       HealthPermission.getReadPermission(DistanceRecord::class),
-      HealthPermission.getReadPermission(ExerciseSessionRecord::class)
+      HealthPermission.getReadPermission(ExerciseSessionRecord::class),
+      HealthPermission.getReadPermission(StepsRecord::class)
     )
   }
 
   companion object {
+    private const val estimatedMetersPerStep = 0.75
     private const val healthPermissionRequestCode = 8104
   }
 }
