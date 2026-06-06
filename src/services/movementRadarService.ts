@@ -36,6 +36,22 @@ export type MovementRadarResult = {
   reason?: string;
 };
 
+export type MovementRadarGoal = {
+  earned: number;
+  id: "walking" | "running" | "cycling";
+  km: number;
+  label: string;
+  targetKm: number;
+};
+
+export type MovementRadarProgress = {
+  available: boolean;
+  awardedToday: number;
+  goals: MovementRadarGoal[];
+  maxRewards: number;
+  reason?: string;
+};
+
 const nativeModule = NativeModules.BugBaasNative as {
   enqueueRadarBugs?: (bugIds: string[]) => Promise<number>;
   getExerciseDistanceSnapshot?: () => Promise<ExerciseDistanceSnapshot>;
@@ -103,6 +119,39 @@ export async function claimMovementRadarBonuses(uid: string): Promise<MovementRa
   return { awarded: added, bugIds: bugIds.slice(0, added), estimatedKm };
 }
 
+export async function getMovementRadarProgress(uid: string): Promise<MovementRadarProgress> {
+  if (Platform.OS !== "android") return emptyProgress("platform");
+  if (!nativeModule?.getStepCounterSnapshot) return emptyProgress("native");
+
+  const healthProgress = await getHealthConnectProgress(uid);
+  if (healthProgress.available || healthProgress.reason === "health_permission") return healthProgress;
+
+  const snapshot = await nativeModule.getStepCounterSnapshot();
+  if (!snapshot.available || typeof snapshot.stepsSinceBoot !== "number") {
+    return emptyProgress(snapshot.reason ?? "sensor");
+  }
+
+  const today = localDayId();
+  const state = await loadState(`movement-radar:${uid}`);
+  const stepsSinceBoot = Math.max(0, Math.floor(snapshot.stepsSinceBoot));
+  const baselineSteps = !state || state.day !== today || stepsSinceBoot < state.baselineSteps
+    ? stepsSinceBoot
+    : state.baselineSteps;
+  const walkedKm = ((stepsSinceBoot - baselineSteps) * estimatedMetersPerStep) / 1000;
+  const earned = Math.floor(Math.max(0, walkedKm * 1000) / fallbackWalkingMetersPerRadarBug);
+
+  return {
+    available: true,
+    awardedToday: state?.day === today ? state.awardedUnits : 0,
+    goals: [
+      makeGoal("walking", "Loop", walkedKm, fallbackWalkingMetersPerRadarBug, earned),
+      makeGoal("running", "Run", 0, runningMetersPerRadarBug, 0),
+      makeGoal("cycling", "Fiets", 0, cyclingMetersPerRadarBug, 0)
+    ],
+    maxRewards: maxMovementRadarBugsPerDay
+  };
+}
+
 async function claimHealthConnectBonuses(uid: string): Promise<MovementRadarResult> {
   if (!nativeModule?.getExerciseDistanceSnapshot || !nativeModule.enqueueRadarBugs) return emptyResult("native");
   const snapshot = await nativeModule.getExerciseDistanceSnapshot();
@@ -145,6 +194,29 @@ async function claimHealthConnectBonuses(uid: string): Promise<MovementRadarResu
     walkingUnits
   });
   return { awarded: added, bugIds: bugIds.slice(0, added), estimatedKm };
+}
+
+async function getHealthConnectProgress(uid: string): Promise<MovementRadarProgress> {
+  if (!nativeModule?.getExerciseDistanceSnapshot) return emptyProgress("native");
+  const snapshot = await nativeModule.getExerciseDistanceSnapshot();
+  if (!snapshot.available) return emptyProgress(snapshot.reason ?? "health_connect_unavailable");
+
+  const today = localDayId();
+  const state = await loadState(`movement-radar:${uid}`);
+  const walkingKm = Math.max(0, snapshot.walkingMeters ?? 0) / 1000;
+  const runningKm = Math.max(0, snapshot.runningMeters ?? 0) / 1000;
+  const cyclingKm = Math.max(0, snapshot.cyclingMeters ?? 0) / 1000;
+
+  return {
+    available: true,
+    awardedToday: state?.day === today ? state.awardedUnits : 0,
+    goals: [
+      makeGoal("walking", "Loop", walkingKm, walkingMetersPerRadarBug, Math.floor((snapshot.walkingMeters ?? 0) / walkingMetersPerRadarBug)),
+      makeGoal("running", "Run", runningKm, runningMetersPerRadarBug, Math.floor((snapshot.runningMeters ?? 0) / runningMetersPerRadarBug)),
+      makeGoal("cycling", "Fiets", cyclingKm, cyclingMetersPerRadarBug, Math.floor((snapshot.cyclingMeters ?? 0) / cyclingMetersPerRadarBug))
+    ],
+    maxRewards: maxMovementRadarBugsPerDay
+  };
 }
 
 async function ensureActivityRecognitionPermission(): Promise<boolean> {
@@ -202,6 +274,30 @@ function pickMovementRarity(): BugDexRarity {
 
 function emptyResult(reason: string): MovementRadarResult {
   return { awarded: 0, bugIds: [], estimatedKm: 0, reason };
+}
+
+function emptyProgress(reason: string): MovementRadarProgress {
+  return {
+    available: false,
+    awardedToday: 0,
+    goals: [
+      makeGoal("walking", "Loop", 0, walkingMetersPerRadarBug, 0),
+      makeGoal("running", "Run", 0, runningMetersPerRadarBug, 0),
+      makeGoal("cycling", "Fiets", 0, cyclingMetersPerRadarBug, 0)
+    ],
+    maxRewards: maxMovementRadarBugsPerDay,
+    reason
+  };
+}
+
+function makeGoal(id: MovementRadarGoal["id"], label: string, km: number, targetMeters: number, earned: number): MovementRadarGoal {
+  return {
+    earned,
+    id,
+    km: Math.max(0, km),
+    label,
+    targetKm: targetMeters / 1000
+  };
 }
 
 function localDayId(date = new Date()): string {

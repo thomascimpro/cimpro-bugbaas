@@ -5,6 +5,7 @@ import { BugArtImage } from "../components/BugArtImage";
 import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
 import { entryByBugId, listBugDexInventory } from "../services/bugDexService";
+import { getMovementRadarProgress, MovementRadarProgress } from "../services/movementRadarService";
 import { BugDexEntry, bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
 import { listUsers } from "../services/userService";
 import { weeklyMissionLabel, weeklyMissionSet } from "../services/weeklyMissionService";
@@ -21,6 +22,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
   const [users, setUsers] = useState<User[]>([]);
   const [bugs, setBugs] = useState<BugReport[]>([]);
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
+  const [movementProgress, setMovementProgress] = useState<MovementRadarProgress | null>(null);
   const [showAllTiers, setShowAllTiers] = useState(false);
   const leaders = users.slice(0, 3);
   const userRank = Math.max(1, users.findIndex((item) => item.uid === user.uid) + 1);
@@ -32,6 +34,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
     listUsers().then(setUsers);
     listBugs().then(setBugs);
     listBugDexInventory(user).then(setInventory);
+    getMovementRadarProgress(user.uid).then(setMovementProgress).catch(() => setMovementProgress(null));
   }, [user.uid, user.totalPoints]);
 
   return (
@@ -67,6 +70,30 @@ export function HomeScreen({ user, onNavigate }: Props) {
           <Text style={styles.statLabel}>{tier.title}</Text>
         </View>
       </View>
+      {movementProgress && (
+        <View style={styles.movementCard}>
+          <View style={styles.movementHeader}>
+            <Text style={styles.movementTitle}>Beweeg radar</Text>
+            <Text style={styles.movementReward}>{movementProgress.awardedToday}/{movementProgress.maxRewards} bugs</Text>
+          </View>
+          <View style={styles.movementGoals}>
+            {movementProgress.goals.map((goal) => {
+              const progress = Math.min(100, Math.round((goal.km / goal.targetKm) * 100));
+              return (
+                <View key={goal.id} style={styles.movementGoal}>
+                  <View style={styles.movementLine}>
+                    <Text style={styles.movementLabel}>{goal.label}</Text>
+                    <Text style={styles.movementKm}>{formatKm(goal.km)}/{formatKm(goal.targetKm)} km</Text>
+                  </View>
+                  <View style={styles.movementTrack}>
+                    <View style={[styles.movementFill, { width: `${progress}%` as DimensionValue }]} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
       <View style={[styles.stage, styles.stageHidden]}>
         {userTiers.map((item) => {
           const current = item.title === tier.title;
@@ -184,6 +211,11 @@ export function HomeScreen({ user, onNavigate }: Props) {
   );
 }
 
+function formatKm(km: number): string {
+  if (km >= 10) return String(Math.floor(km));
+  return km.toFixed(1).replace(".0", "");
+}
+
 const styles = StyleSheet.create({
   content: {
     paddingBottom: 160
@@ -270,6 +302,61 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900",
     marginTop: 3
+  },
+  movementCard: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#cddfd3",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 12
+  },
+  movementHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8
+  },
+  movementTitle: {
+    color: "#102018",
+    fontSize: 15,
+    fontWeight: "900"
+  },
+  movementReward: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  movementGoals: {
+    gap: 7
+  },
+  movementGoal: {
+    gap: 4
+  },
+  movementLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  movementLabel: {
+    color: "#102018",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  movementKm: {
+    color: "#52665d",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  movementTrack: {
+    backgroundColor: "#dbe8de",
+    borderRadius: 8,
+    height: 7,
+    overflow: "hidden"
+  },
+  movementFill: {
+    backgroundColor: "#15724f",
+    height: "100%"
   },
   stage: {
     alignItems: "center",

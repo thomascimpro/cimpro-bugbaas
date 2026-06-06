@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.2
+
+- Home toont nu een compacte Beweeg radar kaart met dagelijkse km-doelen en rewardstatus.
+- Movement radar voortgang is zichtbaar voor lopen, hardlopen en fietsen.
+- GitHub APK release is arm64-only voor kleinere telefooninstallaties.
+
 ## 1.3.1
 
 - Foreground en background bugs bewegen natuurlijker met insectachtige paden en logische rotatie.
