@@ -138,13 +138,14 @@ export async function getMovementRadarProgress(uid: string): Promise<MovementRad
     ? stepsSinceBoot
     : state.baselineSteps;
   const walkedKm = ((stepsSinceBoot - baselineSteps) * estimatedMetersPerStep) / 1000;
-  const earned = Math.floor(Math.max(0, walkedKm * 1000) / fallbackWalkingMetersPerRadarBug);
+  const walkedMeters = Math.max(0, walkedKm * 1000);
+  const earned = Math.floor(walkedMeters / fallbackWalkingMetersPerRadarBug);
 
   return {
     available: true,
     awardedToday: state?.day === today ? state.awardedUnits : 0,
     goals: [
-      makeGoal("walking", "Lopen", walkedKm, fallbackWalkingMetersPerRadarBug, earned),
+      makeGoal("walking", "Lopen", displayCycleMeters(walkedMeters, fallbackWalkingMetersPerRadarBug, earned), fallbackWalkingMetersPerRadarBug, earned),
       makeGoal("running", "Hardlopen", 0, runningMetersPerRadarBug, 0),
       makeGoal("cycling", "Fietsen", 0, cyclingMetersPerRadarBug, 0)
     ],
@@ -203,17 +204,20 @@ async function getHealthConnectProgress(uid: string): Promise<MovementRadarProgr
 
   const today = localDayId();
   const state = await loadState(`movement-radar:${uid}`);
-  const walkingKm = Math.max(0, snapshot.walkingMeters ?? 0) / 1000;
-  const runningKm = Math.max(0, snapshot.runningMeters ?? 0) / 1000;
-  const cyclingKm = Math.max(0, snapshot.cyclingMeters ?? 0) / 1000;
+  const walkingMeters = Math.max(0, snapshot.walkingMeters ?? 0);
+  const runningMeters = Math.max(0, snapshot.runningMeters ?? 0);
+  const cyclingMeters = Math.max(0, snapshot.cyclingMeters ?? 0);
+  const walkingEarned = Math.floor(walkingMeters / walkingMetersPerRadarBug);
+  const runningEarned = Math.floor(runningMeters / runningMetersPerRadarBug);
+  const cyclingEarned = Math.floor(cyclingMeters / cyclingMetersPerRadarBug);
 
   return {
     available: true,
     awardedToday: state?.day === today ? state.awardedUnits : 0,
     goals: [
-      makeGoal("walking", "Lopen", walkingKm, walkingMetersPerRadarBug, Math.floor((snapshot.walkingMeters ?? 0) / walkingMetersPerRadarBug)),
-      makeGoal("running", "Hardlopen", runningKm, runningMetersPerRadarBug, Math.floor((snapshot.runningMeters ?? 0) / runningMetersPerRadarBug)),
-      makeGoal("cycling", "Fietsen", cyclingKm, cyclingMetersPerRadarBug, Math.floor((snapshot.cyclingMeters ?? 0) / cyclingMetersPerRadarBug))
+      makeGoal("walking", "Lopen", displayCycleMeters(walkingMeters, walkingMetersPerRadarBug, walkingEarned), walkingMetersPerRadarBug, walkingEarned),
+      makeGoal("running", "Hardlopen", displayCycleMeters(runningMeters, runningMetersPerRadarBug, runningEarned), runningMetersPerRadarBug, runningEarned),
+      makeGoal("cycling", "Fietsen", displayCycleMeters(cyclingMeters, cyclingMetersPerRadarBug, cyclingEarned), cyclingMetersPerRadarBug, cyclingEarned)
     ],
     maxRewards: maxMovementRadarBugsPerDay
   };
@@ -290,14 +294,19 @@ function emptyProgress(reason: string): MovementRadarProgress {
   };
 }
 
-function makeGoal(id: MovementRadarGoal["id"], label: string, km: number, targetMeters: number, earned: number): MovementRadarGoal {
+function makeGoal(id: MovementRadarGoal["id"], label: string, meters: number, targetMeters: number, earned: number): MovementRadarGoal {
   return {
     earned,
     id,
-    km: Math.max(0, km),
+    km: Math.max(0, meters) / 1000,
     label,
     targetKm: targetMeters / 1000
   };
+}
+
+function displayCycleMeters(totalMeters: number, targetMeters: number, earned: number): number {
+  if (earned >= maxMovementRadarBugsPerDay) return targetMeters;
+  return totalMeters % targetMeters;
 }
 
 function localDayId(date = new Date()): string {

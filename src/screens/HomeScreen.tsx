@@ -42,7 +42,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
       <View style={styles.hero}>
         <View style={styles.heroText}>
           <View style={styles.heroNameRow}>
-            <Text style={[sharedStyles.title, styles.heroTitle]} numberOfLines={1}>{user.displayName}</Text>
+            <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.72} numberOfLines={2} style={[sharedStyles.title, styles.heroTitle]}>{user.displayName}</Text>
             <View style={styles.heroActions}>
               <Pressable style={styles.profilePill} onPress={() => onNavigate("profile")}>
                 <Text style={styles.profileText}>Profiel</Text>
@@ -140,7 +140,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
           {leaders.map((leader, index) => (
             <View key={leader.uid} style={styles.rankingLine}>
               <Text style={styles.rank}>{index + 1}</Text>
-              <Text style={styles.rankingName}>{leader.displayName}</Text>
+              <Text ellipsizeMode="tail" numberOfLines={1} style={styles.rankingName}>{leader.displayName}</Text>
               <Text style={styles.rankingPoints}>{leader.totalPoints}</Text>
             </View>
           ))}
@@ -235,13 +235,16 @@ const styles = StyleSheet.create({
     flex: 1
   },
   heroNameRow: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
     gap: 8
   },
   heroTitle: {
     color: "#ffffff",
-    flex: 1
+    flex: 1,
+    flexShrink: 1,
+    lineHeight: 31,
+    minWidth: 0
   },
   profilePill: {
     backgroundColor: "#d7bd57",
@@ -583,6 +586,7 @@ const styles = StyleSheet.create({
   rankingName: {
     color: "#ffffff",
     flex: 1,
+    flexShrink: 1,
     fontWeight: "800"
   },
   rankingPoints: {

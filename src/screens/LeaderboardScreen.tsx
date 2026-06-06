@@ -63,7 +63,7 @@ function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: U
             <MedalIcon index={index} size={index === 0 ? 76 : 58} />
             <BugArtImage bugId={medal.bugId} size={index === 0 ? 58 : 44} />
             <Text style={[styles.podiumRank, { color: medal.text }]}>#{index + 1}</Text>
-            <Text style={[styles.podiumName, { color: medal.text }]} numberOfLines={1}>{user.displayName}</Text>
+            <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.78} numberOfLines={1} style={[styles.podiumName, { color: medal.text }]}>{user.displayName}</Text>
             <Text style={styles.podiumPoints}>{user.totalPoints} pt</Text>
           </Pressable>
         );
@@ -146,8 +146,10 @@ const styles = StyleSheet.create({
   },
   podiumName: {
     color: "#17211c",
+    flexShrink: 1,
     fontSize: 12,
     fontWeight: "900",
+    lineHeight: 15,
     marginTop: 2,
     maxWidth: "100%"
   },

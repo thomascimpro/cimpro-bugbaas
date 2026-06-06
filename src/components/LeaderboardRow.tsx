@@ -30,7 +30,7 @@ export function LeaderboardRow({ index, user, onPress }: { index: number; user: 
       {medal ? <BugArtImage bugId={medal.bugId} size={isLeader ? 64 : 52} /> : null}
       <View style={styles.body}>
         <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>{user.displayName}</Text>
+          <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.78} numberOfLines={1} style={styles.name}>{user.displayName}</Text>
           <Text style={[styles.status, medal && { backgroundColor: medal.pill, color: medal.pillText }]}>{status}</Text>
         </View>
         <Text style={[styles.meta, { color: tier.color }]}>{title}</Text>
@@ -120,8 +120,11 @@ const styles = StyleSheet.create({
   name: {
     color: "#17211c",
     flex: 1,
+    flexShrink: 1,
     fontSize: 16,
-    fontWeight: "800"
+    fontWeight: "800",
+    lineHeight: 20,
+    minWidth: 0
   },
   status: {
     backgroundColor: "#e8f1e6",
