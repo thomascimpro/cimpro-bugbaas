@@ -61,10 +61,10 @@ const nativeModule = NativeModules.BugBaasNative as {
 
 const activityRecognitionPermission = "android.permission.ACTIVITY_RECOGNITION";
 const estimatedMetersPerStep = 0.75;
-const fallbackWalkingMetersPerRadarBug = 2000;
-const walkingMetersPerRadarBug = 2000;
+const fallbackWalkingMetersPerRadarBug = 3000;
+const walkingMetersPerRadarBug = 3000;
 const runningMetersPerRadarBug = 4000;
-const cyclingMetersPerRadarBug = 8000;
+const cyclingMetersPerRadarBug = 6000;
 const maxMovementRadarBugsPerDay = 5;
 
 export async function claimMovementRadarBonuses(uid: string): Promise<MovementRadarResult> {

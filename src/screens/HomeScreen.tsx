@@ -5,7 +5,7 @@ import { BugArtImage } from "../components/BugArtImage";
 import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
 import { entryByBugId, listBugDexInventory } from "../services/bugDexService";
-import { getMovementRadarProgress, MovementRadarProgress } from "../services/movementRadarService";
+import { claimMovementRadarBonuses, getMovementRadarProgress, MovementRadarProgress } from "../services/movementRadarService";
 import { BugDexEntry, bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
 import { listUsers } from "../services/userService";
 import { weeklyMissionLabel, weeklyMissionSet } from "../services/weeklyMissionService";
@@ -23,6 +23,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
   const [bugs, setBugs] = useState<BugReport[]>([]);
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
   const [movementProgress, setMovementProgress] = useState<MovementRadarProgress | null>(null);
+  const [movementClaiming, setMovementClaiming] = useState(false);
   const [showAllTiers, setShowAllTiers] = useState(false);
   const leaders = users.slice(0, 3);
   const userRank = Math.max(1, users.findIndex((item) => item.uid === user.uid) + 1);
@@ -34,8 +35,29 @@ export function HomeScreen({ user, onNavigate }: Props) {
     listUsers().then(setUsers);
     listBugs().then(setBugs);
     listBugDexInventory(user).then(setInventory);
-    getMovementRadarProgress(user.uid).then(setMovementProgress).catch(() => setMovementProgress(null));
+    refreshMovementProgress();
   }, [user.uid, user.totalPoints]);
+
+  async function refreshMovementProgress() {
+    try {
+      setMovementProgress(await getMovementRadarProgress(user.uid));
+    } catch {
+      setMovementProgress(null);
+    }
+  }
+
+  async function handleMovementClaim() {
+    if (movementClaiming) return;
+    setMovementClaiming(true);
+    try {
+      await claimMovementRadarBonuses(user.uid);
+      await refreshMovementProgress();
+    } catch {
+      await refreshMovementProgress();
+    } finally {
+      setMovementClaiming(false);
+    }
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
@@ -74,7 +96,20 @@ export function HomeScreen({ user, onNavigate }: Props) {
         <View style={styles.movementCard}>
           <View style={styles.movementHeader}>
             <Text style={styles.movementTitle}>Beweeg radar</Text>
-            <Text style={styles.movementReward}>{movementProgress.awardedToday}/{movementProgress.maxRewards} bugs</Text>
+            <View style={styles.movementHeaderActions}>
+              <Text style={styles.movementReward}>{movementProgress.awardedToday}/{movementProgress.maxRewards} bugs</Text>
+              <Pressable
+                disabled={movementClaiming || movementProgress.awardedToday >= movementProgress.maxRewards}
+                onPress={handleMovementClaim}
+                style={({ pressed }) => [
+                  styles.movementClaimButton,
+                  pressed && styles.movementClaimButtonPressed,
+                  (movementClaiming || movementProgress.awardedToday >= movementProgress.maxRewards) && styles.movementClaimButtonDisabled
+                ]}
+              >
+                <Text style={styles.movementClaimText}>{movementClaiming ? "..." : "Claim"}</Text>
+              </Pressable>
+            </View>
           </View>
           <View style={styles.movementGoals}>
             {movementProgress.goals.map((goal) => {
@@ -327,6 +362,28 @@ const styles = StyleSheet.create({
   },
   movementReward: {
     color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  movementHeaderActions: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8
+  },
+  movementClaimButton: {
+    backgroundColor: "#15724f",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7
+  },
+  movementClaimButtonDisabled: {
+    opacity: 0.45
+  },
+  movementClaimButtonPressed: {
+    opacity: 0.75
+  },
+  movementClaimText: {
+    color: "#ffffff",
     fontSize: 12,
     fontWeight: "900"
   },

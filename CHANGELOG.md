@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.6
+
+- Beweeg radar drempels aangepast: lopen 3 km, hardlopen 4 km en fietsen 6 km per radar bug.
+- Home heeft nu een Claim knop op de Beweeg radar kaart om direct verdiende radarbugs op te halen.
+
 ## 1.3.4
 
 - Health Connect koppeling gefixt met verplichte permission-rationale route.
