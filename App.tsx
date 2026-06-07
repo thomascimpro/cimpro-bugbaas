@@ -477,7 +477,7 @@ export default function App() {
 function VersionToast({ notice, onDismiss }: { notice: VersionNotice | null; onDismiss: () => void }) {
   if (!notice) return null;
   const openUpdate = () => {
-    void Linking.openURL(notice.apkUrl ?? notice.releaseUrl).then(onDismiss).catch(() => undefined);
+    void Linking.openURL(notice.releaseUrl).then(onDismiss).catch(() => undefined);
   };
   return (
     <View accessibilityLabel="Open latest release" style={styles.versionToast}>
@@ -488,7 +488,7 @@ function VersionToast({ notice, onDismiss }: { notice: VersionNotice | null; onD
           <Text style={styles.versionToastSecondaryText}>Later</Text>
         </Pressable>
         <Pressable style={styles.versionToastPrimaryButton} onPress={openUpdate}>
-          <Text style={styles.versionToastPrimaryText}>Download</Text>
+          <Text style={styles.versionToastPrimaryText}>Open release</Text>
         </Pressable>
       </View>
     </View>

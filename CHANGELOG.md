@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.10
+
+- Update-knop opent nu de GitHub releasepagina in plaats van direct de APK asset, zodat OnePlus/Chrome minder snel blijft hangen na downloaden.
+
 ## 1.3.9
 
 - Foreground despawn timer vervangen door een ronde ring die segment voor segment afloopt.
