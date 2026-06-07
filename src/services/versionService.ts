@@ -1,5 +1,6 @@
 export type VersionNotice = {
   apkUrl?: string;
+  currentVersion: string;
   latestVersion: string;
   releaseUrl: string;
 };
@@ -7,32 +8,41 @@ export type VersionNotice = {
 const latestReleaseUrl = "https://api.github.com/repos/thomascimpro/cimpro-bugbaas/releases/latest";
 
 export async function checkLatestVersion(currentVersion: string): Promise<VersionNotice | null> {
-  const response = await fetch(latestReleaseUrl);
+  const current = parseVersion(currentVersion);
+  if (!current) return null;
+
+  const response = await fetch(latestReleaseUrl, {
+    headers: {
+      Accept: "application/vnd.github+json"
+    }
+  });
   if (!response.ok) return null;
 
   const release = await response.json() as { assets?: Array<{ browser_download_url?: string; name?: string }>; tag_name?: string; html_url?: string };
-  const latestVersion = cleanVersion(release.tag_name ?? "");
-  if (!latestVersion || !isNewerVersion(latestVersion, currentVersion)) return null;
+  const latest = parseVersion(release.tag_name ?? "");
+  if (!latest || compareVersions(latest.parts, current.parts) <= 0) return null;
 
   return {
     apkUrl: release.assets?.find((asset) => asset.name?.toLowerCase().endsWith(".apk"))?.browser_download_url,
-    latestVersion,
+    currentVersion: current.label,
+    latestVersion: latest.label,
     releaseUrl: release.html_url ?? "https://github.com/thomascimpro/cimpro-bugbaas/releases/latest"
   };
 }
 
-function cleanVersion(version: string): string {
-  return version.trim().replace(/^v/i, "");
+function parseVersion(version: string): { label: string; parts: number[] } | null {
+  const label = version.trim().replace(/^v/i, "");
+  const match = label.match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) return null;
+  return { label, parts: match.slice(1).map((part) => Number(part)) };
 }
 
-function isNewerVersion(latest: string, current: string): boolean {
-  const latestParts = cleanVersion(latest).split(".").map((part) => Number(part));
-  const currentParts = cleanVersion(current).split(".").map((part) => Number(part));
-  for (let i = 0; i < Math.max(latestParts.length, currentParts.length); i += 1) {
-    const latestPart = latestParts[i] || 0;
-    const currentPart = currentParts[i] || 0;
-    if (latestPart > currentPart) return true;
-    if (latestPart < currentPart) return false;
+function compareVersions(latestParts: number[], currentParts: number[]): number {
+  for (let i = 0; i < latestParts.length; i += 1) {
+    const latestPart = latestParts[i];
+    const currentPart = currentParts[i];
+    if (latestPart > currentPart) return 1;
+    if (latestPart < currentPart) return -1;
   }
-  return false;
+  return 0;
 }

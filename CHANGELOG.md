@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.8
+
+- Update notice wordt alleen gezet bij een strikt nieuwere GitHub release-tag.
+- Foreground bugs worden alleen door een echte update notice geblokkeerd; gelijke of ongeldige versies tonen geen notice.
+
 ## 1.3.7
 
 - Foreground bug hitbox verkleind naar de zichtbare bug-afbeelding.
