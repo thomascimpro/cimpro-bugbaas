@@ -33,8 +33,8 @@ function addBug(item: BugDexInventoryItem | null, bugId: string, rarity: string,
       };
 }
 
-function removeDuplicate(item: BugDexInventoryItem, tradeId: string): BugDexInventoryItem {
-  if (item.count < 2) throw new Error("Je kunt alleen dubbele bugs ruilen.");
+function removeTradeBug(item: BugDexInventoryItem, tradeId: string): BugDexInventoryItem {
+  if (item.count < 1) throw new Error("Deze bug ontbreekt.");
   return withTradeId({ ...item, count: item.count - 1 }, tradeId);
 }
 
@@ -54,7 +54,7 @@ export async function createTradeRequest(fromUser: User, toUser: User, offerBugI
 
   const inventory = await listBugDexInventory(fromUser);
   const offer = inventory.find((item) => item.bugId === offerBugId);
-  if (!offer || offer.count < 2) throw new Error("Je kunt alleen een dubbele bug aanbieden.");
+  if (!offer || offer.count < 1) throw new Error("Je hebt deze bug niet.");
 
   const now = nowIso();
   const baseTrade: TradeRequest = {
@@ -128,8 +128,10 @@ export async function respondToTradeRequest(user: User, trade: TradeRequest, acc
     const toOffer = toOfferSnapshot.exists() ? toOfferSnapshot.data() as BugDexInventoryItem : null;
     const updatedAt = nowIso();
 
-    transaction.set(fromOfferRef, removeDuplicate(fromOffer, trade.id));
-    transaction.set(toRequestRef, removeDuplicate(toRequest, trade.id));
+    const nextFromOffer = removeTradeBug(fromOffer, trade.id);
+    const nextToRequest = removeTradeBug(toRequest, trade.id);
+    transaction.set(fromOfferRef, nextFromOffer);
+    transaction.set(toRequestRef, nextToRequest);
     transaction.set(fromRequestRef, addBug(fromRequest, trade.requestBugId, requestEntry.rarity, trade.id));
     transaction.set(toOfferRef, addBug(toOffer, trade.offerBugId, offerEntry.rarity, trade.id));
     transaction.update(tradeRef, { status: "Geaccepteerd", updatedAt });

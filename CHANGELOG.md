@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.3
+
+- BugDex toont standaard alleen gevonden bugs, met een knop om onbekende bugs tijdelijk zichtbaar te maken.
+- Ruilen ondersteunt nu ook niet-dubbele bugs, met duidelijke waarschuwing bij laatste exemplaren.
+- Collega kiezen bij ruilen gebruikt nu character-cards met naam onder het character.
+- Upgrade-optie toegevoegd: combineer 3 verschillende bugs van dezelfde lagere rarity naar een hogere rarity.
+- Foreground hits, catches en BugDex unlocks hebben kleine originele retro sounds.
+- Bugmelding opslaan toont nu een korte automatische success-animatie in plaats van de oude tap-overlay.
+- Een echte bugmelding geeft nu altijd een BugDex reward.
+
 ## 1.4.2
 
 - Beweeg radar gebruikt Health Connect robuuster voor Google Fit, Samsung Health, Huawei via Health Sync en andere bron-apps.

@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import { TradeAnimationModal } from "../components/TradeAnimationModal";
-import { BugDexDropResult, bugDexInventoryMap, combineBugDexDuplicates, combineRequiredCount, entryByBugId, listBugDexInventory } from "../services/bugDexService";
+import { BugDexDropResult, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, entryByBugId, listBugDexInventory } from "../services/bugDexService";
 import { notifyTradeRequest } from "../services/notificationService";
 import { bugDexEntries, BugDexEntry, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
 import { createTradeRequest, listTradeRequests, respondToTradeRequest } from "../services/tradeService";
@@ -23,6 +23,21 @@ const rarityColors: Record<BugDexRarity, string> = {
   Legendarisch: "#b83227"
 };
 
+const upgradeRarities: Array<Exclude<BugDexRarity, "Legendarisch">> = ["Gewoon", "Zeldzaam", "Episch"];
+const nextRarityLabel: Record<Exclude<BugDexRarity, "Legendarisch">, BugDexRarity> = {
+  Gewoon: "Zeldzaam",
+  Zeldzaam: "Episch",
+  Episch: "Legendarisch"
+};
+
+const characterPalettes = [
+  { body: "#15724f", face: "#d9f2df", accent: "#d7bd57" },
+  { body: "#356d7c", face: "#e0f6ff", accent: "#47b7d0" },
+  { body: "#b83227", face: "#ffe5dd", accent: "#f5b84b" },
+  { body: "#6f7f5f", face: "#f1f5df", accent: "#a8bd6b" },
+  { body: "#5d3f84", face: "#eee5ff", accent: "#c6a8ff" }
+];
+
 export function BugDexScreen({ user, onBack }: Props) {
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -36,7 +51,10 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [tradeRequestId, setTradeRequestId] = useState("");
   const [tradeBusy, setTradeBusy] = useState("");
   const [tradeError, setTradeError] = useState("");
+  const [showLocked, setShowLocked] = useState(false);
+  const [upgradeBusy, setUpgradeBusy] = useState("");
   const inventoryById = bugDexInventoryMap(inventory);
+  const recipientInventoryById = bugDexInventoryMap(recipientInventory);
   const tier = getTierForPoints(user.totalPoints);
   const unlockedCount = inventory.length;
   const totalCount = bugDexEntries.length;
@@ -45,10 +63,17 @@ export function BugDexScreen({ user, onBack }: Props) {
   const featuredEntries = unlockedEntries.slice(0, 3);
   const headerEntry = unlockedEntries[unlockedEntries.length - 1];
   const dexCards = bugDexEntries
-    .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }));
+    .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }))
+    .filter(({ inventoryItem }) => showLocked || Boolean(inventoryItem));
   const duplicateCount = inventory.reduce((total, item) => total + Math.max(0, item.count - 1), 0);
-  const duplicateInventory = inventory.filter((item) => item.count > 1);
-  const recipientDuplicateInventory = recipientInventory.filter((item) => item.count > 1);
+  const tradeInventory = inventory.filter((item) => item.count > 0);
+  const recipientTradeInventory = recipientInventory.filter((item) => item.count > 0);
+  const upgradeOptions = upgradeRarities.map((rarity) => {
+    const items = inventory
+      .filter((item) => item.count > 0 && entryByBugId(item.bugId)?.rarity === rarity)
+      .sort((a, b) => b.count - a.count || bugName(a.bugId).localeCompare(bugName(b.bugId)));
+    return { items, rarity, targetRarity: nextRarityLabel[rarity] };
+  });
   const selectedRecipient = users.find((item) => item.uid === tradeRecipientId);
   const incomingTrades = trades.filter((trade) => trade.toUserId === user.uid && trade.status === "Open");
   const outgoingTrades = trades.filter((trade) => trade.fromUserId === user.uid && trade.status === "Open");
@@ -77,6 +102,17 @@ export function BugDexScreen({ user, onBack }: Props) {
       await refreshInventory();
     } finally {
       setCombineBusyId("");
+    }
+  }
+
+  async function upgradeDifferent(rarity: Exclude<BugDexRarity, "Legendarisch">, bugIds: string[]) {
+    setUpgradeBusy(rarity);
+    try {
+      const result = await combineDifferentBugDexUpgrade(user, bugIds);
+      setDrop(result);
+      await refreshInventory();
+    } finally {
+      setUpgradeBusy("");
     }
   }
 
@@ -209,27 +245,32 @@ export function BugDexScreen({ user, onBack }: Props) {
           <Text style={styles.tradeTitle}>Ruilen</Text>
           <Text style={styles.tradeMeta}>{incomingTrades.length} inkomend - {outgoingTrades.length} open</Text>
         </View>
-        {duplicateInventory.length ? (
+        <Text style={styles.tradeHint}>Je kunt nu ook je laatste exemplaar ruilen. Kies bewust: die bug verdwijnt dan uit jouw BugDex.</Text>
+        {tradeInventory.length ? (
           <View style={styles.tradeSection}>
-            <Text style={styles.tradeLabel}>Bied een dubbele bug aan</Text>
+            <Text style={styles.tradeLabel}>Bied een bug aan</Text>
             <View style={styles.chipRow}>
-              {duplicateInventory.map((item) => (
-                <Pressable key={item.bugId} style={[styles.tradeChip, tradeOfferId === item.bugId && styles.tradeChipActive]} onPress={() => setTradeOfferId(item.bugId)}>
-                  <Text style={[styles.tradeChipText, tradeOfferId === item.bugId && styles.tradeChipTextActive]}>{bugName(item.bugId)} x{item.count}</Text>
+              {tradeInventory.map((item) => (
+                <Pressable key={item.bugId} style={[styles.tradeBugChip, tradeOfferId === item.bugId && styles.tradeChipActive]} onPress={() => setTradeOfferId(item.bugId)}>
+                  <BugArtImage bugId={item.bugId} size={34} />
+                  <Text style={[styles.tradeChipText, tradeOfferId === item.bugId && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
+                  <Text style={[styles.tradeChipMeta, tradeOfferId === item.bugId && styles.tradeChipTextActive]}>{item.count === 1 ? "laatste" : `x${item.count}`}</Text>
                 </Pressable>
               ))}
             </View>
           </View>
         ) : (
-          <Text style={styles.tradeEmpty}>Je hebt nog geen dubbele bugs om te ruilen.</Text>
+          <Text style={styles.tradeEmpty}>Je hebt nog geen bugs om te ruilen.</Text>
         )}
+        {!!tradeOfferId && inventoryById[tradeOfferId]?.count === 1 && <Text style={styles.tradeWarning}>Let op: dit is je laatste {bugName(tradeOfferId)}.</Text>}
         {!!tradeOfferId && (
           <View style={styles.tradeSection}>
             <Text style={styles.tradeLabel}>Kies collega</Text>
-            <View style={styles.chipRow}>
+            <View style={styles.characterGrid}>
               {users.map((item) => (
-                <Pressable key={item.uid} style={[styles.tradeChip, tradeRecipientId === item.uid && styles.tradeChipActive]} onPress={() => chooseRecipient(item.uid)}>
-                  <Text style={[styles.tradeChipText, tradeRecipientId === item.uid && styles.tradeChipTextActive]}>{item.displayName}</Text>
+                <Pressable key={item.uid} style={[styles.characterCard, tradeRecipientId === item.uid && styles.tradeChipActive]} onPress={() => chooseRecipient(item.uid)}>
+                  <UserCharacter user={item} active={tradeRecipientId === item.uid} />
+                  <Text style={[styles.characterName, tradeRecipientId === item.uid && styles.tradeChipTextActive]} numberOfLines={1}>{item.displayName}</Text>
                 </Pressable>
               ))}
             </View>
@@ -237,20 +278,23 @@ export function BugDexScreen({ user, onBack }: Props) {
         )}
         {!!selectedRecipient && (
           <View style={styles.tradeSection}>
-            <Text style={styles.tradeLabel}>Vraag een dubbele bug terug</Text>
-            {recipientDuplicateInventory.length ? (
+            <Text style={styles.tradeLabel}>Vraag een bug terug</Text>
+            {recipientTradeInventory.length ? (
               <View style={styles.chipRow}>
-                {recipientDuplicateInventory.map((item) => (
-                  <Pressable key={item.bugId} style={[styles.tradeChip, tradeRequestId === item.bugId && styles.tradeChipActive]} onPress={() => setTradeRequestId(item.bugId)}>
-                    <Text style={[styles.tradeChipText, tradeRequestId === item.bugId && styles.tradeChipTextActive]}>{bugName(item.bugId)} x{item.count}</Text>
+                {recipientTradeInventory.map((item) => (
+                  <Pressable key={item.bugId} style={[styles.tradeBugChip, tradeRequestId === item.bugId && styles.tradeChipActive]} onPress={() => setTradeRequestId(item.bugId)}>
+                    <BugArtImage bugId={item.bugId} size={34} />
+                    <Text style={[styles.tradeChipText, tradeRequestId === item.bugId && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
+                    <Text style={[styles.tradeChipMeta, tradeRequestId === item.bugId && styles.tradeChipTextActive]}>{item.count === 1 ? "laatste" : `x${item.count}`}</Text>
                   </Pressable>
                 ))}
               </View>
             ) : (
-              <Text style={styles.tradeEmpty}>Deze collega heeft geen dubbele bugs.</Text>
+              <Text style={styles.tradeEmpty}>Deze collega heeft geen bugs om terug te ruilen.</Text>
             )}
           </View>
         )}
+        {!!tradeRequestId && recipientInventoryById[tradeRequestId]?.count === 1 && <Text style={styles.tradeWarning}>Voor {selectedRecipient?.displayName ?? "deze collega"} is dit het laatste exemplaar.</Text>}
         {!!tradeRequestId && (
           <Pressable style={styles.tradeButton} disabled={tradeBusy === "send"} onPress={sendTradeRequest}>
             <Text style={styles.tradeButtonText}>{tradeBusy === "send" ? "..." : "Ruilverzoek sturen"}</Text>
@@ -276,8 +320,46 @@ export function BugDexScreen({ user, onBack }: Props) {
         {!!tradeError && <Text style={sharedStyles.error}>{tradeError}</Text>}
       </View>
 
-      <View style={styles.grid}>
-        {dexCards.map(({ entry, index, inventoryItem }) => {
+      <View style={styles.upgradePanel}>
+        <View style={styles.tradeHeader}>
+          <Text style={styles.tradeTitle}>Upgrades</Text>
+          <Text style={styles.tradeMeta}>{"3 verschillend -> hoger"}</Text>
+        </View>
+        <Text style={styles.tradeHint}>Combineer 3 verschillende bugs van dezelfde lagere rarity voor 1 bug uit de volgende rarity. De gekozen bugs worden verbruikt.</Text>
+        {upgradeOptions.map(({ items, rarity, targetRarity }) => {
+          const ready = items.length >= 3;
+          const selected = items.slice(0, 3);
+          return (
+            <View key={rarity} style={[styles.upgradeRow, ready && { borderColor: rarityColors[targetRarity] }]}>
+              <View style={styles.upgradeTextBlock}>
+                <Text style={styles.upgradeTitle}>{`${rarity} x3 -> ${targetRarity}`}</Text>
+                <Text style={styles.upgradeMeta}>{ready ? selected.map((item) => bugName(item.bugId)).join(" + ") : `${items.length}/3 verschillende beschikbaar`}</Text>
+              </View>
+              {ready ? (
+                <Pressable style={[styles.upgradeButton, { backgroundColor: rarityColors[targetRarity] }]} disabled={upgradeBusy === rarity} onPress={() => upgradeDifferent(rarity, selected.map((item) => item.bugId))}>
+                  <Text style={styles.upgradeButtonText}>{upgradeBusy === rarity ? "..." : "Upgrade"}</Text>
+                </Pressable>
+              ) : (
+                <Text style={styles.upgradeLocked}>Nog niet</Text>
+              )}
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={styles.dexToolbar}>
+        <View>
+          <Text style={styles.dexToolbarTitle}>BugDex lijst</Text>
+          <Text style={styles.dexToolbarMeta}>{showLocked ? "Alle bugs zichtbaar" : "Standaard verborgen: onbekende bugs"}</Text>
+        </View>
+        <Pressable style={[styles.lockedToggle, showLocked && styles.lockedToggleActive]} onPress={() => setShowLocked((current) => !current)}>
+          <Text style={[styles.lockedToggleText, showLocked && styles.lockedToggleTextActive]}>{showLocked ? "Verberg onbekend" : "Toon onbekend"}</Text>
+        </Pressable>
+      </View>
+
+      {dexCards.length ? (
+        <View style={styles.grid}>
+          {dexCards.map(({ entry, index, inventoryItem }) => {
           const color = rarityColors[entry.rarity];
           const requiredCount = combineRequiredCount(entry.rarity);
           const unlocked = Boolean(inventoryItem);
@@ -308,8 +390,14 @@ export function BugDexScreen({ user, onBack }: Props) {
               )}
             </View>
           );
-        })}
-      </View>
+          })}
+        </View>
+      ) : (
+        <View style={styles.emptyDexCard}>
+          <Text style={styles.emptyDexTitle}>Nog geen bugs gevonden</Text>
+          <Text style={styles.emptyDexText}>Zet onbekende bugs aan om de volledige BugDex alvast te bekijken.</Text>
+        </View>
+      )}
 
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
         <Text style={sharedStyles.secondaryButtonText}>Terug</Text>
@@ -318,6 +406,29 @@ export function BugDexScreen({ user, onBack }: Props) {
       <TradeAnimationModal currentUser={user} trade={completedTrade} onClose={() => setCompletedTrade(null)} />
     </ScrollView>
   );
+}
+
+function UserCharacter({ active, user }: { active: boolean; user: User }) {
+  const palette = characterPalettes[Math.abs(hashText(user.uid || user.displayName)) % characterPalettes.length];
+  const initial = (user.displayName.trim()[0] || "?").toUpperCase();
+  return (
+    <View style={[styles.characterAvatar, { backgroundColor: palette.body, borderColor: active ? palette.accent : "#c6d3cc" }]}>
+      <View style={[styles.characterAntenna, styles.characterAntennaLeft, { backgroundColor: palette.accent }]} />
+      <View style={[styles.characterAntenna, styles.characterAntennaRight, { backgroundColor: palette.accent }]} />
+      <View style={[styles.characterFace, { backgroundColor: palette.face }]}>
+        <View style={styles.characterEyes}>
+          <View style={[styles.characterEye, { backgroundColor: palette.body }]} />
+          <View style={[styles.characterEye, { backgroundColor: palette.body }]} />
+        </View>
+        <Text style={[styles.characterInitial, { color: palette.body }]}>{initial}</Text>
+      </View>
+      <View style={[styles.characterBody, { backgroundColor: palette.accent }]} />
+    </View>
+  );
+}
+
+function hashText(value: string) {
+  return value.split("").reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0);
 }
 
 const styles = StyleSheet.create({
@@ -603,13 +714,33 @@ const styles = StyleSheet.create({
     backgroundColor: "#102018",
     borderColor: "#d7bd57"
   },
+  tradeBugChip: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 92,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    width: 96
+  },
   tradeChipText: {
     color: "#102018",
     fontSize: 12,
-    fontWeight: "900"
+    fontWeight: "900",
+    marginTop: 4,
+    textAlign: "center",
+    width: "100%"
   },
   tradeChipTextActive: {
     color: "#ffffff"
+  },
+  tradeChipMeta: {
+    color: "#52665d",
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 2
   },
   tradeButton: {
     alignItems: "center",
@@ -674,6 +805,200 @@ const styles = StyleSheet.create({
     color: "#6d7b73",
     fontSize: 12,
     fontWeight: "800"
+  },
+  tradeHint: {
+    backgroundColor: "#eef4ed",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    color: "#52665d",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    marginBottom: 10,
+    padding: 9
+  },
+  tradeWarning: {
+    backgroundColor: "#fff8e8",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1,
+    color: "#8a271c",
+    fontSize: 12,
+    fontWeight: "900",
+    marginBottom: 10,
+    padding: 9
+  },
+  characterGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 9
+  },
+  characterCard: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 104,
+    padding: 8,
+    width: 92
+  },
+  characterAvatar: {
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 2,
+    height: 64,
+    justifyContent: "center",
+    overflow: "visible",
+    width: 58
+  },
+  characterAntenna: {
+    borderRadius: 999,
+    height: 16,
+    position: "absolute",
+    top: -9,
+    width: 4
+  },
+  characterAntennaLeft: {
+    left: 17,
+    transform: [{ rotate: "-28deg" }]
+  },
+  characterAntennaRight: {
+    right: 17,
+    transform: [{ rotate: "28deg" }]
+  },
+  characterFace: {
+    alignItems: "center",
+    borderRadius: 8,
+    height: 42,
+    justifyContent: "center",
+    width: 42
+  },
+  characterEyes: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 2
+  },
+  characterEye: {
+    borderRadius: 999,
+    height: 5,
+    width: 5
+  },
+  characterInitial: {
+    fontSize: 14,
+    fontWeight: "900",
+    lineHeight: 16
+  },
+  characterBody: {
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+    bottom: 5,
+    height: 8,
+    position: "absolute",
+    width: 26
+  },
+  characterName: {
+    color: "#102018",
+    fontSize: 11,
+    fontWeight: "900",
+    marginTop: 6,
+    textAlign: "center",
+    width: "100%"
+  },
+  upgradePanel: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 12
+  },
+  upgradeRow: {
+    alignItems: "center",
+    backgroundColor: "#f7faf6",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 8,
+    padding: 10
+  },
+  upgradeTextBlock: {
+    flex: 1
+  },
+  upgradeTitle: {
+    color: "#102018",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  upgradeMeta: {
+    color: "#52665d",
+    fontSize: 11,
+    fontWeight: "800",
+    lineHeight: 15,
+    marginTop: 3
+  },
+  upgradeButton: {
+    alignItems: "center",
+    borderRadius: 8,
+    minWidth: 78,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  upgradeButtonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  upgradeLocked: {
+    color: "#87958e",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  dexToolbar: {
+    alignItems: "center",
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    padding: 12
+  },
+  dexToolbarTitle: {
+    color: "#102018",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  dexToolbarMeta: {
+    color: "#52665d",
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 2
+  },
+  lockedToggle: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9
+  },
+  lockedToggleActive: {
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57"
+  },
+  lockedToggleText: {
+    color: "#102018",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  lockedToggleTextActive: {
+    color: "#ffffff"
   },
   grid: {
     flexDirection: "row",

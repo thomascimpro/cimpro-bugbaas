@@ -390,7 +390,7 @@ export default function App() {
               void notifyNewBug(bug, user).catch(() => undefined);
               void refreshUser();
               if ((bug.reportType ?? "bug") === "bug") {
-                rewardActivity("bug_reported");
+                void maybeShowBugDexDrop(grantBugDexReward(user, "bug_reported"));
                 setSplatBonusVisible(true);
               } else {
                 rewardActivity("comment");
@@ -468,7 +468,7 @@ export default function App() {
       <BugDexUnlockModal drop={bugDexDrop} onClose={closeBugDexDrop} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
-      <BugSplatBonusOverlay visible={splatBonusVisible} onSplat={() => void handleBugSplat()} onSkip={() => setSplatBonusVisible(false)} />
+      <BugSplatBonusOverlay visible={splatBonusVisible} onSkip={() => setSplatBonusVisible(false)} />
       <VersionToast notice={versionNotice} onDismiss={() => setVersionNotice(null)} />
     </SafeAreaView>
   );

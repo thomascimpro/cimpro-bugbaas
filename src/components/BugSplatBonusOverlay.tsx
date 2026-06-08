@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { allBugArtIds, BugArtId } from "../services/bugArt";
 import { BugArtImage } from "./BugArtImage";
@@ -10,42 +10,35 @@ type BonusBug = {
   drift: number;
   lane: number;
   size: number;
-  taps: number;
   direction: "left" | "right";
 };
 
 type Props = {
   visible: boolean;
-  onSplat: () => void;
   onSkip: () => void;
 };
 
-export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
+const autoCloseMs = 8000;
+
+export function BugSplatBonusOverlay({ visible, onSkip }: Props) {
   const { height, width } = useWindowDimensions();
-  const [splatted, setSplatted] = useState<Record<number, boolean>>({});
-  const [hits, setHits] = useState<Record<number, number>>({});
   const tracks = useMemo(
     () =>
-      allBugArtIds.map((bugId, index) => ({
+      allBugArtIds.slice(0, 36).map((bugId, index) => ({
         bugId,
         delay: (index % 8) * 210,
         direction: index % 2 === 0 ? "right" as const : "left" as const,
-        drift: 26 + (index % 5) * 13,
-        duration: 5400 + (index % 9) * 620,
+        drift: 22 + (index % 5) * 12,
+        duration: 4700 + (index % 9) * 520,
         lane: 0.12 + ((index * 0.137) % 0.72),
         progress: new Animated.Value(0),
-        size: 34 + (index % 7) * 5,
-        taps: index > 25 ? 3 : index > 16 ? 2 : 1
+        size: 36 + (index % 6) * 5
       })),
     []
   );
-  const splatCount = Object.values(splatted).filter(Boolean).length;
-  const complete = splatCount >= tracks.length;
 
   useEffect(() => {
     if (!visible) return;
-    setSplatted({});
-    setHits({});
     tracks.forEach((track) => track.progress.setValue(0));
   }, [tracks, visible]);
 
@@ -57,14 +50,14 @@ export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
           Animated.delay(track.delay),
           Animated.timing(track.progress, {
             duration: track.duration,
-            easing: Easing.linear,
+            easing: Easing.inOut(Easing.cubic),
             toValue: 1,
-            useNativeDriver: false
+            useNativeDriver: true
           }),
           Animated.timing(track.progress, {
             duration: 0,
             toValue: 0,
-            useNativeDriver: false
+            useNativeDriver: true
           })
         ])
       );
@@ -75,31 +68,19 @@ export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
   }, [tracks, visible]);
 
   useEffect(() => {
-    if (!complete) return;
-    const timer = setTimeout(onSkip, 850);
+    if (!visible) return;
+    const timer = setTimeout(onSkip, autoCloseMs);
     return () => clearTimeout(timer);
-  }, [complete, onSkip]);
-
-  function tapBug(index: number, bug: BonusBug) {
-    if (splatted[index]) return;
-    const nextHits = (hits[index] ?? 0) + 1;
-    if (nextHits < bug.taps) {
-      setHits((current) => ({ ...current, [index]: nextHits }));
-      return;
-    }
-    setHits((current) => ({ ...current, [index]: 0 }));
-    setSplatted((current) => ({ ...current, [index]: true }));
-    onSplat();
-  }
+  }, [onSkip, visible]);
 
   if (!visible) return null;
 
   return (
     <Modal transparent animationType="fade" visible={visible} statusBarTranslucent onRequestClose={onSkip}>
-      <View style={styles.backdrop}>
+      <Pressable style={styles.backdrop} onPress={onSkip}>
         <View style={styles.header}>
-          <Text style={styles.title}>Splat bonus</Text>
-          <Text style={styles.meta}>{splatCount}</Text>
+          <Text style={styles.title}>Bugmelding opgeslagen</Text>
+          <Text style={styles.meta}>BugDex reward onderweg</Text>
         </View>
         {tracks.map((track, index) => {
           const translateX = track.progress.interpolate({
@@ -112,7 +93,15 @@ export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
           });
           const rotate = track.progress.interpolate({
             inputRange: [0, 0.5, 1],
-            outputRange: track.direction === "right" ? ["86deg", "104deg", "88deg"] : ["-86deg", "-104deg", "-88deg"]
+            outputRange: track.direction === "right" ? ["72deg", "104deg", "82deg"] : ["-72deg", "-104deg", "-82deg"]
+          });
+          const scale = track.progress.interpolate({
+            inputRange: [0, 0.18, 0.82, 1],
+            outputRange: [0.72, 1, 1, 0.72]
+          });
+          const opacity = track.progress.interpolate({
+            inputRange: [0, 0.08, 0.9, 1],
+            outputRange: [0, 1, 1, 0]
           });
           return (
             <Animated.View
@@ -121,40 +110,22 @@ export function BugSplatBonusOverlay({ visible, onSplat, onSkip }: Props) {
                 styles.bug,
                 {
                   top: height * track.lane,
-                  transform: [{ translateX }, { translateY }, { rotate }]
+                  opacity,
+                  transform: [{ translateX }, { translateY }, { rotate }, { scale }]
                 }
               ]}
             >
-              <Pressable hitSlop={24} onPress={() => tapBug(index, track)} style={[styles.hitbox, { minHeight: track.size + 44, minWidth: track.size * 2.5 }]}>
-                {splatted[index] ? (
-                  <SplatMark size={track.size + 24} />
-                ) : (
-                  <>
-                    <BugArtImage bugId={track.bugId} size={track.size} />
-                    {track.taps > 1 && hits[index] > 0 && <View style={[styles.damageRing, { height: track.size + 14, width: track.size + 14 }]} />}
-                  </>
-                )}
-              </Pressable>
+              <View style={styles.hitbox}>
+                <BugArtImage bugId={track.bugId} size={track.size} />
+              </View>
             </Animated.View>
           );
         })}
-        <Pressable style={styles.skipButton} onPress={onSkip}>
-          <Text style={styles.skipText}>{complete ? "Klaar" : "Skip"}</Text>
-        </Pressable>
-      </View>
+        <View style={styles.skipButton}>
+          <Text style={styles.skipText}>Tik om door te gaan</Text>
+        </View>
+      </Pressable>
     </Modal>
-  );
-}
-
-function SplatMark({ size }: { size: number }) {
-  return (
-    <View style={[styles.splat, { height: size, width: size }]}>
-      <View style={[styles.splatBlob, styles.splatCenter]} />
-      <View style={[styles.splatBlob, styles.splatTop]} />
-      <View style={[styles.splatBlob, styles.splatRight]} />
-      <View style={[styles.splatBlob, styles.splatBottom]} />
-      <View style={[styles.splatBlob, styles.splatLeft]} />
-    </View>
   );
 }
 
@@ -197,13 +168,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
-  damageRing: {
-    borderColor: "#b83227",
-    borderRadius: 999,
-    borderWidth: 2,
-    opacity: 0.75,
-    position: "absolute"
-  },
   skipButton: {
     alignSelf: "center",
     backgroundColor: "rgba(16,32,24,0.78)",
@@ -218,52 +182,5 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 12,
     fontWeight: "900"
-  },
-  splat: {
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  splatBlob: {
-    backgroundColor: "#2b3a28",
-    position: "absolute"
-  },
-  splatCenter: {
-    borderRadius: 18,
-    height: 34,
-    opacity: 0.9,
-    transform: [{ rotate: "-12deg" }],
-    width: 40
-  },
-  splatTop: {
-    borderRadius: 10,
-    height: 20,
-    opacity: 0.72,
-    top: 5,
-    transform: [{ rotate: "22deg" }],
-    width: 14
-  },
-  splatRight: {
-    borderRadius: 12,
-    height: 18,
-    opacity: 0.72,
-    right: 7,
-    transform: [{ rotate: "-18deg" }],
-    width: 26
-  },
-  splatBottom: {
-    borderRadius: 10,
-    bottom: 6,
-    height: 16,
-    opacity: 0.66,
-    transform: [{ rotate: "12deg" }],
-    width: 22
-  },
-  splatLeft: {
-    borderRadius: 10,
-    height: 18,
-    left: 7,
-    opacity: 0.7,
-    transform: [{ rotate: "18deg" }],
-    width: 24
   }
 });

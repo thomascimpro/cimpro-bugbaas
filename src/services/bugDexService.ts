@@ -296,6 +296,62 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
   });
 }
 
+export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]): Promise<BugDexDropResult> {
+  const uniqueBugIds = Array.from(new Set(bugIds));
+  if (uniqueBugIds.length !== 3) throw new Error("Kies 3 verschillende bugs.");
+  const sourceEntries = uniqueBugIds.map(entryByBugId);
+  if (sourceEntries.some((entry) => !entry)) throw new Error("Bug niet gevonden.");
+  const sourceRarity = sourceEntries[0]?.rarity;
+  if (!sourceRarity || sourceEntries.some((entry) => entry?.rarity !== sourceRarity)) throw new Error("Kies 3 bugs van dezelfde rarity.");
+  const targetRarity = nextRarity(sourceRarity);
+  if (!targetRarity) throw new Error("Legendarisch kan niet verder upgraden.");
+
+  const currentInventory = await listBugDexInventory(user);
+  const targetEntry = pickCombineTarget(targetRarity, currentInventory);
+  const now = new Date().toISOString();
+
+  if (!isFirebaseConfigured) {
+    const inventory = demoInventory.get(user.uid) ?? new Map<string, BugDexInventoryItem>();
+    for (const bugId of uniqueBugIds) {
+      const item = inventory.get(bugId);
+      if (!item || item.count < 1) throw new Error("Je mist een gekozen bug.");
+    }
+    for (const bugId of uniqueBugIds) {
+      const item = inventory.get(bugId);
+      if (!item) continue;
+      inventory.set(bugId, { ...item, count: item.count - 1, lastUnlockedAt: now });
+    }
+    const existingTarget = inventory.get(targetEntry.id);
+    const targetItem: BugDexInventoryItem = existingTarget
+      ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
+      : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
+    inventory.set(targetEntry.id, targetItem);
+    demoInventory.set(user.uid, inventory);
+    return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
+  }
+
+  const sourceRefs = uniqueBugIds.map((bugId) => doc(db, "users", user.uid, "bugdex", bugId));
+  const targetRef = doc(db, "users", user.uid, "bugdex", targetEntry.id);
+  return runTransaction(db, async (transaction) => {
+    const sourceSnapshots = await Promise.all(sourceRefs.map((ref) => transaction.get(ref)));
+    const sourceItems = sourceSnapshots.map((snapshot) => snapshot.exists() ? snapshot.data() as BugDexInventoryItem : null);
+    if (sourceItems.some((item) => !item || item.count < 1)) throw new Error("Je mist een gekozen bug.");
+
+    const targetSnapshot = await transaction.get(targetRef);
+    const existingTarget = targetSnapshot.exists() ? targetSnapshot.data() as BugDexInventoryItem : null;
+    const targetItem: BugDexInventoryItem = existingTarget
+      ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
+      : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
+
+    sourceItems.forEach((item, index) => {
+      if (!item) return;
+      transaction.set(sourceRefs[index], { ...item, count: item.count - 1, lastUnlockedAt: now });
+    });
+    transaction.set(targetRef, targetItem);
+    return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
+  });
+}
+
 async function grantDailyReward(user: User, streakDay: number): Promise<BugDexDropResult> {
   const daysUntilBetterReward = daysUntilNextDailyStreakReward(streakDay);
   const isStreakReward = streakDay % dailyStreakLength === 0;

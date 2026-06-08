@@ -7,6 +7,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -35,6 +36,38 @@ class BugBaasNativeModule(private val reactContext: ReactApplicationContext) : R
   private val scope = CoroutineScope(Dispatchers.IO)
 
   override fun getName(): String = "BugBaasNative"
+
+  @ReactMethod
+  fun playSound(name: String, promise: Promise) {
+    val resId = when (name) {
+      "bug_hit" -> R.raw.bug_hit
+      "bug_catch" -> R.raw.bug_catch
+      "bug_unlock" -> R.raw.bug_unlock
+      "bug_rare_unlock" -> R.raw.bug_rare_unlock
+      else -> 0
+    }
+    if (resId == 0) {
+      promise.resolve(false)
+      return
+    }
+
+    try {
+      val player = MediaPlayer.create(reactContext, resId)
+      if (player == null) {
+        promise.resolve(false)
+        return
+      }
+      player.setOnCompletionListener { completed -> completed.release() }
+      player.setOnErrorListener { errored, _, _ ->
+        errored.release()
+        true
+      }
+      player.start()
+      promise.resolve(true)
+    } catch (_: Exception) {
+      promise.resolve(false)
+    }
+  }
 
   @ReactMethod
   fun getStepCounterSnapshot(promise: Promise) {

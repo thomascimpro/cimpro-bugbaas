@@ -21,7 +21,7 @@ service cloud.firestore {
     function validInventoryData(bugId) {
       return request.resource.data.bugId == bugId
         && request.resource.data.count is int
-        && request.resource.data.count >= 1
+      && request.resource.data.count >= 0
         && request.resource.data.firstUnlockedAt is string
         && request.resource.data.lastUnlockedAt is string
         && request.resource.data.rarity is string
@@ -60,7 +60,7 @@ service cloud.firestore {
         && acceptedTradeData()
         && (
           (tradeGain(userId, bugId) && request.resource.data.count == resource.data.count + 1)
-          || (tradeLoss(userId, bugId) && resource.data.count >= 2 && request.resource.data.count == resource.data.count - 1)
+          || (tradeLoss(userId, bugId) && resource.data.count >= 1 && request.resource.data.count == resource.data.count - 1)
         );
     }
 

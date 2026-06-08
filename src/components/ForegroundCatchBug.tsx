@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { allBugArtIds, BugArtId } from "../services/bugArt";
 import { bugDexEntries } from "../services/pointsService";
+import { playBugSound } from "../services/soundService";
 import { BugArtImage } from "./BugArtImage";
 
 type SpawnRarity = "common" | "rare" | "epic" | "legendary";
@@ -279,9 +280,11 @@ export function ForegroundCatchBug({ enabled, forcedBugIds = [], onCaught, onFor
     setHits(nextHits);
     playHitFeedback();
     if (nextHits < currentBug.requiredTaps) {
+      playBugSound("bug_hit");
       return;
     }
 
+    playBugSound("bug_catch");
     caughtRef.current = true;
     setCaught(true);
     moveAnimation.current?.stop();

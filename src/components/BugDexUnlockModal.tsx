@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { Animated, Image, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { BugDexDropResult } from "../services/bugDexService";
 import { bugDexFacts, BugDexRarity } from "../services/pointsService";
+import { playBugSound } from "../services/soundService";
 import { BugArtImage } from "./BugArtImage";
 
 type Props = {
@@ -51,6 +52,7 @@ export function BugDexUnlockModal({ drop, onClose }: Props) {
 
   useEffect(() => {
     if (!drop) return;
+    playBugSound(drop.rewardType === "bug" && (drop.entry.rarity === "Episch" || drop.entry.rarity === "Legendarisch") ? "bug_rare_unlock" : "bug_unlock");
     scale.setValue(0.82);
     glow.setValue(0);
     Animated.parallel([
