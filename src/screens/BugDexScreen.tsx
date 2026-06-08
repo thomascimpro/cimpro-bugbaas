@@ -16,6 +16,8 @@ type Props = {
   onBack: () => void;
 };
 
+type UpgradeRarity = Exclude<BugDexRarity, "Legendarisch">;
+
 const rarityColors: Record<BugDexRarity, string> = {
   Gewoon: "#6f7f5f",
   Zeldzaam: "#15724f",
@@ -23,8 +25,13 @@ const rarityColors: Record<BugDexRarity, string> = {
   Legendarisch: "#b83227"
 };
 
-const upgradeRarities: Array<Exclude<BugDexRarity, "Legendarisch">> = ["Gewoon", "Zeldzaam", "Episch"];
-const nextRarityLabel: Record<Exclude<BugDexRarity, "Legendarisch">, BugDexRarity> = {
+const upgradeRarities: UpgradeRarity[] = ["Gewoon", "Zeldzaam", "Episch"];
+const emptyUpgradeSelections: Record<UpgradeRarity, string[]> = {
+  Gewoon: [],
+  Zeldzaam: [],
+  Episch: []
+};
+const nextRarityLabel: Record<UpgradeRarity, BugDexRarity> = {
   Gewoon: "Zeldzaam",
   Zeldzaam: "Episch",
   Episch: "Legendarisch"
@@ -53,6 +60,7 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [tradeError, setTradeError] = useState("");
   const [showLocked, setShowLocked] = useState(false);
   const [upgradeBusy, setUpgradeBusy] = useState("");
+  const [upgradeSelections, setUpgradeSelections] = useState<Record<UpgradeRarity, string[]>>(emptyUpgradeSelections);
   const inventoryById = bugDexInventoryMap(inventory);
   const recipientInventoryById = bugDexInventoryMap(recipientInventory);
   const tier = getTierForPoints(user.totalPoints);
@@ -82,6 +90,15 @@ export function BugDexScreen({ user, onBack }: Props) {
     void refreshAll();
   }, [user.uid]);
 
+  useEffect(() => {
+    const availableIds = new Set(inventory.filter((item) => item.count > 0).map((item) => item.bugId));
+    setUpgradeSelections((current) => ({
+      Gewoon: current.Gewoon.filter((bugId) => availableIds.has(bugId)),
+      Zeldzaam: current.Zeldzaam.filter((bugId) => availableIds.has(bugId)),
+      Episch: current.Episch.filter((bugId) => availableIds.has(bugId))
+    }));
+  }, [inventory]);
+
   async function refreshAll() {
     await Promise.all([refreshInventory(), refreshTrades(), listUsers().then((items) => setUsers(items.filter((item) => item.uid !== user.uid)))]);
   }
@@ -105,15 +122,25 @@ export function BugDexScreen({ user, onBack }: Props) {
     }
   }
 
-  async function upgradeDifferent(rarity: Exclude<BugDexRarity, "Legendarisch">, bugIds: string[]) {
+  async function upgradeDifferent(rarity: UpgradeRarity, bugIds: string[]) {
     setUpgradeBusy(rarity);
     try {
       const result = await combineDifferentBugDexUpgrade(user, bugIds);
       setDrop(result);
+      setUpgradeSelections((current) => ({ ...current, [rarity]: [] }));
       await refreshInventory();
     } finally {
       setUpgradeBusy("");
     }
+  }
+
+  function toggleUpgradeSelection(rarity: UpgradeRarity, bugId: string) {
+    setUpgradeSelections((current) => {
+      const selected = current[rarity];
+      if (selected.includes(bugId)) return { ...current, [rarity]: selected.filter((item) => item !== bugId) };
+      if (selected.length >= 3) return current;
+      return { ...current, [rarity]: [...selected, bugId] };
+    });
   }
 
   function bugName(bugId: string) {
@@ -328,16 +355,40 @@ export function BugDexScreen({ user, onBack }: Props) {
         <Text style={styles.tradeHint}>Combineer 3 verschillende bugs van dezelfde lagere rarity voor 1 bug uit de volgende rarity. De gekozen bugs worden verbruikt.</Text>
         {upgradeOptions.map(({ items, rarity, targetRarity }) => {
           const ready = items.length >= 3;
-          const selected = items.slice(0, 3);
+          const selectedBugIds = upgradeSelections[rarity].filter((bugId) => items.some((item) => item.bugId === bugId));
+          const canUpgrade = selectedBugIds.length === 3;
           return (
             <View key={rarity} style={[styles.upgradeRow, ready && { borderColor: rarityColors[targetRarity] }]}>
               <View style={styles.upgradeTextBlock}>
                 <Text style={styles.upgradeTitle}>{`${rarity} x3 -> ${targetRarity}`}</Text>
-                <Text style={styles.upgradeMeta}>{ready ? selected.map((item) => bugName(item.bugId)).join(" + ") : `${items.length}/3 verschillende beschikbaar`}</Text>
+                <Text style={styles.upgradeMeta}>{ready ? `${selectedBugIds.length}/3 gekozen` : `${items.length}/3 verschillende beschikbaar`}</Text>
+                {ready && (
+                  <View style={styles.upgradeChoiceGrid}>
+                    {items.map((item) => {
+                      const selected = selectedBugIds.includes(item.bugId);
+                      const disabled = !selected && selectedBugIds.length >= 3;
+                      return (
+                        <Pressable
+                          key={item.bugId}
+                          style={[
+                            styles.upgradeChoice,
+                            selected && { backgroundColor: rarityColors[targetRarity], borderColor: rarityColors[targetRarity] },
+                            disabled && styles.upgradeChoiceDisabled
+                          ]}
+                          onPress={() => toggleUpgradeSelection(rarity, item.bugId)}
+                        >
+                          <BugArtImage bugId={item.bugId} size={32} />
+                          <Text style={[styles.upgradeChoiceText, selected && styles.upgradeChoiceTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
+                          <Text style={[styles.upgradeChoiceCount, selected && styles.upgradeChoiceTextActive]}>{item.count === 1 ? "laatste" : `x${item.count}`}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
               </View>
               {ready ? (
-                <Pressable style={[styles.upgradeButton, { backgroundColor: rarityColors[targetRarity] }]} disabled={upgradeBusy === rarity} onPress={() => upgradeDifferent(rarity, selected.map((item) => item.bugId))}>
-                  <Text style={styles.upgradeButtonText}>{upgradeBusy === rarity ? "..." : "Upgrade"}</Text>
+                <Pressable style={[styles.upgradeButton, { backgroundColor: canUpgrade ? rarityColors[targetRarity] : "#87958e" }]} disabled={!canUpgrade || upgradeBusy === rarity} onPress={() => upgradeDifferent(rarity, selectedBugIds)}>
+                  <Text style={styles.upgradeButtonText}>{upgradeBusy === rarity ? "..." : canUpgrade ? "Upgrade" : "Kies 3"}</Text>
                 </Pressable>
               ) : (
                 <Text style={styles.upgradeLocked}>Nog niet</Text>
@@ -939,6 +990,43 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 15,
     marginTop: 3
+  },
+  upgradeChoiceGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+    marginTop: 8
+  },
+  upgradeChoice: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 84,
+    paddingHorizontal: 7,
+    paddingVertical: 7,
+    width: 86
+  },
+  upgradeChoiceDisabled: {
+    opacity: 0.42
+  },
+  upgradeChoiceText: {
+    color: "#102018",
+    fontSize: 11,
+    fontWeight: "900",
+    marginTop: 4,
+    textAlign: "center",
+    width: "100%"
+  },
+  upgradeChoiceCount: {
+    color: "#52665d",
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  upgradeChoiceTextActive: {
+    color: "#ffffff"
   },
   upgradeButton: {
     alignItems: "center",

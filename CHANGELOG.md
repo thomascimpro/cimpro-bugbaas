@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.4
+
+- Upgrade-flow laat je nu zelf exact 3 verschillende bugs kiezen die worden verbruikt.
+- Upgrade-knop blijft geblokkeerd tot er 3 geldige bugs van dezelfde lagere rarity geselecteerd zijn.
+- Geselecteerde upgradebugs tonen duidelijk welke laatste exemplaren worden opgeofferd.
+
 ## 1.4.3
 
 - BugDex toont standaard alleen gevonden bugs, met een knop om onbekende bugs tijdelijk zichtbaar te maken.
