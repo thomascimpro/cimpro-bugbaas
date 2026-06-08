@@ -6,7 +6,7 @@ import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import { TradeAnimationModal } from "../components/TradeAnimationModal";
 import { BugDexDropResult, DailyUpgradeUsage, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, entryByBugId, getDailyUpgradeUsage, listBugDexInventory } from "../services/bugDexService";
 import { rarityLabel, useI18n } from "../services/i18n";
-import { notifyTradeRequest } from "../services/notificationService";
+import { notifyTradeAccepted, notifyTradeRequest } from "../services/notificationService";
 import { bugDexEntries, BugDexEntry, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
 import { createTradeRequest, listTradeRequests, markTradeRequesterSeen, respondToTradeRequest } from "../services/tradeService";
 import { listUsers } from "../services/userService";
@@ -66,7 +66,6 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [dailyUpgradeUsage, setDailyUpgradeUsage] = useState<DailyUpgradeUsage>(emptyDailyUpgradeUsage);
   const [upgradeSelections, setUpgradeSelections] = useState<Record<UpgradeRarity, string[]>>(emptyUpgradeSelections);
   const inventoryById = bugDexInventoryMap(inventory);
-  const recipientInventoryById = bugDexInventoryMap(recipientInventory);
   const tier = getTierForPoints(user.totalPoints);
   const unlockedCount = inventory.length;
   const totalCount = bugDexEntries.length;
@@ -229,6 +228,7 @@ export function BugDexScreen({ user, onBack }: Props) {
       if (accept) {
         setCompletedTrade(result);
         setTradeExpanded(false);
+        await notifyTradeAccepted(trade.fromUserId, user, bugName(trade.requestBugId));
       }
       await refreshAll();
     } catch (error) {
@@ -395,7 +395,6 @@ export function BugDexScreen({ user, onBack }: Props) {
           <Text style={[styles.tradeDropdownTitle, tradeExpanded && styles.tradeDropdownTitleActive]}>{t("bugdex.tradeAndUpgrades")}</Text>
           <Text style={[styles.tradeDropdownMeta, tradeExpanded && styles.tradeDropdownMetaActive]}>{t("bugdex.tradeMeta", { incoming: incomingTrades.length, open: outgoingTrades.length, duplicate: duplicateCount })}</Text>
         </View>
-        <Text style={[styles.tradeDropdownIcon, tradeExpanded && styles.tradeDropdownTitleActive]}>{tradeExpanded ? t("common.close") : t("common.open")}</Text>
       </Pressable>
 
       {tradeExpanded && (
@@ -423,7 +422,6 @@ export function BugDexScreen({ user, onBack }: Props) {
         ) : (
           <Text style={styles.tradeEmpty}>{t("bugdex.noTradeBugs")}</Text>
         )}
-        {!!tradeOfferId && inventoryById[tradeOfferId]?.count === 1 && <Text style={styles.tradeWarning}>{t("bugdex.lastWarning", { name: bugName(tradeOfferId) })}</Text>}
         {!!tradeOfferId && (
           <View style={styles.tradeSection}>
             <Text style={styles.tradeLabel}>{t("bugdex.chooseColleague")}</Text>
@@ -456,7 +454,6 @@ export function BugDexScreen({ user, onBack }: Props) {
             )}
           </View>
         )}
-        {!!tradeRequestId && recipientInventoryById[tradeRequestId]?.count === 1 && <Text style={styles.tradeWarning}>{t("bugdex.colleagueLast", { name: selectedRecipient?.displayName ?? "deze collega" })}</Text>}
         {!!tradeRequestId && (
           <Pressable style={styles.tradeButton} disabled={tradeBusy === "send"} onPress={sendTradeRequest}>
             <Text style={styles.tradeButtonText}>{tradeBusy === "send" ? "..." : t("bugdex.sendTrade")}</Text>
@@ -810,11 +807,6 @@ const styles = StyleSheet.create({
   },
   tradeDropdownMetaActive: {
     color: "#dce9df"
-  },
-  tradeDropdownIcon: {
-    color: "#102018",
-    fontSize: 12,
-    fontWeight: "900"
   },
   tradePanel: {
     backgroundColor: "#fdfefb",

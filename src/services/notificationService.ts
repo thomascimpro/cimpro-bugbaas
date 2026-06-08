@@ -193,8 +193,18 @@ export async function notifyBugUpdate(previousBug: BugReport, nextBug: BugReport
 export async function notifyTradeRequest(recipientId: string, actor: User, offeredBugName: string): Promise<void> {
   await createNotification(recipientId, {
     type: "trade",
-    title: "Ruilverzoek",
-    body: `${actor.displayName} wil ${offeredBugName} ruilen`,
+    title: "BugBaas ruilverzoek",
+    body: `${actor.displayName} wil ${offeredBugName} ruilen. Open BugDex om te reageren.`,
+    actorId: actor.uid,
+    actorName: actor.displayName
+  });
+}
+
+export async function notifyTradeAccepted(requesterId: string, actor: User, receivedBugName: string): Promise<void> {
+  await createNotification(requesterId, {
+    type: "trade",
+    title: "Ruil gelukt",
+    body: `${actor.displayName} accepteerde je ruil. Je ontving ${receivedBugName}.`,
     actorId: actor.uid,
     actorName: actor.displayName
   });

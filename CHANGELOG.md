@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.3
+
+- Home toont geen Health Connect datatype-statusregels meer zoals `Stappen: laatste ...`.
+- Laatste-exemplaar waarschuwingen bij ruilen verwijderd.
+- Dropdown-pijltjes/actie-indicators uit de dropdownknoppen gehaald.
+- Trade-acties geven nu ook echte Android-notificaties; trade-verzoeken en geaccepteerde ruilen hebben duidelijkere meldingstekst.
+
 ## 1.5.2
 
 - Ruil-resultaat opent pas na acceptatie en wordt na sluiten niet opnieuw getoond.

@@ -5,7 +5,7 @@ import { BugArtImage } from "../components/BugArtImage";
 import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
 import { entryByBugId, listBugDexInventory } from "../services/bugDexService";
-import { claimMovementRadarBonuses, getMovementRadarProgress, MovementDataTypeStatus, MovementRadarProgress } from "../services/movementRadarService";
+import { claimMovementRadarBonuses, getMovementRadarProgress, MovementRadarProgress } from "../services/movementRadarService";
 import { BugDexEntry, bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
 import { languages, useI18n } from "../services/i18n";
 import { listUsers } from "../services/userService";
@@ -76,7 +76,6 @@ export function HomeScreen({ user, onNavigate }: Props) {
             <View style={styles.heroActions}>
               <Pressable style={styles.languagePill} onPress={() => setLanguageOpen((current) => !current)}>
                 <Text style={styles.languageFlag}>{selectedLanguage.flag}</Text>
-                <Text style={styles.languageChevron}>{languageOpen ? "^" : "v"}</Text>
               </Pressable>
               {languageOpen && (
                 <View style={styles.languageMenu}>
@@ -168,13 +167,6 @@ export function HomeScreen({ user, onNavigate }: Props) {
               );
             })}
           </View>
-          <View style={styles.movementSources}>
-            {movementDataTypes.map((item) => (
-              <View key={item.id} style={[styles.movementSourcePill, item.available && styles.movementSourcePillActive]}>
-                <Text style={[styles.movementSourceText, item.available && styles.movementSourceTextActive]}>{movementDataTypeLabel(item, t)}: {movementStatusText(item, t)}</Text>
-              </View>
-            ))}
-          </View>
           {showMovementSourceHelp && (
             <Text style={styles.movementHelp}>
               {t("home.connectHelp")}
@@ -201,7 +193,6 @@ export function HomeScreen({ user, onNavigate }: Props) {
       </View>
       <Pressable style={styles.tierToggle} onPress={() => setShowAllTiers((current) => !current)}>
         <Text style={styles.tierToggleText}>{t("home.showAllTiers")}</Text>
-        <Text style={styles.tierToggleIcon}>{showAllTiers ? "^" : "v"}</Text>
       </Pressable>
       {showAllTiers && (
         <View style={styles.stage}>
@@ -308,18 +299,6 @@ function movementGoalLabel(goal: MovementRadarProgress["goals"][number], t: (key
   return t(`movement.goal.${goal.id}`);
 }
 
-function movementDataTypeLabel(status: MovementDataTypeStatus, t: (key: string) => string): string {
-  return t(`movement.data.${status.id}`);
-}
-
-function movementStatusText(status: MovementDataTypeStatus, t: (key: string, params?: Record<string, string | number>) => string): string {
-  if (status.available) return status.lastSeenLabel ? t("health.last", { value: status.lastSeenLabel }) : t("health.available");
-  if (status.reason === "health_permission") return t("health.noAccess");
-  if (status.reason === "health_connect_unavailable") return t("health.unavailable");
-  if (status.reason === "health_error") return t("health.error");
-  return t("health.noData");
-}
-
 function showMovementConnectInfo(t: (key: string) => string): void {
   Alert.alert(
     t("health.connectTitle"),
@@ -401,11 +380,6 @@ const styles = StyleSheet.create({
   languageFlag: {
     color: "#102018",
     fontSize: 16,
-    fontWeight: "900"
-  },
-  languageChevron: {
-    color: "#102018",
-    fontSize: 11,
     fontWeight: "900"
   },
   profileText: {
@@ -558,32 +532,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#15724f",
     height: "100%"
   },
-  movementSources: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 10
-  },
-  movementSourcePill: {
-    backgroundColor: "#eef4ef",
-    borderColor: "#d6e3da",
-    borderRadius: 8,
-    borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 5
-  },
-  movementSourcePillActive: {
-    backgroundColor: "#e3f5e9",
-    borderColor: "#97caa8"
-  },
-  movementSourceText: {
-    color: "#6c7a72",
-    fontSize: 10,
-    fontWeight: "900"
-  },
-  movementSourceTextActive: {
-    color: "#15724f"
-  },
   movementHelp: {
     color: "#52665d",
     fontSize: 11,
@@ -667,11 +615,6 @@ const styles = StyleSheet.create({
   tierToggleText: {
     color: "#102018",
     fontSize: 14,
-    fontWeight: "900"
-  },
-  tierToggleIcon: {
-    color: "#15724f",
-    fontSize: 18,
     fontWeight: "900"
   },
   rankingCard: {

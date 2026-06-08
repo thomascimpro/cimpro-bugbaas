@@ -92,7 +92,6 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
                 <Text style={[styles.characterDropdownTitle, characterPickerOpen && styles.characterDropdownTitleOpen]}>{selectedCharacter.label}</Text>
                 <Text style={[styles.characterDropdownMeta, characterPickerOpen && styles.characterDropdownMetaOpen]}>{t("profile.changeCharacter")}</Text>
               </View>
-              <Text style={[styles.characterDropdownAction, characterPickerOpen && styles.characterDropdownTitleOpen]}>{characterPickerOpen ? t("common.close") : t("common.open")}</Text>
             </Pressable>
             {characterPickerOpen && (
               <View style={styles.characterGrid}>
@@ -406,12 +405,6 @@ const styles = StyleSheet.create({
   },
   characterDropdownMetaOpen: {
     color: "#dce9df"
-  },
-  characterDropdownAction: {
-    color: "#102018",
-    fontSize: 12,
-    fontWeight: "900",
-    marginLeft: 10
   },
   characterGrid: {
     flexDirection: "row",

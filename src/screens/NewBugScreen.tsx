@@ -184,7 +184,6 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
           <Text style={styles.selectText}>{t(selectedReportType.labelKey)}</Text>
           <Text style={styles.selectDescription}>{t(selectedReportType.descriptionKey)}</Text>
         </View>
-        <Text style={styles.selectChevron}>{typeOpen ? "^" : "v"}</Text>
       </Pressable>
       {typeOpen && (
         <View style={styles.selectMenu}>
@@ -208,7 +207,6 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
       <Text style={sharedStyles.label}>{t("new.system")}</Text>
       <Pressable style={styles.selectButton} onPress={() => setProjectOpen((current) => !current)}>
         <Text style={[styles.selectText, !project && styles.selectPlaceholder]}>{project || t("new.chooseSystem")}</Text>
-        <Text style={styles.selectChevron}>{projectOpen ? "^" : "v"}</Text>
       </Pressable>
       {projectOpen && (
         <View style={styles.selectMenu}>
@@ -337,11 +335,6 @@ const styles = StyleSheet.create({
   },
   selectPlaceholder: {
     color: "#77847f"
-  },
-  selectChevron: {
-    color: "#15724f",
-    fontSize: 16,
-    fontWeight: "900"
   },
   selectMenu: {
     backgroundColor: "#fdfefb",

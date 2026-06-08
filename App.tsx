@@ -158,6 +158,7 @@ function AppContent() {
     return subscribeUserNotifications(user, notificationSettings, (nextNotification) => {
       if (appState.current === "active") {
         setNotification(nextNotification);
+        if (nextNotification.type === "trade") void showPhoneNotification(nextNotification).catch(() => undefined);
         return;
       }
       void showPhoneNotification(nextNotification).catch(() => undefined);

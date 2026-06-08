@@ -113,7 +113,6 @@ export function BugListScreen({ onBack, onNew, onSelect }: Props) {
 
       <Pressable style={styles.projectButton} onPress={() => setProjectOpen((current) => !current)}>
         <Text style={[styles.projectButtonText, !projectFilter && styles.projectButtonPlaceholder]}>{t("buglist.product", { value: projectFilter ?? t("common.all") })}</Text>
-        <Text style={styles.projectChevron}>{projectOpen ? "^" : "v"}</Text>
       </Pressable>
       {projectOpen && (
         <View style={styles.projectMenu}>
@@ -311,10 +310,6 @@ const styles = StyleSheet.create({
   },
   projectButtonPlaceholder: {
     color: "#53645d"
-  },
-  projectChevron: {
-    color: "#15724f",
-    fontWeight: "900"
   },
   projectMenu: {
     backgroundColor: "#fdfefb",
