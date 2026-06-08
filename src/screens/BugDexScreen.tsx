@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
+import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import { TradeAnimationModal } from "../components/TradeAnimationModal";
 import { BugDexDropResult, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, entryByBugId, listBugDexInventory } from "../services/bugDexService";
@@ -37,14 +38,6 @@ const nextRarityLabel: Record<UpgradeRarity, BugDexRarity> = {
   Episch: "Legendarisch"
 };
 
-const characterPalettes = [
-  { body: "#15724f", face: "#d9f2df", accent: "#d7bd57" },
-  { body: "#356d7c", face: "#e0f6ff", accent: "#47b7d0" },
-  { body: "#b83227", face: "#ffe5dd", accent: "#f5b84b" },
-  { body: "#6f7f5f", face: "#f1f5df", accent: "#a8bd6b" },
-  { body: "#5d3f84", face: "#eee5ff", accent: "#c6a8ff" }
-];
-
 export function BugDexScreen({ user, onBack }: Props) {
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -59,6 +52,7 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [tradeBusy, setTradeBusy] = useState("");
   const [tradeError, setTradeError] = useState("");
   const [showLocked, setShowLocked] = useState(false);
+  const [tradeExpanded, setTradeExpanded] = useState(false);
   const [upgradeBusy, setUpgradeBusy] = useState("");
   const [upgradeSelections, setUpgradeSelections] = useState<Record<UpgradeRarity, string[]>>(emptyUpgradeSelections);
   const inventoryById = bugDexInventoryMap(inventory);
@@ -187,6 +181,62 @@ export function BugDexScreen({ user, onBack }: Props) {
     }
   }
 
+  const dexList = (
+    <>
+      <View style={styles.dexToolbar}>
+        <View>
+          <Text style={styles.dexToolbarTitle}>Ontdekte bugs</Text>
+          <Text style={styles.dexToolbarMeta}>{showLocked ? "Alle bugs zichtbaar" : "Focus op jouw unlocked bugs"}</Text>
+        </View>
+        <Pressable style={[styles.lockedToggle, showLocked && styles.lockedToggleActive]} onPress={() => setShowLocked((current) => !current)}>
+          <Text style={[styles.lockedToggleText, showLocked && styles.lockedToggleTextActive]}>{showLocked ? "Verberg onbekend" : "Toon onbekend"}</Text>
+        </Pressable>
+      </View>
+
+      {dexCards.length ? (
+        <View style={styles.grid}>
+          {dexCards.map(({ entry, index, inventoryItem }) => {
+            const color = rarityColors[entry.rarity];
+            const requiredCount = combineRequiredCount(entry.rarity);
+            const unlocked = Boolean(inventoryItem);
+            const canCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
+            return (
+              <View key={entry.id} style={[styles.card, !unlocked && styles.lockedCard, { borderColor: unlocked ? color : "#cbd8d1" }]}>
+                <View style={styles.cardTop}>
+                  <View style={[styles.numberPill, { backgroundColor: unlocked ? color : "#87958e" }]}>
+                    <Text style={styles.numberText}>{String(index + 1).padStart(2, "0")}</Text>
+                  </View>
+                  <Text style={[styles.rarity, { color: unlocked ? color : "#87958e" }]}>{unlocked ? entry.rarity : "???"}</Text>
+                </View>
+                <View style={[styles.bugWrap, !unlocked && styles.lockedBugWrap]}>
+                  {unlocked ? <BugArtImage bugId={entry.id} size={70} /> : <Text style={styles.lockedMark}>?</Text>}
+                </View>
+                <View style={styles.nameRow}>
+                  <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? entry.name : "Onbekend"}</Text>
+                  {unlocked && inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
+                </View>
+                <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? entry.title : "Nog niet ontdekt"}</Text>
+                <Text style={[styles.note, !unlocked && styles.lockedText]}>
+                  {unlocked ? entry.note : "Gebruik de app om deze bug te vinden."}
+                </Text>
+                {canCombine && (
+                  <Pressable style={styles.combineButton} disabled={combineBusyId === entry.id} onPress={() => combine(entry.id)}>
+                    <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : `Combine x${requiredCount}`}</Text>
+                  </Pressable>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      ) : (
+        <View style={styles.emptyDexCard}>
+          <Text style={styles.emptyDexTitle}>Nog geen bugs gevonden</Text>
+          <Text style={styles.emptyDexText}>Zet onbekende bugs aan om de volledige BugDex alvast te bekijken.</Text>
+        </View>
+      )}
+    </>
+  );
+
   return (
     <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
@@ -267,6 +317,18 @@ export function BugDexScreen({ user, onBack }: Props) {
         </View>
       </View>
 
+      {dexList}
+
+      <Pressable style={[styles.tradeDropdown, tradeExpanded && styles.tradeDropdownActive]} onPress={() => setTradeExpanded((current) => !current)}>
+        <View>
+          <Text style={[styles.tradeDropdownTitle, tradeExpanded && styles.tradeDropdownTitleActive]}>Ruilen en upgrades</Text>
+          <Text style={[styles.tradeDropdownMeta, tradeExpanded && styles.tradeDropdownMetaActive]}>{incomingTrades.length} inkomend - {outgoingTrades.length} open - {duplicateCount} dubbel</Text>
+        </View>
+        <Text style={[styles.tradeDropdownIcon, tradeExpanded && styles.tradeDropdownTitleActive]}>{tradeExpanded ? "Sluit" : "Open"}</Text>
+      </Pressable>
+
+      {tradeExpanded && (
+        <>
       <View style={styles.tradePanel}>
         <View style={styles.tradeHeader}>
           <Text style={styles.tradeTitle}>Ruilen</Text>
@@ -296,7 +358,7 @@ export function BugDexScreen({ user, onBack }: Props) {
             <View style={styles.characterGrid}>
               {users.map((item) => (
                 <Pressable key={item.uid} style={[styles.characterCard, tradeRecipientId === item.uid && styles.tradeChipActive]} onPress={() => chooseRecipient(item.uid)}>
-                  <UserCharacter user={item} active={tradeRecipientId === item.uid} />
+                  <CharacterAvatarImage characterId={item.characterId} selected={tradeRecipientId === item.uid} size={64} />
                   <Text style={[styles.characterName, tradeRecipientId === item.uid && styles.tradeChipTextActive]} numberOfLines={1}>{item.displayName}</Text>
                 </Pressable>
               ))}
@@ -397,57 +459,7 @@ export function BugDexScreen({ user, onBack }: Props) {
           );
         })}
       </View>
-
-      <View style={styles.dexToolbar}>
-        <View>
-          <Text style={styles.dexToolbarTitle}>BugDex lijst</Text>
-          <Text style={styles.dexToolbarMeta}>{showLocked ? "Alle bugs zichtbaar" : "Standaard verborgen: onbekende bugs"}</Text>
-        </View>
-        <Pressable style={[styles.lockedToggle, showLocked && styles.lockedToggleActive]} onPress={() => setShowLocked((current) => !current)}>
-          <Text style={[styles.lockedToggleText, showLocked && styles.lockedToggleTextActive]}>{showLocked ? "Verberg onbekend" : "Toon onbekend"}</Text>
-        </Pressable>
-      </View>
-
-      {dexCards.length ? (
-        <View style={styles.grid}>
-          {dexCards.map(({ entry, index, inventoryItem }) => {
-          const color = rarityColors[entry.rarity];
-          const requiredCount = combineRequiredCount(entry.rarity);
-          const unlocked = Boolean(inventoryItem);
-          const canCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
-          return (
-            <View key={entry.id} style={[styles.card, !unlocked && styles.lockedCard, { borderColor: unlocked ? color : "#cbd8d1" }]}>
-              <View style={styles.cardTop}>
-                <View style={[styles.numberPill, { backgroundColor: unlocked ? color : "#87958e" }]}>
-                  <Text style={styles.numberText}>{String(index + 1).padStart(2, "0")}</Text>
-                </View>
-                <Text style={[styles.rarity, { color: unlocked ? color : "#87958e" }]}>{unlocked ? entry.rarity : "???"}</Text>
-              </View>
-              <View style={[styles.bugWrap, !unlocked && styles.lockedBugWrap]}>
-                {unlocked ? <BugArtImage bugId={entry.id} size={70} /> : <Text style={styles.lockedMark}>?</Text>}
-              </View>
-              <View style={styles.nameRow}>
-                <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? entry.name : "Onbekend"}</Text>
-                {unlocked && inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
-              </View>
-              <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? entry.title : "Nog niet ontdekt"}</Text>
-              <Text style={[styles.note, !unlocked && styles.lockedText]}>
-                {unlocked ? entry.note : "Gebruik de app om deze bug te vinden."}
-              </Text>
-              {canCombine && (
-                <Pressable style={styles.combineButton} disabled={combineBusyId === entry.id} onPress={() => combine(entry.id)}>
-                  <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : `Combine x${requiredCount}`}</Text>
-                </Pressable>
-              )}
-            </View>
-          );
-          })}
-        </View>
-      ) : (
-        <View style={styles.emptyDexCard}>
-          <Text style={styles.emptyDexTitle}>Nog geen bugs gevonden</Text>
-          <Text style={styles.emptyDexText}>Zet onbekende bugs aan om de volledige BugDex alvast te bekijken.</Text>
-        </View>
+        </>
       )}
 
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
@@ -457,29 +469,6 @@ export function BugDexScreen({ user, onBack }: Props) {
       <TradeAnimationModal currentUser={user} trade={completedTrade} onClose={() => setCompletedTrade(null)} />
     </ScrollView>
   );
-}
-
-function UserCharacter({ active, user }: { active: boolean; user: User }) {
-  const palette = characterPalettes[Math.abs(hashText(user.uid || user.displayName)) % characterPalettes.length];
-  const initial = (user.displayName.trim()[0] || "?").toUpperCase();
-  return (
-    <View style={[styles.characterAvatar, { backgroundColor: palette.body, borderColor: active ? palette.accent : "#c6d3cc" }]}>
-      <View style={[styles.characterAntenna, styles.characterAntennaLeft, { backgroundColor: palette.accent }]} />
-      <View style={[styles.characterAntenna, styles.characterAntennaRight, { backgroundColor: palette.accent }]} />
-      <View style={[styles.characterFace, { backgroundColor: palette.face }]}>
-        <View style={styles.characterEyes}>
-          <View style={[styles.characterEye, { backgroundColor: palette.body }]} />
-          <View style={[styles.characterEye, { backgroundColor: palette.body }]} />
-        </View>
-        <Text style={[styles.characterInitial, { color: palette.body }]}>{initial}</Text>
-      </View>
-      <View style={[styles.characterBody, { backgroundColor: palette.accent }]} />
-    </View>
-  );
-}
-
-function hashText(value: string) {
-  return value.split("").reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0);
 }
 
 const styles = StyleSheet.create({
@@ -715,6 +704,43 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900"
   },
+  tradeDropdown: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    padding: 12
+  },
+  tradeDropdownActive: {
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57"
+  },
+  tradeDropdownTitle: {
+    color: "#102018",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  tradeDropdownTitleActive: {
+    color: "#ffffff"
+  },
+  tradeDropdownMeta: {
+    color: "#52665d",
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 2
+  },
+  tradeDropdownMetaActive: {
+    color: "#dce9df"
+  },
+  tradeDropdownIcon: {
+    color: "#102018",
+    fontSize: 12,
+    fontWeight: "900"
+  },
   tradePanel: {
     backgroundColor: "#fdfefb",
     borderColor: "#d7e1d9",
@@ -894,60 +920,6 @@ const styles = StyleSheet.create({
     minHeight: 104,
     padding: 8,
     width: 92
-  },
-  characterAvatar: {
-    alignItems: "center",
-    borderRadius: 8,
-    borderWidth: 2,
-    height: 64,
-    justifyContent: "center",
-    overflow: "visible",
-    width: 58
-  },
-  characterAntenna: {
-    borderRadius: 999,
-    height: 16,
-    position: "absolute",
-    top: -9,
-    width: 4
-  },
-  characterAntennaLeft: {
-    left: 17,
-    transform: [{ rotate: "-28deg" }]
-  },
-  characterAntennaRight: {
-    right: 17,
-    transform: [{ rotate: "28deg" }]
-  },
-  characterFace: {
-    alignItems: "center",
-    borderRadius: 8,
-    height: 42,
-    justifyContent: "center",
-    width: 42
-  },
-  characterEyes: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 2
-  },
-  characterEye: {
-    borderRadius: 999,
-    height: 5,
-    width: 5
-  },
-  characterInitial: {
-    fontSize: 14,
-    fontWeight: "900",
-    lineHeight: 16
-  },
-  characterBody: {
-    borderBottomLeftRadius: 8,
-    borderBottomRightRadius: 8,
-    bottom: 5,
-    height: 8,
-    position: "absolute",
-    width: 26
   },
   characterName: {
     color: "#102018",

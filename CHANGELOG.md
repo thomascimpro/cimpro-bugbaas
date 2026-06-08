@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.5
+
+- Profiel heeft nu character creation met bug-catcher presets.
+- Ruilen toont de gekozen character-afbeelding van collega's.
+- BugDex focust nu eerst op jouw ontdekte bugs.
+- Ruilen en upgrades staan onder de BugDex in een inklapbare sectie.
+
 ## 1.4.4
 
 - Upgrade-flow laat je nu zelf exact 3 verschillende bugs kiezen die worden verbruikt.

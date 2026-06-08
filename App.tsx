@@ -3,7 +3,7 @@ import * as Application from "expo-application";
 import React, { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Linking, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
 import { AppNotification, BugComment, BugReport, BugSeverity, NotificationSettings, User } from "./src/types";
-import { applyUserPoints, ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, updateUserDisplayName } from "./src/services/userService";
+import { applyUserPoints, ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, updateUserCharacter, updateUserDisplayName } from "./src/services/userService";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
 import { BugListScreen } from "./src/screens/BugListScreen";
@@ -23,6 +23,7 @@ import { DisplayNameModal } from "./src/components/DisplayNameModal";
 import { InAppNotificationToast } from "./src/components/InAppNotificationToast";
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
 import { allBugArtIds, BugArtId } from "./src/services/bugArt";
+import { CharacterId } from "./src/services/characterService";
 import { listBugs } from "./src/services/bugService";
 import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, grantBugDexReward, rollBugDexDrop, rollSpecificBugDexDrop } from "./src/services/bugDexService";
 import { claimMovementRadarBonuses } from "./src/services/movementRadarService";
@@ -189,6 +190,11 @@ export default function App() {
   async function handleDisplayNameSave(displayName: string) {
     if (!user) return;
     setUser(await updateUserDisplayName(user, displayName));
+  }
+
+  async function handleCharacterSave(characterId: CharacterId) {
+    if (!user) return;
+    setUser(await updateUserCharacter(user, characterId));
   }
 
   async function finishHelpTour() {
@@ -434,6 +440,7 @@ export default function App() {
             user={user}
             onBack={() => setRoute("home")}
             onLogout={handleLogout}
+            onUpdateCharacter={handleCharacterSave}
             onUpdateDisplayName={handleDisplayNameSave}
             onSelectBug={(bug) => {
               setSelectedBug(bug);

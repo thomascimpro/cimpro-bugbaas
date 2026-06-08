@@ -8,6 +8,7 @@ export type User = {
   email: string;
   active?: boolean;
   testAccount?: boolean;
+  characterId?: string;
   nameSet?: boolean;
   helpSeen?: boolean;
   splatCount?: number;

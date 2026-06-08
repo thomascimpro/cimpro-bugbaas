@@ -12,6 +12,7 @@ import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDo
 import { auth, db, isFirebaseConfigured } from "../firebase";
 import { BugComment, BugReport, User } from "../types";
 import { countBugDexInventory } from "./bugDexService";
+import { CharacterId, defaultCharacterId, safeCharacterId } from "./characterService";
 import { badgesForUser, titleForPoints } from "./pointsService";
 
 export const upvotePointValue = 3;
@@ -28,6 +29,7 @@ function normalizeUser(user: User): User {
     ...user,
     active: user.active !== false,
     bugDexCount: user.bugDexCount ?? 0,
+    characterId: safeCharacterId(user.characterId),
     commentPointCount: user.commentPointCount ?? 0,
     upvoteGivenPointCount: user.upvoteGivenPointCount ?? 0,
     title: titleForPoints(user.totalPoints),
@@ -78,6 +80,7 @@ function makeUser(uid: string, email: string, displayName?: string | null, nameS
     uid,
     displayName: name || fallbackName,
     email,
+    characterId: defaultCharacterId,
     nameSet,
     active: true,
     helpSeen: false,
@@ -214,6 +217,20 @@ export async function updateUserDisplayName(user: User, displayName: string): Pr
     nameSet: true
   });
   return normalizeUser(updated);
+}
+
+export async function updateUserCharacter(user: User, characterId: CharacterId): Promise<User> {
+  const safeId = safeCharacterId(characterId);
+  const updated = normalizeUser({ ...user, characterId: safeId });
+
+  if (!isFirebaseConfigured) {
+    demoUsers.set(updated.email, updated);
+    if (demoUser?.uid === user.uid) demoUser = updated;
+    return updated;
+  }
+
+  await updateDoc(doc(db, "users", user.uid), { characterId: safeId });
+  return updated;
 }
 
 export async function markHelpSeen(user: User): Promise<User> {

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugArtImage } from "../components/BugArtImage";
 import { DisplayNameModal } from "../components/DisplayNameModal";
 import { SeverityBadge } from "../components/SeverityBadge";
@@ -7,6 +8,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
 import { bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
+import { CharacterId, characterOptions, safeCharacterId } from "../services/characterService";
 import { upvotePointValue } from "../services/userService";
 import { BugReport, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
@@ -16,17 +18,20 @@ type Props = {
   isOwnProfile?: boolean;
   onBack: () => void;
   onLogout?: () => void;
+  onUpdateCharacter?: (characterId: CharacterId) => Promise<void>;
   onUpdateDisplayName?: (displayName: string) => Promise<void>;
   onSelectBug?: (bug: BugReport) => void;
 };
 
-export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onUpdateDisplayName, onSelectBug }: Props) {
+export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onUpdateCharacter, onUpdateDisplayName, onSelectBug }: Props) {
   const tier = getTierForPoints(user.totalPoints);
   const badges = user.badges.length ? user.badges : ["Nog geen badges"];
   const badgeCount = user.badges.length;
   const [bugs, setBugs] = useState<BugReport[]>([]);
   const [editNameVisible, setEditNameVisible] = useState(false);
+  const [characterBusy, setCharacterBusy] = useState("");
   const [loadingBugs, setLoadingBugs] = useState(true);
+  const selectedCharacterId = safeCharacterId(user.characterId);
 
   useEffect(() => {
     setLoadingBugs(true);
@@ -48,7 +53,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
             </Pressable>
           )}
         </View>
-        <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={tier.bugSize + 22} />
+        <CharacterAvatarImage characterId={selectedCharacterId} size={112} />
       </View>
 
       <View style={styles.stats}>
@@ -67,6 +72,43 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       </View>
 
       <TierBadge points={user.totalPoints} />
+
+      <View style={styles.card}>
+        <View style={styles.characterHeader}>
+          <View>
+            <Text style={styles.cardTitle}>Character</Text>
+            <Text style={styles.characterSubtitle}>Bug catcher met net</Text>
+          </View>
+          <CharacterAvatarImage characterId={selectedCharacterId} size={74} />
+        </View>
+        {isOwnProfile && onUpdateCharacter ? (
+          <View style={styles.characterGrid}>
+            {characterOptions.map((option) => {
+              const selected = option.id === selectedCharacterId;
+              return (
+                <Pressable
+                  key={option.id}
+                  style={[styles.characterOption, selected && { borderColor: option.accent, backgroundColor: "#fff9df" }]}
+                  disabled={Boolean(characterBusy)}
+                  onPress={async () => {
+                    setCharacterBusy(option.id);
+                    try {
+                      await onUpdateCharacter(option.id);
+                    } finally {
+                      setCharacterBusy("");
+                    }
+                  }}
+                >
+                  <CharacterAvatarImage characterId={option.id} selected={selected} size={66} />
+                  <Text style={styles.characterName} numberOfLines={1}>{characterBusy === option.id ? "..." : option.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : (
+          <Text style={styles.characterSubtitle}>{characterOptions.find((item) => item.id === selectedCharacterId)?.label ?? "Bug catcher"}</Text>
+        )}
+      </View>
 
       <View style={styles.stage}>
         {userTiers.map((item) => {
@@ -302,6 +344,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "900",
     marginBottom: 10
+  },
+  characterHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10
+  },
+  characterSubtitle: {
+    color: "#53645d",
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  characterGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  characterOption: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 104,
+    padding: 8,
+    width: "31%"
+  },
+  characterName: {
+    color: "#102018",
+    fontSize: 11,
+    fontWeight: "900",
+    marginTop: 6,
+    textAlign: "center"
   },
   statusLine: {
     alignItems: "center",
