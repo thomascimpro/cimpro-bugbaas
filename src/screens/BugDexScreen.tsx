@@ -4,10 +4,10 @@ import { BugArtImage } from "../components/BugArtImage";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import { TradeAnimationModal } from "../components/TradeAnimationModal";
-import { BugDexDropResult, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, entryByBugId, listBugDexInventory } from "../services/bugDexService";
+import { BugDexDropResult, DailyUpgradeUsage, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, entryByBugId, getDailyUpgradeUsage, listBugDexInventory } from "../services/bugDexService";
 import { notifyTradeRequest } from "../services/notificationService";
 import { bugDexEntries, BugDexEntry, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
-import { createTradeRequest, listTradeRequests, respondToTradeRequest } from "../services/tradeService";
+import { createTradeRequest, listTradeRequests, markTradeRequesterSeen, respondToTradeRequest } from "../services/tradeService";
 import { listUsers } from "../services/userService";
 import { BugDexInventoryItem, TradeRequest, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
@@ -37,6 +37,11 @@ const nextRarityLabel: Record<UpgradeRarity, BugDexRarity> = {
   Zeldzaam: "Episch",
   Episch: "Legendarisch"
 };
+const emptyDailyUpgradeUsage: DailyUpgradeUsage = {
+  "Gewoon-Zeldzaam": false,
+  "Zeldzaam-Episch": false,
+  "Episch-Legendarisch": false
+};
 
 export function BugDexScreen({ user, onBack }: Props) {
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
@@ -54,6 +59,8 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [showLocked, setShowLocked] = useState(false);
   const [tradeExpanded, setTradeExpanded] = useState(false);
   const [upgradeBusy, setUpgradeBusy] = useState("");
+  const [upgradeError, setUpgradeError] = useState("");
+  const [dailyUpgradeUsage, setDailyUpgradeUsage] = useState<DailyUpgradeUsage>(emptyDailyUpgradeUsage);
   const [upgradeSelections, setUpgradeSelections] = useState<Record<UpgradeRarity, string[]>>(emptyUpgradeSelections);
   const inventoryById = bugDexInventoryMap(inventory);
   const recipientInventoryById = bugDexInventoryMap(recipientInventory);
@@ -85,6 +92,13 @@ export function BugDexScreen({ user, onBack }: Props) {
   }, [user.uid]);
 
   useEffect(() => {
+    const acceptedOwnTrade = trades.find((trade) => trade.fromUserId === user.uid && trade.status === "Geaccepteerd" && !trade.requesterSeenAt);
+    if (!acceptedOwnTrade || completedTrade) return;
+    setCompletedTrade(acceptedOwnTrade);
+    void markTradeRequesterSeen(user, acceptedOwnTrade).then(refreshTrades).catch(() => undefined);
+  }, [completedTrade, trades, user]);
+
+  useEffect(() => {
     const availableIds = new Set(inventory.filter((item) => item.count > 0).map((item) => item.bugId));
     setUpgradeSelections((current) => ({
       Gewoon: current.Gewoon.filter((bugId) => availableIds.has(bugId)),
@@ -94,7 +108,7 @@ export function BugDexScreen({ user, onBack }: Props) {
   }, [inventory]);
 
   async function refreshAll() {
-    await Promise.all([refreshInventory(), refreshTrades(), listUsers().then((items) => setUsers(items.filter((item) => item.uid !== user.uid)))]);
+    await Promise.all([refreshInventory(), refreshTrades(), refreshDailyUpgradeUsage(), listUsers().then((items) => setUsers(items.filter((item) => item.uid !== user.uid)))]);
   }
 
   async function refreshInventory() {
@@ -105,12 +119,19 @@ export function BugDexScreen({ user, onBack }: Props) {
     setTrades(await listTradeRequests(user));
   }
 
+  async function refreshDailyUpgradeUsage() {
+    setDailyUpgradeUsage(await getDailyUpgradeUsage(user));
+  }
+
   async function combine(bugId: string) {
     setCombineBusyId(bugId);
+    setUpgradeError("");
     try {
       const result = await combineBugDexDuplicates(user, bugId);
       setDrop(result);
-      await refreshInventory();
+      await Promise.all([refreshInventory(), refreshDailyUpgradeUsage()]);
+    } catch (error) {
+      setUpgradeError(error instanceof Error ? error.message : "Upgrade mislukt.");
     } finally {
       setCombineBusyId("");
     }
@@ -118,11 +139,14 @@ export function BugDexScreen({ user, onBack }: Props) {
 
   async function upgradeDifferent(rarity: UpgradeRarity, bugIds: string[]) {
     setUpgradeBusy(rarity);
+    setUpgradeError("");
     try {
       const result = await combineDifferentBugDexUpgrade(user, bugIds);
       setDrop(result);
       setUpgradeSelections((current) => ({ ...current, [rarity]: [] }));
-      await refreshInventory();
+      await Promise.all([refreshInventory(), refreshDailyUpgradeUsage()]);
+    } catch (error) {
+      setUpgradeError(error instanceof Error ? error.message : "Upgrade mislukt.");
     } finally {
       setUpgradeBusy("");
     }
@@ -139,6 +163,10 @@ export function BugDexScreen({ user, onBack }: Props) {
 
   function bugName(bugId: string) {
     return entryByBugId(bugId)?.name ?? "Bug";
+  }
+
+  function upgradeRouteUsedToday(sourceRarity: UpgradeRarity) {
+    return dailyUpgradeUsage[`${sourceRarity}-${nextRarityLabel[sourceRarity]}` as keyof DailyUpgradeUsage];
   }
 
   async function chooseRecipient(uid: string) {
@@ -199,7 +227,10 @@ export function BugDexScreen({ user, onBack }: Props) {
             const color = rarityColors[entry.rarity];
             const requiredCount = combineRequiredCount(entry.rarity);
             const unlocked = Boolean(inventoryItem);
-            const canCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
+            const upgradeRarity = entry.rarity === "Legendarisch" ? null : entry.rarity as UpgradeRarity;
+            const routeUsedToday = upgradeRarity ? upgradeRouteUsedToday(upgradeRarity) : false;
+            const hasEnoughToCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
+            const canCombine = hasEnoughToCombine && !routeUsedToday;
             return (
               <View key={entry.id} style={[styles.card, !unlocked && styles.lockedCard, { borderColor: unlocked ? color : "#cbd8d1" }]}>
                 <View style={styles.cardTop}>
@@ -219,9 +250,9 @@ export function BugDexScreen({ user, onBack }: Props) {
                 <Text style={[styles.note, !unlocked && styles.lockedText]}>
                   {unlocked ? entry.note : "Gebruik de app om deze bug te vinden."}
                 </Text>
-                {canCombine && (
-                  <Pressable style={styles.combineButton} disabled={combineBusyId === entry.id} onPress={() => combine(entry.id)}>
-                    <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : `Combine x${requiredCount}`}</Text>
+                {hasEnoughToCombine && (
+                  <Pressable style={[styles.combineButton, !canCombine && styles.combineButtonDisabled]} disabled={!canCombine || combineBusyId === entry.id} onPress={() => combine(entry.id)}>
+                    <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : routeUsedToday ? "Morgen weer" : `Combine x${requiredCount}`}</Text>
                   </Pressable>
                 )}
               </View>
@@ -414,17 +445,18 @@ export function BugDexScreen({ user, onBack }: Props) {
           <Text style={styles.tradeTitle}>Upgrades</Text>
           <Text style={styles.tradeMeta}>{"3 verschillend -> hoger"}</Text>
         </View>
-        <Text style={styles.tradeHint}>Combineer 3 verschillende bugs van dezelfde lagere rarity voor 1 bug uit de volgende rarity. De gekozen bugs worden verbruikt.</Text>
+        <Text style={styles.tradeHint}>{"Je kunt per route 1 upgrade per dag doen: Gewoon -> Zeldzaam, Zeldzaam -> Episch en Episch -> Legendarisch."}</Text>
         {upgradeOptions.map(({ items, rarity, targetRarity }) => {
           const ready = items.length >= 3;
           const selectedBugIds = upgradeSelections[rarity].filter((bugId) => items.some((item) => item.bugId === bugId));
-          const canUpgrade = selectedBugIds.length === 3;
+          const routeUsedToday = upgradeRouteUsedToday(rarity);
+          const canUpgrade = selectedBugIds.length === 3 && !routeUsedToday;
           return (
-            <View key={rarity} style={[styles.upgradeRow, ready && { borderColor: rarityColors[targetRarity] }]}>
+            <View key={rarity} style={[styles.upgradeRow, ready && { borderColor: routeUsedToday ? "#c6d3cc" : rarityColors[targetRarity] }, routeUsedToday && styles.upgradeRowUsed]}>
               <View style={styles.upgradeTextBlock}>
                 <Text style={styles.upgradeTitle}>{`${rarity} x3 -> ${targetRarity}`}</Text>
-                <Text style={styles.upgradeMeta}>{ready ? `${selectedBugIds.length}/3 gekozen` : `${items.length}/3 verschillende beschikbaar`}</Text>
-                {ready && (
+                <Text style={styles.upgradeMeta}>{routeUsedToday ? "Vandaag gebruikt - morgen weer" : ready ? `${selectedBugIds.length}/3 gekozen` : `${items.length}/3 verschillende beschikbaar`}</Text>
+                {ready && !routeUsedToday && (
                   <View style={styles.upgradeChoiceGrid}>
                     {items.map((item) => {
                       const selected = selectedBugIds.includes(item.bugId);
@@ -450,7 +482,7 @@ export function BugDexScreen({ user, onBack }: Props) {
               </View>
               {ready ? (
                 <Pressable style={[styles.upgradeButton, { backgroundColor: canUpgrade ? rarityColors[targetRarity] : "#87958e" }]} disabled={!canUpgrade || upgradeBusy === rarity} onPress={() => upgradeDifferent(rarity, selectedBugIds)}>
-                  <Text style={styles.upgradeButtonText}>{upgradeBusy === rarity ? "..." : canUpgrade ? "Upgrade" : "Kies 3"}</Text>
+                  <Text style={styles.upgradeButtonText}>{upgradeBusy === rarity ? "..." : routeUsedToday ? "Morgen" : canUpgrade ? "Upgrade" : "Kies 3"}</Text>
                 </Pressable>
               ) : (
                 <Text style={styles.upgradeLocked}>Nog niet</Text>
@@ -458,6 +490,7 @@ export function BugDexScreen({ user, onBack }: Props) {
             </View>
           );
         })}
+        {!!upgradeError && <Text style={sharedStyles.error}>{upgradeError}</Text>}
       </View>
         </>
       )}
@@ -948,6 +981,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 10
   },
+  upgradeRowUsed: {
+    opacity: 0.72
+  },
   upgradeTextBlock: {
     flex: 1
   },
@@ -1183,6 +1219,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 8,
     paddingVertical: 8
+  },
+  combineButtonDisabled: {
+    backgroundColor: "#87958e"
   },
   combineText: {
     color: "#ffffff",

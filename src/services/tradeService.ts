@@ -139,3 +139,16 @@ export async function respondToTradeRequest(user: User, trade: TradeRequest, acc
     return { ...freshTrade, status: "Geaccepteerd", updatedAt };
   });
 }
+
+export async function markTradeRequesterSeen(user: User, trade: TradeRequest): Promise<void> {
+  if (user.uid !== trade.fromUserId || trade.status !== "Geaccepteerd" || trade.requesterSeenAt) return;
+  const requesterSeenAt = nowIso();
+
+  if (!isFirebaseConfigured) {
+    const index = demoTrades.findIndex((item) => item.id === trade.id);
+    if (index >= 0) demoTrades[index] = { ...demoTrades[index], requesterSeenAt };
+    return;
+  }
+
+  await updateDoc(doc(db, "trades", trade.id), { requesterSeenAt });
+}

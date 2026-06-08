@@ -77,7 +77,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
         <View style={styles.characterHeader}>
           <View>
             <Text style={styles.cardTitle}>Character</Text>
-            <Text style={styles.characterSubtitle}>Bug catcher met net</Text>
+            <Text style={styles.characterSubtitle}>Kies je bug-catcher preset</Text>
           </View>
           <CharacterAvatarImage characterId={selectedCharacterId} size={74} />
         </View>

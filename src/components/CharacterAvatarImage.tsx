@@ -12,7 +12,7 @@ export function CharacterAvatarImage({ characterId, selected = false, size = 76 
   const option = characterOptionById(characterId);
   return (
     <View style={[styles.frame, { borderColor: selected ? option.accent : "#d7e1d9", height: size, width: size }]}>
-      <Image accessibilityIgnoresInvertColors source={option.source} style={{ height: size - 8, width: size - 8 }} />
+      <Image accessibilityIgnoresInvertColors resizeMode="contain" source={option.source} style={{ height: size - 8, width: size - 8 }} />
     </View>
   );
 }

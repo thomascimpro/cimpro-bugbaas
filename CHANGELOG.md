@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.6
+
+- Character creation uitgebreid naar 12 bug-catcher presets met backpack en bugnet.
+- Ruil-aanvragers krijgen nu ook een succes-popup zodra hun ruil is geaccepteerd.
+- Upgrades zijn beperkt tot 1x per dag per route: Gewoon naar Zeldzaam, Zeldzaam naar Episch en Episch naar Legendarisch.
+- BugDex toont in de upgrade-interface wanneer een route vandaag al gebruikt is.
+- Daily login geeft nu altijd een common BugDex unlock.
+
 ## 1.4.5
 
 - Profiel heeft nu character creation met bug-catcher presets.

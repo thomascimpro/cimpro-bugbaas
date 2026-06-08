@@ -90,6 +90,7 @@ export type TradeRequest = {
   status: TradeStatus;
   createdAt: string;
   updatedAt: string;
+  requesterSeenAt?: string;
 };
 
 export type NewBugInput = {

@@ -1,7 +1,7 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, runTransaction } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 import { BugDexInventoryItem, User } from "../types";
-import { badgesForUser, BugDexEntry, BugDexRarity, bugDexEntries, titleForPoints } from "./pointsService";
+import { BugDexEntry, BugDexRarity, bugDexEntries } from "./pointsService";
 
 export type BugDexDropSource =
   | "daily_login"
@@ -38,8 +38,11 @@ const demoInventory = new Map<string, Map<string, BugDexInventoryItem>>();
 const demoEvents = new Set<string>();
 const demoDailyStreaks = new Map<string, number>();
 
-const dailyPointReward = 5;
 const dailyStreakLength = 5;
+const upgradeSourceRarities: Array<Exclude<BugDexRarity, "Legendarisch">> = ["Gewoon", "Zeldzaam", "Episch"];
+
+export type UpgradeRouteId = "Gewoon-Zeldzaam" | "Zeldzaam-Episch" | "Episch-Legendarisch";
+export type DailyUpgradeUsage = Record<UpgradeRouteId, boolean>;
 
 const dropChances: Record<BugDexDropSource, number> = {
   daily_login: 0.35,
@@ -104,6 +107,22 @@ export async function countBugDexInventory(userOrUid: Pick<User, "uid"> | string
   }).length;
 }
 
+export async function getDailyUpgradeUsage(user: User): Promise<DailyUpgradeUsage> {
+  const day = localDayId();
+  const entries = upgradeSourceRarities.map((rarity) => {
+    const targetRarity = nextRarity(rarity);
+    if (!targetRarity) throw new Error("Ongeldige upgrade-route.");
+    return [upgradeRouteId(rarity, targetRarity), upgradeEventId(day, rarity, targetRarity)] as const;
+  });
+
+  if (!isFirebaseConfigured) {
+    return Object.fromEntries(entries.map(([routeId, eventId]) => [routeId, demoEvents.has(`${user.uid}:${eventId}`)])) as DailyUpgradeUsage;
+  }
+
+  const snapshots = await Promise.all(entries.map(([, eventId]) => getDoc(doc(db, "users", user.uid, "bugdexEvents", eventId))));
+  return Object.fromEntries(entries.map(([routeId], index) => [routeId, snapshots[index].exists()])) as DailyUpgradeUsage;
+}
+
 export async function claimDailyLoginBug(user: User): Promise<BugDexDropResult | null> {
   const day = localDayId();
   const previousDay = localDayId(addDays(new Date(), -1));
@@ -121,7 +140,6 @@ export async function claimDailyLoginBug(user: User): Promise<BugDexDropResult |
 
   const eventRef = doc(db, "users", user.uid, "bugdexEvents", eventId);
   const previousEventRef = doc(db, "users", user.uid, "bugdexEvents", previousEventId);
-  const userRef = doc(db, "users", user.uid);
   return runTransaction(db, async (transaction) => {
     const eventSnapshot = await transaction.get(eventRef);
     if (eventSnapshot.exists()) return null;
@@ -130,62 +148,26 @@ export async function claimDailyLoginBug(user: User): Promise<BugDexDropResult |
     const previousStreak = previousEventSnapshot.exists() ? Number(previousEventSnapshot.data().streakDay ?? 0) : 0;
     const streakDay = previousStreak + 1;
     const daysUntilBetterReward = daysUntilNextDailyStreakReward(streakDay);
-    const isStreakReward = streakDay % dailyStreakLength === 0;
     const now = new Date().toISOString();
+    const entry = pickDailyCommonEntry();
+    const inventoryRef = doc(db, "users", user.uid, "bugdex", entry.id);
+    const inventorySnapshot = await transaction.get(inventoryRef);
+    const existing = inventorySnapshot.exists() ? inventorySnapshot.data() as BugDexInventoryItem : null;
+    const item: BugDexInventoryItem = existing
+      ? { ...existing, count: existing.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existing.sources, "daily_login"])) }
+      : { bugId: entry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: entry.rarity, sources: ["daily_login"] };
 
-    if (isStreakReward || Math.random() < 0.42) {
-      const entry = isStreakReward ? pickDailyStreakEntry() : pickDailyBaseEntry();
-      const inventoryRef = doc(db, "users", user.uid, "bugdex", entry.id);
-      const inventorySnapshot = await transaction.get(inventoryRef);
-      const existing = inventorySnapshot.exists() ? inventorySnapshot.data() as BugDexInventoryItem : null;
-      const item: BugDexInventoryItem = existing
-        ? { ...existing, count: existing.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existing.sources, "daily_login"])) }
-        : { bugId: entry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: entry.rarity, sources: ["daily_login"] };
-
-      transaction.set(inventoryRef, item);
-      transaction.set(eventRef, {
-        id: eventId,
-        source: "daily_login",
-        rewardType: "bug",
-        rewardValue: entry.id,
-        streakDay,
-        localDay: day,
-        createdAt: now
-      });
-      return { rewardType: "bug", entry, item, isNew: !existing, source: "daily_login", streakDay, daysUntilBetterReward };
-    }
-
-    const userSnapshot = await transaction.get(userRef);
-    if (!userSnapshot.exists()) throw new Error("Gebruiker niet gevonden.");
-    const current = userSnapshot.data() as User;
-    const totalPoints = Math.max(0, current.totalPoints + dailyPointReward);
-    const updatedUser = { ...current, totalPoints, title: titleForPoints(totalPoints) };
-    updatedUser.badges = badgesForUser(updatedUser);
-
-    transaction.update(userRef, {
-      active: true,
-      totalPoints: updatedUser.totalPoints,
-      title: updatedUser.title,
-      badges: updatedUser.badges
-    });
+    transaction.set(inventoryRef, item);
     transaction.set(eventRef, {
       id: eventId,
       source: "daily_login",
-      rewardType: "points",
-      rewardValue: dailyPointReward,
+      rewardType: "bug",
+      rewardValue: entry.id,
       streakDay,
       localDay: day,
       createdAt: now
     });
-    return {
-      rewardType: "points",
-      points: dailyPointReward,
-      isNew: false,
-      source: "daily_login",
-      streakDay,
-      daysUntilBetterReward,
-      updatedUser
-    };
+    return { rewardType: "bug", entry, item, isNew: !existing, source: "daily_login", streakDay, daysUntilBetterReward };
   });
 }
 
@@ -260,8 +242,11 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
   const currentInventory = await listBugDexInventory(user);
   const targetEntry = pickCombineTarget(targetRarity, currentInventory);
   const now = new Date().toISOString();
+  const routeEventId = upgradeEventId(localDayId(), sourceEntry.rarity, targetRarity);
 
   if (!isFirebaseConfigured) {
+    const demoKey = `${user.uid}:${routeEventId}`;
+    if (demoEvents.has(demoKey)) throw new Error(`Vandaag is ${sourceEntry.rarity} -> ${targetRarity} al gebruikt.`);
     const inventory = demoInventory.get(user.uid) ?? new Map<string, BugDexInventoryItem>();
     const sourceItem = inventory.get(bugId);
     if (!sourceItem || sourceItem.count < requiredCount) throw new Error(`Je hebt x${requiredCount} nodig om te combineren.`);
@@ -272,13 +257,17 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
       ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
       : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
     inventory.set(targetEntry.id, targetItem);
+    demoEvents.add(demoKey);
     demoInventory.set(user.uid, inventory);
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   }
 
   const sourceRef = doc(db, "users", user.uid, "bugdex", bugId);
   const targetRef = doc(db, "users", user.uid, "bugdex", targetEntry.id);
+  const routeEventRef = doc(db, "users", user.uid, "bugdexEvents", routeEventId);
   return runTransaction(db, async (transaction) => {
+    const routeEventSnapshot = await transaction.get(routeEventRef);
+    if (routeEventSnapshot.exists()) throw new Error(`Vandaag is ${sourceEntry.rarity} -> ${targetRarity} al gebruikt.`);
     const sourceSnapshot = await transaction.get(sourceRef);
     if (!sourceSnapshot.exists()) throw new Error("Bug niet gevonden.");
     const sourceItem = sourceSnapshot.data() as BugDexInventoryItem;
@@ -292,6 +281,7 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
       : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
     transaction.set(sourceRef, { ...sourceItem, count: nextSourceCount, lastUnlockedAt: now });
     transaction.set(targetRef, targetItem);
+    transaction.set(routeEventRef, upgradeEventPayload(routeEventId, sourceEntry.rarity, targetRarity, targetEntry.id, now));
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   });
 }
@@ -309,8 +299,11 @@ export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]
   const currentInventory = await listBugDexInventory(user);
   const targetEntry = pickCombineTarget(targetRarity, currentInventory);
   const now = new Date().toISOString();
+  const routeEventId = upgradeEventId(localDayId(), sourceRarity, targetRarity);
 
   if (!isFirebaseConfigured) {
+    const demoKey = `${user.uid}:${routeEventId}`;
+    if (demoEvents.has(demoKey)) throw new Error(`Vandaag is ${sourceRarity} -> ${targetRarity} al gebruikt.`);
     const inventory = demoInventory.get(user.uid) ?? new Map<string, BugDexInventoryItem>();
     for (const bugId of uniqueBugIds) {
       const item = inventory.get(bugId);
@@ -326,13 +319,17 @@ export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]
       ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
       : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
     inventory.set(targetEntry.id, targetItem);
+    demoEvents.add(demoKey);
     demoInventory.set(user.uid, inventory);
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   }
 
   const sourceRefs = uniqueBugIds.map((bugId) => doc(db, "users", user.uid, "bugdex", bugId));
   const targetRef = doc(db, "users", user.uid, "bugdex", targetEntry.id);
+  const routeEventRef = doc(db, "users", user.uid, "bugdexEvents", routeEventId);
   return runTransaction(db, async (transaction) => {
+    const routeEventSnapshot = await transaction.get(routeEventRef);
+    if (routeEventSnapshot.exists()) throw new Error(`Vandaag is ${sourceRarity} -> ${targetRarity} al gebruikt.`);
     const sourceSnapshots = await Promise.all(sourceRefs.map((ref) => transaction.get(ref)));
     const sourceItems = sourceSnapshots.map((snapshot) => snapshot.exists() ? snapshot.data() as BugDexInventoryItem : null);
     if (sourceItems.some((item) => !item || item.count < 1)) throw new Error("Je mist een gekozen bug.");
@@ -348,28 +345,15 @@ export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]
       transaction.set(sourceRefs[index], { ...item, count: item.count - 1, lastUnlockedAt: now });
     });
     transaction.set(targetRef, targetItem);
+    transaction.set(routeEventRef, upgradeEventPayload(routeEventId, sourceRarity, targetRarity, targetEntry.id, now));
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   });
 }
 
 async function grantDailyReward(user: User, streakDay: number): Promise<BugDexDropResult> {
   const daysUntilBetterReward = daysUntilNextDailyStreakReward(streakDay);
-  const isStreakReward = streakDay % dailyStreakLength === 0;
-  if (isStreakReward || Math.random() < 0.42) {
-    const entry = isStreakReward ? pickDailyStreakEntry() : pickDailyBaseEntry();
-    const result = await grantSpecificBug(user, entry, "daily_login");
-    return { ...result, streakDay, daysUntilBetterReward };
-  }
-  const updatedUser = await grantDailyPoints(user, dailyPointReward);
-  return {
-    rewardType: "points",
-    points: dailyPointReward,
-    isNew: false,
-    source: "daily_login",
-    streakDay,
-    daysUntilBetterReward,
-    updatedUser
-  };
+  const result = await grantSpecificBug(user, pickDailyCommonEntry(), "daily_login");
+  return { ...result, streakDay, daysUntilBetterReward };
 }
 
 async function grantSpecificBug(user: User, entry: BugDexEntry, source: BugDexDropSource): Promise<BugDexDropResult> {
@@ -398,30 +382,8 @@ async function grantSpecificBug(user: User, entry: BugDexEntry, source: BugDexDr
   });
 }
 
-async function grantDailyPoints(user: User, points: number): Promise<User> {
-  const totalPoints = Math.max(0, user.totalPoints + points);
-  const updated = { ...user, totalPoints, title: titleForPoints(totalPoints) };
-  updated.badges = badgesForUser(updated);
-
-  if (!isFirebaseConfigured) return updated;
-
-  await setDoc(doc(db, "users", user.uid), {
-    totalPoints: updated.totalPoints,
-    title: updated.title,
-    badges: updated.badges,
-    active: true
-  }, { merge: true });
-  return updated;
-}
-
-function pickDailyBaseEntry(): BugDexEntry {
-  const rarity: BugDexRarity = Math.random() < 0.82 ? "Gewoon" : "Zeldzaam";
-  return pickFrom(bugDexEntries.filter((entry) => entry.rarity === rarity)) ?? bugDexEntries[0];
-}
-
-function pickDailyStreakEntry(): BugDexEntry {
-  const rarity: BugDexRarity = Math.random() < 0.82 ? "Zeldzaam" : "Episch";
-  return pickFrom(bugDexEntries.filter((entry) => entry.rarity === rarity)) ?? bugDexEntries[0];
+function pickDailyCommonEntry(): BugDexEntry {
+  return pickFrom(bugDexEntries.filter((entry) => entry.rarity === "Gewoon")) ?? bugDexEntries[0];
 }
 
 function daysUntilNextDailyStreakReward(streakDay: number): number {
@@ -440,6 +402,27 @@ function addDays(date: Date, amount: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + amount);
   return next;
+}
+
+function upgradeRouteId(sourceRarity: BugDexRarity, targetRarity: BugDexRarity): UpgradeRouteId {
+  return `${sourceRarity}-${targetRarity}` as UpgradeRouteId;
+}
+
+function upgradeEventId(day: string, sourceRarity: BugDexRarity, targetRarity: BugDexRarity): string {
+  return `upgrade-${day}-${sourceRarity}-to-${targetRarity}`;
+}
+
+function upgradeEventPayload(id: string, sourceRarity: BugDexRarity, targetRarity: BugDexRarity, targetBugId: string, createdAt: string) {
+  return {
+    id,
+    source: "combine",
+    rewardType: "bug",
+    rewardValue: targetBugId,
+    sourceRarity,
+    targetRarity,
+    localDay: localDayId(),
+    createdAt
+  };
 }
 
 export function combineRequiredCount(rarity: BugDexRarity): number {
