@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { entryByBugId } from "../services/bugDexService";
-import { rarityLabel, useI18n } from "../services/i18n";
+import { bugDexEntryName, rarityLabel, useI18n } from "../services/i18n";
 import { BugDexRarity } from "../services/pointsService";
 import { TradeRequest, User } from "../types";
 import { BugArtImage } from "./BugArtImage";
@@ -10,7 +10,8 @@ const rarityColors: Record<BugDexRarity, string> = {
   Gewoon: "#6f7f5f",
   Zeldzaam: "#15724f",
   Episch: "#356d7c",
-  Legendarisch: "#b83227"
+  Legendarisch: "#b83227",
+  Mythisch: "#7c3aed"
 };
 
 type Props = {
@@ -108,9 +109,9 @@ export function TradeAnimationModal({ currentUser, trade, onClose }: Props) {
               <BugArtImage bugId={receivedBugId} size={116} />
             </View>
             <Text style={styles.resultLabel}>{t("trade.received")}</Text>
-            <Text style={styles.resultName}>{receivedEntry?.name ?? "Bug"}</Text>
+            <Text style={styles.resultName}>{receivedEntry ? bugDexEntryName(receivedEntry, t) : "Bug"}</Text>
             <Text style={[styles.resultRarity, { backgroundColor: rarityColors[receivedRarity] }]}>{rarityLabel(receivedRarity, t)}</Text>
-            <Text style={styles.resultMeta}>{t("trade.gave", { name: sentEntry?.name ?? "Bug" })}</Text>
+            <Text style={styles.resultMeta}>{t("trade.gave", { name: sentEntry ? bugDexEntryName(sentEntry, t) : "Bug" })}</Text>
             <Text style={[styles.sentRarity, { color: rarityColors[sentRarity] }]}>{rarityLabel(sentRarity, t)}</Text>
           </Animated.View>
 

@@ -117,7 +117,15 @@ export const bugArt = {
   "vuurkever": require("../../assets/bugdex/vuurkever.png"),
   "blauwe-ertsbij": require("../../assets/bugdex/blauwe-ertsbij.png"),
   "wespboktor": require("../../assets/bugdex/wespboktor.png"),
-  "groene-zandloopkever": require("../../assets/bugdex/groene-zandloopkever.png")
+  "groene-zandloopkever": require("../../assets/bugdex/groene-zandloopkever.png"),
+  "koningin-alexandravlinder": require("../../assets/bugdex/koningin-alexandravlinder.png"),
+  "zonsondergangsmot": require("../../assets/bugdex/zonsondergangsmot.png"),
+  "picasso-wants": require("../../assets/bugdex/picasso-wants.png"),
+  "roze-esdoornmot": require("../../assets/bugdex/roze-esdoornmot.png"),
+  "giraffekevertje": require("../../assets/bugdex/giraffekevertje.png"),
+  "doornbloembidsprinkhaan": require("../../assets/bugdex/doornbloembidsprinkhaan.png"),
+  "lantaarndrager": require("../../assets/bugdex/lantaarndrager.png"),
+  "glorieuze-scarabee": require("../../assets/bugdex/glorieuze-scarabee.png")
 } as const satisfies Record<string, ImageSourcePropType>;
 
 export type BugArtId = keyof typeof bugArt;

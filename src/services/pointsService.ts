@@ -20,7 +20,7 @@ export type UserTier = {
   evolutionLevel: number;
 };
 
-export type BugDexRarity = "Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch";
+export type BugDexRarity = "Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch" | "Mythisch";
 
 export type BugDexEntry = {
   id: string;
@@ -282,7 +282,15 @@ export const bugDexEntries: BugDexEntry[] = [
   { id: "vuurkever", name: "Vuurkever", title: "Red Alert", minPoints: 4460, minBugs: 120, rarity: "Zeldzaam", insect: "beetle", evolutionLevel: 4, note: "Strakke waarschuwingskleur." },
   { id: "blauwe-ertsbij", name: "Blauwe ertsbij", title: "Blue Premium", minPoints: 4510, minBugs: 121, rarity: "Legendarisch", insect: "dragonfly", evolutionLevel: 5, note: "Koel blauw, zeldzame beloning." },
   { id: "wespboktor", name: "Wespboktor", title: "Danger Disguise", minPoints: 4560, minBugs: 122, rarity: "Episch", insect: "beetle", evolutionLevel: 4, note: "Camouflage en gevaar in een." },
-  { id: "groene-zandloopkever", name: "Groene zandloopkever", title: "Speed Precision", minPoints: 4610, minBugs: 123, rarity: "Legendarisch", insect: "grasshopper", evolutionLevel: 5, note: "Metallic groene jager met tempo." }
+  { id: "groene-zandloopkever", name: "Groene zandloopkever", title: "Speed Precision", minPoints: 4610, minBugs: 123, rarity: "Legendarisch", insect: "grasshopper", evolutionLevel: 5, note: "Metallic groene jager met tempo." },
+  { id: "koningin-alexandravlinder", name: "Koningin-Alexandravlinder", title: "Royal Wing", minPoints: 4800, minBugs: 124, rarity: "Mythisch", insect: "dragonfly", evolutionLevel: 5, note: "Zeldzaam, enorm en bijna koninklijk in de lucht." },
+  { id: "zonsondergangsmot", name: "Zonsondergangsmot", title: "Prism Wing", minPoints: 4880, minBugs: 125, rarity: "Mythisch", insect: "dragonfly", evolutionLevel: 5, note: "Kleuren alsof de release door een prisma gaat." },
+  { id: "picasso-wants", name: "Picasso-wants", title: "Pattern Master", minPoints: 4960, minBugs: 126, rarity: "Mythisch", insect: "beetle", evolutionLevel: 5, note: "Een levend kunstwerk met waarschuwingspatroon." },
+  { id: "roze-esdoornmot", name: "Roze esdoornmot", title: "Candy Glow", minPoints: 5040, minBugs: 127, rarity: "Mythisch", insect: "dragonfly", evolutionLevel: 5, note: "Zacht roze-geel, maar opvallend genoeg voor de top tier." },
+  { id: "giraffekevertje", name: "Giraffekevertje", title: "Long Neck Scout", minPoints: 5120, minBugs: 128, rarity: "Mythisch", insect: "beetle", evolutionLevel: 5, note: "Een bizarre lange nek voor bugs die ver vooruit kijken." },
+  { id: "doornbloembidsprinkhaan", name: "Doornbloembidsprinkhaan", title: "Bloom Blade", minPoints: 5200, minBugs: 129, rarity: "Mythisch", insect: "grasshopper", evolutionLevel: 5, note: "Bloemachtig, stekelig en klaar om precies toe te slaan." },
+  { id: "lantaarndrager", name: "Lantaarndrager", title: "Signal Lantern", minPoints: 5280, minBugs: 130, rarity: "Mythisch", insect: "dragonfly", evolutionLevel: 5, note: "Vreemde snuit, felle vleugels en direct herkenbaar." },
+  { id: "glorieuze-scarabee", name: "Glorieuze scarabee", title: "Mirror Shield", minPoints: 5360, minBugs: 131, rarity: "Mythisch", insect: "beetle", evolutionLevel: 5, note: "Een spiegelende scarabee met echte eindtier-uitstraling." }
 ];
 
 export const bugDexFacts: Record<string, string> = {
@@ -402,7 +410,15 @@ export const bugDexFacts: Record<string, string> = {
   "vuurkever": "Vuurkevers dragen felrode schilden die direct opvallen tussen bladeren.",
   "blauwe-ertsbij": "Blauwe ertsbijen hebben een diepe blauwzwarte metaalglans.",
   "wespboktor": "Wespboktorren lijken op wespen, maar zijn kevers met lange sprieten.",
-  "groene-zandloopkever": "Groene zandloopkevers sprinten over zandige plekken en jagen op zicht."
+  "groene-zandloopkever": "Groene zandloopkevers sprinten over zandige plekken en jagen op zicht.",
+  "koningin-alexandravlinder": "De Koningin-Alexandravlinder is een van de grootste dagvlinders ter wereld en komt uit Papoea-Nieuw-Guinea.",
+  "zonsondergangsmot": "De Madagascan sunset moth heeft iriserende vleugels die kleuren tonen door lichtbreking.",
+  "picasso-wants": "De Picasso-wants heeft patronen die bijna geschilderd lijken en roofdieren waarschuwen.",
+  "roze-esdoornmot": "De roze esdoornmot valt op door zijn zachte roze en gele kleuren.",
+  "giraffekevertje": "Het giraffekevertje uit Madagaskar heeft een extreem lange nek, vooral bij mannetjes.",
+  "doornbloembidsprinkhaan": "De doornbloembidsprinkhaan lijkt op een bloem en gebruikt camouflage bij het jagen.",
+  "lantaarndrager": "Lantaarndragers hebben een lange kopuitsteeksel en opvallend getekende vleugels.",
+  "glorieuze-scarabee": "De glorious scarab heeft metallic groene en zilveren strepen die sterk glanzen."
 };
 
 const severityBase: Record<BugSeverity, number> = {

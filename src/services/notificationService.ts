@@ -76,6 +76,7 @@ export async function showPhoneNotification(notification: AppNotification): Prom
       color: "#15724f",
       data: {
         bugId: notification.bugId ?? "",
+        notificationId: notification.id,
         type: notification.type
       },
       priority: Notifications.AndroidNotificationPriority.MAX,

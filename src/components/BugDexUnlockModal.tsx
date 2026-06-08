@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, Image, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { BugDexDropResult } from "../services/bugDexService";
-import { useI18n } from "../services/i18n";
-import { bugDexFacts, BugDexRarity } from "../services/pointsService";
+import { bugDexEntryFact, bugDexEntryName, useI18n } from "../services/i18n";
+import { BugDexRarity } from "../services/pointsService";
 import { playBugSound } from "../services/soundService";
 import { BugArtImage } from "./BugArtImage";
 
@@ -15,10 +15,11 @@ const rarityColors: Record<BugDexRarity, string> = {
   Gewoon: "#6f7f5f",
   Zeldzaam: "#15724f",
   Episch: "#356d7c",
-  Legendarisch: "#b83227"
+  Legendarisch: "#b83227",
+  Mythisch: "#7c3aed"
 };
 
-const premiumRarityStyles: Record<"Episch" | "Legendarisch", {
+const premiumRarityStyles: Record<"Episch" | "Legendarisch" | "Mythisch", {
   accent: string;
   auraSource: ImageSourcePropType;
   background: string;
@@ -44,6 +45,15 @@ const premiumRarityStyles: Record<"Episch" | "Legendarisch", {
     glow: "#ffd66b",
     label: "LEGENDARISCH",
     text: "#8a271c"
+  },
+  Mythisch: {
+    accent: "#b78cff",
+    auraSource: require("../../assets/generated/bugdex_popup_aura_legendary.png"),
+    background: "#f7f0ff",
+    border: "#7c3aed",
+    glow: "#d8b4fe",
+    label: "MYTHISCH",
+    text: "#4c1d95"
   }
 };
 
@@ -54,7 +64,7 @@ export function BugDexUnlockModal({ drop, onClose }: Props) {
 
   useEffect(() => {
     if (!drop) return;
-    playBugSound(drop.rewardType === "bug" && (drop.entry.rarity === "Episch" || drop.entry.rarity === "Legendarisch") ? "bug_rare_unlock" : "bug_unlock");
+    playBugSound(drop.rewardType === "bug" && (drop.entry.rarity === "Episch" || drop.entry.rarity === "Legendarisch" || drop.entry.rarity === "Mythisch") ? "bug_rare_unlock" : "bug_unlock");
     scale.setValue(0.82);
     glow.setValue(0);
     Animated.parallel([
@@ -78,11 +88,17 @@ export function BugDexUnlockModal({ drop, onClose }: Props) {
   const isPointsReward = drop.rewardType === "points";
   const isDailyReward = drop.source === "daily_login";
   const rarityColor = isPointsReward ? "#d7bd57" : rarityColors[drop.entry.rarity];
-  const premiumStyle = !isPointsReward && (drop.entry.rarity === "Episch" || drop.entry.rarity === "Legendarisch")
+  const premiumStyle = !isPointsReward && (drop.entry.rarity === "Episch" || drop.entry.rarity === "Legendarisch" || drop.entry.rarity === "Mythisch")
     ? premiumRarityStyles[drop.entry.rarity]
     : null;
-  const premiumLabel = premiumStyle && !isPointsReward ? (drop.entry.rarity === "Episch" ? t("bugdex.epicFind") : t("bugdex.legendary")) : "";
-  const bugFact = isPointsReward ? t("bugdex.dailyLogin") : bugDexFacts[drop.entry.id] ?? drop.entry.note;
+  const premiumLabel = premiumStyle && !isPointsReward
+    ? drop.entry.rarity === "Episch"
+      ? t("bugdex.epicFind")
+      : drop.entry.rarity === "Legendarisch"
+        ? t("bugdex.legendary")
+        : t("bugdex.mythic")
+    : "";
+  const bugFact = isPointsReward ? t("bugdex.dailyLogin") : bugDexEntryFact(drop.entry, t);
   const title = isDailyReward ? t("bugdex.daily") : drop.source === "combine" ? t("bugdex.combineDone") : drop.isNew ? t("bugdex.unlocked") : t("bugdex.duplicate");
   const subtitle = isPointsReward
     ? `+${drop.points} ${t("profile.points").toLowerCase()}`
@@ -128,7 +144,7 @@ export function BugDexUnlockModal({ drop, onClose }: Props) {
             <Animated.View style={[styles.glow, { backgroundColor: premiumStyle?.glow ?? rarityColor, opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
             {isPointsReward ? <Text style={styles.pointsReward}>+{drop.points}</Text> : <BugArtImage bugId={drop.entry.id} size={138} />}
           </View>
-          <Text style={[styles.name, premiumStyle && { color: premiumStyle.text }]}>{isPointsReward ? t("bugdex.pointsFound") : drop.entry.name}</Text>
+          <Text style={[styles.name, premiumStyle && { color: premiumStyle.text }]}>{isPointsReward ? t("bugdex.pointsFound") : bugDexEntryName(drop.entry, t)}</Text>
           <Text style={[styles.meta, premiumStyle && { color: premiumStyle.text }]}>{bugFact}</Text>
           {!!streakText && <Text style={styles.streak}>{streakText}</Text>}
           <Pressable style={[styles.button, premiumStyle && { backgroundColor: premiumStyle.border }]} onPress={onClose}>

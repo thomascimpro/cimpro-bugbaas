@@ -55,6 +55,7 @@ export function LeaderboardScreen({ onBack: _onBack, onSelectUser }: Props) {
 }
 
 function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: User) => void }) {
+  const { t } = useI18n();
   return (
     <View style={styles.podium}>
       {users.map((user, index) => {
@@ -66,7 +67,7 @@ function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: U
             <BugArtImage bugId={medal.bugId} size={index === 0 ? 58 : 44} />
             <Text style={[styles.podiumRank, { color: medal.text }]}>#{index + 1}</Text>
             <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.78} numberOfLines={1} style={[styles.podiumName, { color: medal.text }]}>{user.displayName}</Text>
-            <Text style={styles.podiumPoints}>{user.totalPoints} pt</Text>
+            <Text style={styles.podiumPoints}>{user.totalPoints} {t("common.pointsShort")}</Text>
           </Pressable>
         );
       })}

@@ -5,7 +5,7 @@ import { bugDexEntries } from "../services/pointsService";
 import { playBugSound } from "../services/soundService";
 import { BugArtImage } from "./BugArtImage";
 
-type SpawnRarity = "common" | "rare" | "epic" | "legendary";
+type SpawnRarity = "common" | "rare" | "epic" | "legendary" | "mythic";
 
 type MotionPath = {
   rotate: string[];
@@ -47,19 +47,21 @@ const raritySettings: Record<SpawnRarity, { motionCycleMs: number; rewardXp: num
   common: { motionCycleMs: catchDurationMs, rewardXp: 1, requiredTaps: 3, size: 68, stepBob: 4, turn: 12, verticalDrift: 0.1, wiggle: 0.015 },
   rare: { motionCycleMs: catchDurationMs, rewardXp: 4, requiredTaps: 5, size: 74, stepBob: 5, turn: 17, verticalDrift: 0.16, wiggle: 0.028 },
   epic: { motionCycleMs: catchDurationMs, rewardXp: 9, requiredTaps: 7, size: 82, stepBob: 6, turn: 22, verticalDrift: 0.24, wiggle: 0.04 },
-  legendary: { motionCycleMs: catchDurationMs, rewardXp: 15, requiredTaps: 9, size: 90, stepBob: 7, turn: 28, verticalDrift: 0.3, wiggle: 0.055 }
+  legendary: { motionCycleMs: catchDurationMs, rewardXp: 15, requiredTaps: 9, size: 90, stepBob: 7, turn: 28, verticalDrift: 0.3, wiggle: 0.055 },
+  mythic: { motionCycleMs: catchDurationMs, rewardXp: 22, requiredTaps: 11, size: 96, stepBob: 8, turn: 32, verticalDrift: 0.34, wiggle: 0.065 }
 };
 
-const rarityLabels: Record<SpawnRarity, "Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch"> = {
+const rarityLabels: Record<SpawnRarity, "Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch" | "Mythisch"> = {
   common: "Gewoon",
   rare: "Zeldzaam",
   epic: "Episch",
-  legendary: "Legendarisch"
+  legendary: "Legendarisch",
+  mythic: "Mythisch"
 };
 
 const rarityByLabel = Object.fromEntries(
   (Object.keys(rarityLabels) as SpawnRarity[]).map((rarity) => [rarityLabels[rarity], rarity])
-) as Record<"Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch", SpawnRarity>;
+) as Record<"Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch" | "Mythisch", SpawnRarity>;
 
 const rarityByBugId = Object.fromEntries(
   bugDexEntries.map((entry) => [entry.id, rarityByLabel[entry.rarity]])
@@ -69,7 +71,8 @@ const fallbackBugPools: Record<SpawnRarity, BugArtId[]> = {
   common: ["zilvervisje", "fruitvlieg", "bladluis", "mier", "mot", "boekluis"],
   rare: ["pissebed", "schildwants", "houtmier", "loopkever", "waterkever", "soldaatje"],
   epic: ["kakkerlak", "boktor", "duizendpoot", "tijgerkever", "bidsprinkhaan", "zebra-springspin"],
-  legendary: ["schorpioen", "neushoornkever", "atlaskever", "pauwspin", "smaragdlibel", "goudwesp"]
+  legendary: ["schorpioen", "neushoornkever", "atlaskever", "pauwspin", "smaragdlibel", "goudwesp"],
+  mythic: ["koningin-alexandravlinder", "zonsondergangsmot", "picasso-wants", "roze-esdoornmot", "giraffekevertje", "doornbloembidsprinkhaan", "lantaarndrager", "glorieuze-scarabee"]
 };
 
 const availableBugIds = new Set<string>(allBugArtIds);
@@ -437,7 +440,8 @@ function createMotionPath(rarity: SpawnRarity, direction: "left" | "right"): Mot
 
 function pickRarity(): SpawnRarity {
   const roll = Math.random();
-  if (roll < 0.02) return "legendary";
+  if (roll < 0.005) return "mythic";
+  if (roll < 0.025) return "legendary";
   if (roll < 0.1) return "epic";
   if (roll < 0.35) return "rare";
   return "common";

@@ -20,9 +20,15 @@ type Props = {
 
 const steps: Step[] = [
   { route: "home", titleKey: "tour.home", bodyKey: "tour.homeBody", target: "tab" },
+  { route: "home", titleKey: "tour.profile", bodyKey: "tour.profileBody", target: "tab" },
+  { route: "home", titleKey: "tour.movement", bodyKey: "tour.movementBody", target: "tab" },
   { route: "bugs", titleKey: "tour.bugs", bodyKey: "tour.bugsBody", target: "tab" },
+  { route: "bugs", titleKey: "tour.bugDetails", bodyKey: "tour.bugDetailsBody", target: "tab" },
   { route: "new", titleKey: "tour.new", bodyKey: "tour.newBody", target: "tab" },
   { route: "bugdex", titleKey: "tour.bugdex", bodyKey: "tour.bugdexBody", target: "tab" },
+  { route: "bugdex", titleKey: "tour.bugdexRewards", bodyKey: "tour.bugdexRewardsBody", target: "tab" },
+  { route: "bugdex", titleKey: "tour.trade", bodyKey: "tour.tradeBody", target: "tab" },
+  { route: "bugdex", titleKey: "tour.upgrade", bodyKey: "tour.upgradeBody", target: "tab" },
   { route: "leaderboard", titleKey: "tour.rank", bodyKey: "tour.rankBody", target: "tab" },
   { route: "settings", titleKey: "tour.settings", bodyKey: "tour.settingsBody", target: "settings" }
 ];

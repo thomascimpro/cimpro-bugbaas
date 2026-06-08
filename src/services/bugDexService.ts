@@ -39,9 +39,9 @@ const demoEvents = new Set<string>();
 const demoDailyStreaks = new Map<string, number>();
 
 const dailyStreakLength = 5;
-const upgradeSourceRarities: Array<Exclude<BugDexRarity, "Legendarisch">> = ["Gewoon", "Zeldzaam", "Episch"];
+const upgradeSourceRarities: Array<Exclude<BugDexRarity, "Mythisch">> = ["Gewoon", "Zeldzaam", "Episch", "Legendarisch"];
 
-export type UpgradeRouteId = "Gewoon-Zeldzaam" | "Zeldzaam-Episch" | "Episch-Legendarisch";
+export type UpgradeRouteId = "Gewoon-Zeldzaam" | "Zeldzaam-Episch" | "Episch-Legendarisch" | "Legendarisch-Mythisch";
 export type DailyUpgradeUsage = Record<UpgradeRouteId, boolean>;
 
 const dropChances: Record<BugDexDropSource, number> = {
@@ -58,21 +58,29 @@ const dropChances: Record<BugDexDropSource, number> = {
 };
 
 const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
-  daily_login: [["Gewoon", 76], ["Zeldzaam", 24]],
-  bug_reported: [["Gewoon", 58], ["Zeldzaam", 31], ["Episch", 11]],
-  comment: [["Gewoon", 68], ["Zeldzaam", 27], ["Episch", 5]],
-  status_update: [["Zeldzaam", 70], ["Episch", 30]],
-  bug_fixed: [["Zeldzaam", 45], ["Episch", 45], ["Legendarisch", 10]],
-  upvote_given: [["Gewoon", 75], ["Zeldzaam", 25]],
+  daily_login: [["Gewoon", 100]],
+  bug_reported: [["Gewoon", 54], ["Zeldzaam", 31], ["Episch", 12], ["Legendarisch", 2.5], ["Mythisch", 0.5]],
+  comment: [["Gewoon", 68], ["Zeldzaam", 27], ["Episch", 4.7], ["Legendarisch", 0.3]],
+  status_update: [["Zeldzaam", 67], ["Episch", 30], ["Legendarisch", 2.7], ["Mythisch", 0.3]],
+  bug_fixed: [["Zeldzaam", 40], ["Episch", 43], ["Legendarisch", 15], ["Mythisch", 2]],
+  upvote_given: [["Gewoon", 75], ["Zeldzaam", 24.5], ["Episch", 0.5]],
   profile_view: [["Gewoon", 88], ["Zeldzaam", 12]],
-  bug_splat: [["Gewoon", 88], ["Zeldzaam", 12]],
-  weekly_mission: [["Episch", 78], ["Legendarisch", 22]],
+  bug_splat: [["Gewoon", 65], ["Zeldzaam", 25], ["Episch", 7.5], ["Legendarisch", 2], ["Mythisch", 0.5]],
+  weekly_mission: [["Episch", 72], ["Legendarisch", 25], ["Mythisch", 3]],
   combine: [["Zeldzaam", 100]]
 };
 
 const legendaryPools: Partial<Record<BugDexDropSource, string[]>> = {
   bug_fixed: ["mestkever", "termiet", "schorpioen"],
   weekly_mission: ["neushoornkever", "atlaskever", "herculeskever", "goliathkever"]
+};
+
+const mythicPools: Partial<Record<BugDexDropSource, string[]>> = {
+  bug_fixed: ["picasso-wants", "giraffekevertje", "glorieuze-scarabee"],
+  bug_reported: ["roze-esdoornmot", "picasso-wants", "lantaarndrager"],
+  bug_splat: ["zonsondergangsmot", "doornbloembidsprinkhaan", "glorieuze-scarabee"],
+  status_update: ["giraffekevertje", "lantaarndrager"],
+  weekly_mission: ["koningin-alexandravlinder", "zonsondergangsmot", "doornbloembidsprinkhaan", "glorieuze-scarabee"]
 };
 
 export function entryByBugId(bugId: string): BugDexEntry | undefined {
@@ -302,7 +310,7 @@ export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]
   const sourceRarity = sourceEntries[0]?.rarity;
   if (!sourceRarity || sourceEntries.some((entry) => entry?.rarity !== sourceRarity)) throw new Error("Kies 3 bugs van dezelfde rarity.");
   const targetRarity = nextRarity(sourceRarity);
-  if (!targetRarity) throw new Error("Legendarisch kan niet verder upgraden.");
+  if (!targetRarity) throw new Error("Mythisch kan niet verder upgraden.");
 
   const currentInventory = await listBugDexInventory(user);
   const targetEntry = pickCombineTarget(targetRarity, currentInventory);
@@ -455,6 +463,7 @@ export function combineRequiredCount(rarity: BugDexRarity): number {
   if (rarity === "Gewoon") return 3;
   if (rarity === "Zeldzaam") return 4;
   if (rarity === "Episch") return 5;
+  if (rarity === "Legendarisch") return 6;
   return Number.POSITIVE_INFINITY;
 }
 
@@ -462,6 +471,7 @@ function nextRarity(rarity: BugDexRarity): BugDexRarity | null {
   if (rarity === "Gewoon") return "Zeldzaam";
   if (rarity === "Zeldzaam") return "Episch";
   if (rarity === "Episch") return "Legendarisch";
+  if (rarity === "Legendarisch") return "Mythisch";
   return null;
 }
 
@@ -474,6 +484,11 @@ function pickCombineTarget(rarity: BugDexRarity, inventory: BugDexInventoryItem[
 
 function pickEntry(source: BugDexDropSource): BugDexEntry {
   const rarity = pickRarity(source);
+  if (rarity === "Mythisch") {
+    const specialIds = mythicPools[source] ?? [];
+    const special = pickFrom(specialIds.map((id) => entryByBugId(id)).filter((entry): entry is BugDexEntry => Boolean(entry)));
+    if (special) return special;
+  }
   if (rarity === "Legendarisch") {
     const specialIds = legendaryPools[source] ?? [];
     const special = pickFrom(specialIds.map((id) => entryByBugId(id)).filter((entry): entry is BugDexEntry => Boolean(entry)));

@@ -18,9 +18,9 @@ export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
 
   useEffect(() => {
     if (!visible) return;
-    setDisplayName("");
+    setDisplayName(user?.displayName ?? "");
     setError("");
-  }, [visible]);
+  }, [user?.displayName, visible]);
 
   async function submit() {
     setBusy(true);

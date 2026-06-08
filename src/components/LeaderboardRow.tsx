@@ -41,7 +41,7 @@ export function LeaderboardRow({ index, user, onPress }: { index: number; user: 
           {visibleBadges.length ? (
             <>
               {visibleBadges.map((badge) => (
-                <Text key={badge} style={styles.badgeChip} numberOfLines={1}>{badge}</Text>
+                <Text key={badge} style={styles.badgeChip} numberOfLines={1}>{tr(badge)}</Text>
               ))}
               {extraBadges > 0 && <Text style={styles.badgeChip}>+{extraBadges}</Text>}
             </>

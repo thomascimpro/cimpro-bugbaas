@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.8
+
+- Changelog-popup vernieuwd met visuele kaarten en bugbeelden.
+- Nieuwe updates rond Help, Mythisch en rewards worden duidelijker uitgelegd.
+- Release voorbereid als patch bovenop de 1.5.7 functionaliteit.
+
 ## 1.5.7
 
 - Afgeronde ruil-popup wordt nu lokaal per gebruiker onthouden na `Klaar`.

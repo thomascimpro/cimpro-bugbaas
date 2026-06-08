@@ -1,7 +1,9 @@
 import Constants from "expo-constants";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Application from "expo-application";
+import * as Notifications from "expo-notifications";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, AppState, Linking, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, AppState, Image, ImageSourcePropType, Linking, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppNotification, BugComment, BugReport, BugSeverity, NotificationSettings, User } from "./src/types";
 import { applyUserPoints, ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, updateUserCharacter, updateUserDisplayName } from "./src/services/userService";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -45,6 +47,29 @@ import {
 
 export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "profile" | "userProfile" | "bugdex" | "settings";
 
+const helpTourVersion = "full-help-v2";
+const helpTourVersionKey = (uid: string) => `bugbaas:helpTour:${helpTourVersion}:${uid}`;
+const changelogSeenKey = (uid: string, version: string) => `bugbaas:changelog:${version}:${uid}`;
+
+type ChangelogFeature = {
+  key: string;
+  image: ImageSourcePropType;
+  tone: "gold" | "green" | "purple";
+};
+
+const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
+  "1.5.8": [
+    { key: "changelog.1.5.8.help", image: require("./assets/characters/bugcatcher-classic.png"), tone: "green" },
+    { key: "changelog.1.5.8.mythic", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
+    { key: "changelog.1.5.8.rewards", image: require("./assets/bugdex/pissebed.png"), tone: "gold" }
+  ],
+  "1.5.7": [
+    { key: "changelog.1.5.7.help", image: require("./assets/characters/bugcatcher-classic.png"), tone: "green" },
+    { key: "changelog.1.5.7.mythic", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
+    { key: "changelog.1.5.7.rewards", image: require("./assets/bugdex/pissebed.png"), tone: "gold" }
+  ]
+};
+
 export default function App() {
   return (
     <LanguageProvider>
@@ -62,7 +87,10 @@ function AppContent() {
   const [bugDexDropQueue, setBugDexDropQueue] = useState<BugDexDropResult[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings);
   const [notification, setNotification] = useState<AppNotification | null>(null);
+  const [openBugDexTradeRequest, setOpenBugDexTradeRequest] = useState(0);
   const [helpVisible, setHelpVisible] = useState(false);
+  const [helpGateChecked, setHelpGateChecked] = useState(false);
+  const [changelogVersion, setChangelogVersion] = useState("");
   const [splatBonusVisible, setSplatBonusVisible] = useState(false);
   const [versionNotice, setVersionNotice] = useState<VersionNotice | null>(null);
   const [pendingRadarBugIds, setPendingRadarBugIds] = useState<BugArtId[]>([]);
@@ -73,6 +101,8 @@ function AppContent() {
   const versionCheckInProgress = useRef(false);
   const userRef = useRef<User | null>(null);
   const notificationSettingsRef = useRef<NotificationSettings>(defaultNotificationSettings);
+  const handledNotificationResponses = useRef(new Set<string>());
+  const dailyLoginClaimedForUsers = useRef(new Set<string>());
   const foregroundBugEnabled = Boolean(
     user
     && user.nameSet === true
@@ -80,6 +110,7 @@ function AppContent() {
     && !bugDexDrop
     && !notification
     && !helpVisible
+    && !changelogVersion
     && !splatBonusVisible
     && !versionNotice
   );
@@ -98,7 +129,6 @@ function AppContent() {
         if (nextUser) {
           const appUser = await ensureUserDocument(nextUser);
           setUser(appUser);
-          void maybeShowBugDexDrop(claimDailyLoginBug(appUser));
         } else {
           setUser(null);
         }
@@ -155,9 +185,42 @@ function AppContent() {
   }, [user?.uid]);
 
   useEffect(() => {
-    if (!user || user.nameSet !== true || user.helpSeen !== false) return;
-    setHelpVisible(true);
+    setHelpGateChecked(false);
+    if (!user || user.nameSet !== true) return;
+    let active = true;
+    void AsyncStorage.getItem(helpTourVersionKey(user.uid)).then((seenVersion) => {
+      if (!active) return;
+      if (user.helpSeen === false || !seenVersion) setHelpVisible(true);
+      setHelpGateChecked(true);
+    }).catch(() => {
+      if (active && user.helpSeen === false) setHelpVisible(true);
+      if (active) setHelpGateChecked(true);
+    });
+    return () => {
+      active = false;
+    };
   }, [user?.helpSeen, user?.nameSet, user?.uid]);
+
+  useEffect(() => {
+    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
+    const currentVersion = currentAppVersion();
+    const changelogItems = usefulChangelogByVersion[currentVersion];
+    if (!currentVersion || !changelogItems?.length) return;
+    let active = true;
+    void AsyncStorage.getItem(changelogSeenKey(user.uid, currentVersion)).then((seen) => {
+      if (active && !seen) setChangelogVersion(currentVersion);
+    }).catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [bugDexDrop, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
+
+  useEffect(() => {
+    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || changelogVersion || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
+    if (dailyLoginClaimedForUsers.current.has(user.uid)) return;
+    dailyLoginClaimedForUsers.current.add(user.uid);
+    void maybeShowBugDexDrop(claimDailyLoginBug(user));
+  }, [bugDexDrop, changelogVersion, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
 
   useEffect(() => {
     if (!user) return () => undefined;
@@ -171,12 +234,28 @@ function AppContent() {
     });
   }, [notificationSettings, user]);
 
+  useEffect(() => {
+    function handleResponse(response: Notifications.NotificationResponse) {
+      const request = response.notification.request;
+      const contentData = request.content.data as { bugId?: string; notificationId?: string; type?: string };
+      const responseKey = `${request.identifier}:${response.actionIdentifier}`;
+      if (handledNotificationResponses.current.has(responseKey)) return;
+      handledNotificationResponses.current.add(responseKey);
+      void openNotificationTarget(contentData.type, contentData.bugId, contentData.notificationId);
+    }
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+    void Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (response) handleResponse(response);
+    }).catch(() => undefined);
+    return () => subscription.remove();
+  }, []);
+
   async function handleLogin(email: string, password: string, createAccount: boolean, displayName?: string) {
     setAuthError("");
     try {
       const appUser = createAccount ? await register(email, password, displayName) : await login(email, password);
       setUser(appUser);
-      void maybeShowBugDexDrop(claimDailyLoginBug(appUser));
       setRoute("home");
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Inloggen mislukt.");
@@ -188,7 +267,6 @@ function AppContent() {
     try {
       const appUser = await loginWithGoogle(idToken, accessToken);
       setUser(appUser);
-      void maybeShowBugDexDrop(claimDailyLoginBug(appUser));
       setRoute("home");
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Google-login mislukt.");
@@ -215,11 +293,21 @@ function AppContent() {
 
   async function finishHelpTour() {
     setHelpVisible(false);
-    if (!user || user.helpSeen === true) return;
+    if (!user) return;
+    void AsyncStorage.setItem(helpTourVersionKey(user.uid), "true").catch(() => undefined);
+    if (user.helpSeen === true) return;
     try {
       setUser(await markHelpSeen(user));
     } catch {
       setUser({ ...user, helpSeen: true });
+    }
+  }
+
+  function closeChangelog() {
+    const currentVersion = changelogVersion;
+    setChangelogVersion("");
+    if (user && currentVersion) {
+      void AsyncStorage.setItem(changelogSeenKey(user.uid, currentVersion), "true").catch(() => undefined);
     }
   }
 
@@ -280,7 +368,7 @@ function AppContent() {
     }
   }
 
-  async function handleForegroundBugCaught(xp: number, bugId: string, rarity: "common" | "rare" | "epic" | "legendary") {
+  async function handleForegroundBugCaught(xp: number, bugId: string, rarity: "common" | "rare" | "epic" | "legendary" | "mythic") {
     if (!user) return;
     try {
       const updated = await applyUserPoints(user.uid, xp, 0);
@@ -315,7 +403,7 @@ function AppContent() {
 
   async function checkForVersionUpdate() {
     if (versionCheckInProgress.current) return;
-    const currentVersion = String(Application.nativeApplicationVersion || Constants.expoConfig?.version || "");
+    const currentVersion = currentAppVersion();
     if (!currentVersion) return;
     versionCheckInProgress.current = true;
     try {
@@ -341,11 +429,30 @@ function AppContent() {
 
   async function openNotification(current: AppNotification) {
     await closeNotification();
-    if (!current.bugId) return;
-    const bug = (await listBugs()).find((item) => item.id === current.bugId);
+    await openNotificationTarget(current.type, current.bugId, current.id);
+  }
+
+  async function openNotificationTarget(type?: string, bugId?: string, notificationId?: string) {
+    const currentUser = userRef.current;
+    if (currentUser && notificationId) {
+      await markNotificationRead(currentUser, notificationId).catch(() => undefined);
+    }
+    if (type === "trade") {
+      openBugDexTrades();
+      return;
+    }
+    if (!bugId) return;
+    const bug = (await listBugs()).find((item) => item.id === bugId);
     if (!bug) return;
     setSelectedBug(bug);
     setRoute("detail");
+  }
+
+  function openBugDexTrades() {
+    setSelectedBug(null);
+    setSelectedUser(null);
+    setRoute("bugdex");
+    setOpenBugDexTradeRequest((current) => current + 1);
   }
 
   function navigateMain(nextRoute: "home" | "bugs" | "new" | "bugdex" | "leaderboard") {
@@ -478,7 +585,7 @@ function AppContent() {
             }}
           />
         )}
-        {route === "bugdex" && <BugDexScreen user={user} onBack={() => setRoute("home")} />}
+        {route === "bugdex" && <BugDexScreen openTradeRequest={openBugDexTradeRequest} user={user} onBack={() => setRoute("home")} />}
         {route === "settings" && (
           <SettingsScreen settings={notificationSettings} onBack={() => setRoute("home")} onChange={updateNotificationSettings} onShowHelp={showHelpTour} />
         )}
@@ -494,10 +601,49 @@ function AppContent() {
       <BugDexUnlockModal drop={bugDexDrop} onClose={closeBugDexDrop} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
+      <ChangelogModal version={changelogVersion} onClose={closeChangelog} />
       <BugSplatBonusOverlay visible={splatBonusVisible} onSkip={() => setSplatBonusVisible(false)} />
       <VersionToast notice={versionNotice} onDismiss={() => setVersionNotice(null)} />
     </SafeAreaView>
   );
+}
+
+function currentAppVersion(): string {
+  return String(Application.nativeApplicationVersion || Constants.expoConfig?.version || "");
+}
+
+function ChangelogModal({ version, onClose }: { version: string; onClose: () => void }) {
+  const { t } = useI18n();
+  const features = usefulChangelogByVersion[version] ?? [];
+  return (
+    <Modal transparent animationType="fade" visible={Boolean(version && features.length)} onRequestClose={onClose}>
+      <View style={styles.changelogBackdrop}>
+        <View style={styles.changelogCard}>
+          <Text style={styles.changelogKicker}>{t("changelog.kicker", { version })}</Text>
+          <Text style={styles.changelogTitle}>{t("changelog.title")}</Text>
+          <ScrollView style={styles.changelogScroll} contentContainerStyle={styles.changelogList} showsVerticalScrollIndicator={false}>
+            {features.map((feature) => (
+              <View key={feature.key} style={[styles.changelogItem, styles[`changelogItem${capitalizeTone(feature.tone)}`]]}>
+                <View style={styles.changelogImageFrame}>
+                  <Image source={feature.image} style={styles.changelogImage} resizeMode="contain" />
+                </View>
+                <Text style={styles.changelogText}>{t(feature.key)}</Text>
+              </View>
+            ))}
+          </ScrollView>
+          <Pressable style={styles.changelogButton} onPress={onClose}>
+            <Text style={styles.changelogButtonText}>{t("common.done")}</Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function capitalizeTone(tone: ChangelogFeature["tone"]): "Gold" | "Green" | "Purple" {
+  if (tone === "gold") return "Gold";
+  if (tone === "purple") return "Purple";
+  return "Green";
 }
 
 function VersionToast({ notice, onDismiss }: { notice: VersionNotice | null; onDismiss: () => void }) {
@@ -553,6 +699,96 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     justifyContent: "center"
+  },
+  changelogBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    backgroundColor: "rgba(16,32,24,0.62)",
+    justifyContent: "center",
+    padding: 24
+  },
+  changelogCard: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 2,
+    maxHeight: "86%",
+    maxWidth: 460,
+    padding: 18,
+    width: "100%"
+  },
+  changelogKicker: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900",
+    marginBottom: 6
+  },
+  changelogTitle: {
+    color: "#102018",
+    fontSize: 24,
+    fontWeight: "900"
+  },
+  changelogScroll: {
+    marginTop: 14,
+    maxHeight: 420
+  },
+  changelogList: {
+    gap: 10,
+    paddingBottom: 2
+  },
+  changelogItem: {
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    minHeight: 88,
+    padding: 10
+  },
+  changelogItemGold: {
+    backgroundColor: "#fff4d8",
+    borderColor: "#d7bd57"
+  },
+  changelogItemGreen: {
+    backgroundColor: "#edf8f1",
+    borderColor: "#9fc9ad"
+  },
+  changelogItemPurple: {
+    backgroundColor: "#f4efff",
+    borderColor: "#b99df5"
+  },
+  changelogImageFrame: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "rgba(16,32,24,0.12)",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 68,
+    justifyContent: "center",
+    width: 68
+  },
+  changelogImage: {
+    height: 58,
+    width: 58
+  },
+  changelogText: {
+    color: "#283a31",
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 18
+  },
+  changelogButton: {
+    alignItems: "center",
+    backgroundColor: "#15724f",
+    borderRadius: 8,
+    justifyContent: "center",
+    marginTop: 18,
+    minHeight: 44
+  },
+  changelogButtonText: {
+    color: "#ffffff",
+    fontWeight: "900"
   },
   versionToast: {
     backgroundColor: "#102018",

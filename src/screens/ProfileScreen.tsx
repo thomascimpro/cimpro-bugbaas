@@ -161,7 +161,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
           {badges.map((badge) => (
             <View key={badge} style={styles.badge}>
               <BugArtImage bugId="lieveheersbeestje" size={24} />
-              <Text style={styles.badgeText}>{badge}</Text>
+              <Text style={styles.badgeText}>{tr(badge)}</Text>
             </View>
           ))}
         </View>

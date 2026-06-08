@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { BugSeverity, BugStatus } from "../types";
-import { BugDexRarity } from "./pointsService";
+import { BugDexEntry, BugDexRarity, bugDexEntries, bugDexFacts } from "./pointsService";
 
 export type Language = "nl" | "en" | "fr";
 
@@ -19,6 +19,21 @@ export const languages: Array<{ flag: string; label: string; value: Language }> 
   { flag: "🇬🇧", label: "English", value: "en" },
   { flag: "🇫🇷", label: "Français", value: "fr" }
 ];
+
+const bugDexEntryNames: Record<Exclude<Language, "nl">, Record<string, string>> = {
+  en: {
+    "zilvervisje": "Silverfish", "fruitvlieg": "Fruit fly", "bladluis": "Aphid", "mug": "Mosquito", "mot": "Moth", "mier": "Ant", "vlo": "Flea", "pissebed": "Woodlouse", "stinkwants": "Stink bug", "snuitkever": "Weevil", "lieveheersbeestje": "Ladybug", "kakkerlak": "Cockroach", "oorworm": "Earwig", "boktor": "Longhorn beetle", "tapijtkever": "Carpet beetle", "roofwants": "Predatory bug", "duizendpoot": "Centipede", "sprinkhaan": "Grasshopper", "wesp": "Wasp", "hoornaar": "Hornet", "schorpioen": "Scorpion", "termiet": "Termite", "mestkever": "Dung beetle", "wandelende-tak": "Walking stick", "vogelspin": "Tarantula", "reuzenkakkerlak": "Giant cockroach", "reuzen-duizendpoot": "Giant centipede", "neushoornkever": "Rhinoceros beetle", "atlaskever": "Atlas beetle", "herculeskever": "Hercules beetle", "goliathkever": "Goliath beetle",
+    "motmug": "Drain fly", "langpootmug": "Crane fly", "faraomier": "Pharaoh ant", "boekluis": "Booklouse", "stofluis": "Dust louse", "teek": "Tick", "fluweelmijt": "Velvet mite", "schildwants": "Shield bug", "houtmier": "Wood ant", "kniptor": "Click beetle", "loopkever": "Ground beetle", "waterkever": "Water beetle", "schrijvertje": "Whirligig beetle", "schaatsenrijder": "Pond skater", "goudtor": "Rose chafer", "tijgerkever": "Tiger beetle", "doodgraver": "Burying beetle", "waterschorpioen": "Water scorpion", "bidsprinkhaan": "Praying mantis", "wandelend-blad": "Walking leaf", "wespspin": "Wasp spider", "kruisspin": "Garden spider", "springspin": "Jumping spider", "libel": "Dragonfly", "waterjuffer": "Damselfly", "gaasvlieg": "Lacewing", "doodshoofdvlinder": "Death's-head moth", "kolibrievlinder": "Hummingbird hawk-moth", "koninginnenpage": "Swallowtail", "atalanta": "Red admiral", "dagpauwoog": "Peacock butterfly",
+    "eikenprocessierups": "Oak processionary caterpillar", "pijlstaartrups": "Hawk-moth caterpillar", "cicade": "Cicada", "schuimcicade": "Froghopper", "vliegend-hert": "Stag beetle", "juweelkever": "Jewel beetle", "orchidee-bidsprinkhaan": "Orchid mantis", "pauwspin": "Peacock spider", "juweelwesp": "Jewel wasp", "goudschildkever": "Golden tortoise beetle", "harlekijnwants": "Harlequin bug", "lantaarnvlieg": "Lanternfly", "vioolspin": "Recluse spider", "gespikkelde-houtvlinder": "Speckled wood moth", "zebra-springspin": "Zebra jumping spider", "smaragdlibel": "Emerald dragonfly", "glasvleugelvlinder": "Glasswing butterfly", "komeetmot": "Comet moth", "maanmot": "Luna moth", "atlasvlinder": "Atlas moth", "rozekever": "Rose beetle", "kardinaalkever": "Cardinal beetle", "vuurwants": "Firebug", "sabelsprinkhaan": "Katydid", "mierenleeuw": "Antlion", "dobsonvlieg": "Dobsonfly", "helikopterjuffer": "Helicopter damselfly",
+    "spookinsect": "Ghost insect", "bladpootwants": "Leaf-footed bug", "assassin-bug": "Assassin bug", "tijgermug": "Tiger mosquito", "dolksteekwesp": "Dagger wasp", "roofvlieg": "Robber fly", "kameelhalsvlieg": "Snakefly", "zweefvlieg": "Hoverfly", "goudwesp": "Cuckoo wasp", "sluipwesp": "Ichneumon wasp", "fluweelmier": "Velvet ant", "reuzenwaterwants": "Giant water bug", "zweepschorpioen": "Whip scorpion", "azuren-waterjuffer": "Azure damselfly", "rouwmantelvlinder": "Mourning cloak", "keizersmantel": "Silver-washed fritillary", "gouden-tor": "Golden beetle", "soldaatje": "Soldier beetle", "doodgraverkever": "Burying beetle", "olifantskever": "Elephant beetle", "regenboogmestkever": "Rainbow dung beetle", "titanus-kever": "Titan beetle", "langsprietboktor": "Longhorn beetle", "schildpadkever": "Tortoise beetle", "vuurkever": "Fire beetle", "blauwe-ertsbij": "Blue carpenter bee", "wespboktor": "Wasp longhorn beetle", "groene-zandloopkever": "Green tiger beetle"
+  },
+  fr: {
+    "zilvervisje": "Poisson d'argent", "fruitvlieg": "Mouche du vinaigre", "bladluis": "Puceron", "mug": "Moustique", "mot": "Mite", "mier": "Fourmi", "vlo": "Puce", "pissebed": "Cloporte", "stinkwants": "Punaise verte", "snuitkever": "Charancon", "lieveheersbeestje": "Coccinelle", "kakkerlak": "Cafard", "oorworm": "Perce-oreille", "boktor": "Capricorne", "tapijtkever": "Anthrene des tapis", "roofwants": "Punaise predatrice", "duizendpoot": "Mille-pattes", "sprinkhaan": "Sauterelle", "wesp": "Guepe", "hoornaar": "Frelon", "schorpioen": "Scorpion", "termiet": "Termite", "mestkever": "Bousier", "wandelende-tak": "Phasme baton", "vogelspin": "Mygale", "reuzenkakkerlak": "Cafard geant", "reuzen-duizendpoot": "Mille-pattes geant", "neushoornkever": "Scarabee rhinoceros", "atlaskever": "Scarabee atlas", "herculeskever": "Scarabee hercule", "goliathkever": "Scarabee goliath",
+    "motmug": "Mouche des drains", "langpootmug": "Tipule", "faraomier": "Fourmi pharaon", "boekluis": "Psoque des livres", "stofluis": "Psoque", "teek": "Tique", "fluweelmijt": "Acarien de velours", "schildwants": "Punaise bouclier", "houtmier": "Fourmi des bois", "kniptor": "Taupin", "loopkever": "Carabe", "waterkever": "Dytique", "schrijvertje": "Gyrin", "schaatsenrijder": "Gerris", "goudtor": "Cetonia doree", "tijgerkever": "Cicindele", "doodgraver": "Necrophore", "waterschorpioen": "Scorpion d'eau", "bidsprinkhaan": "Mante religieuse", "wandelend-blad": "Phasme feuille", "wespspin": "Argiope frelon", "kruisspin": "Epeire diademe", "springspin": "Araignee sauteuse", "libel": "Libellule", "waterjuffer": "Demoiselle", "gaasvlieg": "Chrysope", "doodshoofdvlinder": "Sphinx tete de mort", "kolibrievlinder": "Moro-sphinx", "koninginnenpage": "Machaon", "atalanta": "Vulcain", "dagpauwoog": "Paon-du-jour",
+    "eikenprocessierups": "Chenille processionnaire du chene", "pijlstaartrups": "Chenille de sphinx", "cicade": "Cigale", "schuimcicade": "Cicadelle ecumeuse", "vliegend-hert": "Lucane cerf-volant", "juweelkever": "Bupreste", "orchidee-bidsprinkhaan": "Mante orchidee", "pauwspin": "Araignee paon", "juweelwesp": "Guepe emeraude", "goudschildkever": "Scarabee tortue dore", "harlekijnwants": "Punaise arlequin", "lantaarnvlieg": "Fulgore", "vioolspin": "Araignee recluse", "gespikkelde-houtvlinder": "Papillon du bois tachete", "zebra-springspin": "Araignee sauteuse zebree", "smaragdlibel": "Libellule emeraude", "glasvleugelvlinder": "Papillon aux ailes de verre", "komeetmot": "Papillon comete", "maanmot": "Papillon lune", "atlasvlinder": "Papillon atlas", "rozekever": "Scarabee des roses", "kardinaalkever": "Cardinal", "vuurwants": "Gendarme", "sabelsprinkhaan": "Sauterelle sabre", "mierenleeuw": "Fourmilion", "dobsonvlieg": "Corydale", "helikopterjuffer": "Demoiselle helicoptere",
+    "spookinsect": "Insecte fantome", "bladpootwants": "Punaise a pattes feuille", "assassin-bug": "Punaise assassine", "tijgermug": "Moustique tigre", "dolksteekwesp": "Guepe a dard", "roofvlieg": "Asile", "kameelhalsvlieg": "Raphidie", "zweefvlieg": "Syrphe", "goudwesp": "Guepe coucou", "sluipwesp": "Ichneumon", "fluweelmier": "Fourmi de velours", "reuzenwaterwants": "Belostome geant", "zweepschorpioen": "Scorpion fouet", "azuren-waterjuffer": "Demoiselle azuree", "rouwmantelvlinder": "Morio", "keizersmantel": "Tabac d'Espagne", "gouden-tor": "Scarabee dore", "soldaatje": "Cantharide", "doodgraverkever": "Necrophore", "olifantskever": "Scarabee elephant", "regenboogmestkever": "Bousier arc-en-ciel", "titanus-kever": "Titan", "langsprietboktor": "Capricorne a longues antennes", "schildpadkever": "Casside", "vuurkever": "Pyrochre", "blauwe-ertsbij": "Abeille charpentiere bleue", "wespboktor": "Capricorne guepe", "groene-zandloopkever": "Cicindele verte"
+  }
+};
 
 const nl: Record<string, string> = {
   "language.label": "Taal",
@@ -199,6 +214,7 @@ const nl: Record<string, string> = {
   "bugdex.nice": "Mooi",
   "bugdex.epicFind": "EPISCHE VONDST",
   "bugdex.legendary": "LEGENDARISCH",
+  "bugdex.mythic": "MYTHISCH",
   "bugdex.discovered": "Ontdekte bugs",
   "bugdex.allVisible": "Alle bugs zichtbaar",
   "bugdex.focusUnlocked": "Focus op jouw unlocked bugs",
@@ -252,6 +268,14 @@ const nl: Record<string, string> = {
   "version.tap": "Tik voor versie {version}.",
   "version.later": "Later",
   "version.open": "Open release",
+  "changelog.kicker": "Versie {version}",
+  "changelog.title": "Nieuw in BugBaas",
+  "changelog.1.5.8.help": "De vernieuwde changelog laat updates nu als duidelijke visuele kaarten zien.",
+  "changelog.1.5.8.mythic": "Mythische BugDex-vondsten krijgen meer aandacht met grote insectbeelden.",
+  "changelog.1.5.8.rewards": "Radar- en foreground rewards tonen beter welke bug je echt hebt gevangen.",
+  "changelog.1.5.7.help": "De help is uitgebreid en legt nu alle hoofdonderdelen duidelijk uit.",
+  "changelog.1.5.7.mythic": "BugDex heeft een nieuwe Mythisch tier met 8 echte, bijzondere insecten.",
+  "changelog.1.5.7.rewards": "Rewards, foreground bugs, radar bugs en upgrades kunnen nu ook richting Mythisch werken.",
   "login.google": "Doorgaan met Google",
   "login.hideEmail": "E-mail verbergen",
   "login.emailLogin": "Met e-mail inloggen",
@@ -265,17 +289,29 @@ const nl: Record<string, string> = {
   "login.googleNoToken": "Google-login gaf geen geldig token terug.",
   "login.googleFailed": "Google-login mislukt.",
   "tour.home": "Home",
-  "tour.homeBody": "Nieuws, snelle acties en je laatste voortgang.",
+  "tour.homeBody": "Hier zie je je punten, tier, dagelijkse status, snelle acties en je nieuwste BugDex voortgang.",
+  "tour.profile": "Profiel",
+  "tour.profileBody": "Open je profiel vanaf Home om je naam, character, badges, titel, splats en gemelde bugs te bekijken.",
+  "tour.movement": "Beweeg radar",
+  "tour.movementBody": "Koppel Health Connect voor lopen, hardlopen en fietsen. Als een doel klaarstaat kun je zelf claimen of via de widget openen.",
   "tour.bugs": "Bugs",
-  "tour.bugsBody": "Bekijk meldingen van iedereen en open details.",
+  "tour.bugsBody": "Bekijk alle meldingen, tips, tricks en ideeen. Gebruik zoeken en filters om snel de juiste melding te vinden.",
+  "tour.bugDetails": "Bug details",
+  "tour.bugDetailsBody": "Open een melding om beschrijving, stappen, screenshots, reacties en status te zien. Upvotes geven punten aan de melder.",
   "tour.new": "Meld",
-  "tour.newBody": "Maak een nieuwe bug met uitleg en eventueel een screenshot.",
+  "tour.newBody": "Meld een bug, tip, trick of idee met systeem, urgentie, uitleg, reproduceerstappen en eventueel een screenshot.",
   "tour.bugdex": "BugDex",
-  "tour.bugdexBody": "Bekijk je gevonden bugs, dubbelen en combineer upgrades.",
+  "tour.bugdexBody": "De BugDex toont standaard alleen jouw unlocked bugs. Zet onbekende bugs aan als je de volledige collectie wilt bekijken.",
+  "tour.bugdexRewards": "Rewards",
+  "tour.bugdexRewardsBody": "Je krijgt BugDex rewards door melden, reageren, fixes, daily login, foreground bugs, radar bugs en beweegdoelen.",
+  "tour.trade": "Ruilen",
+  "tour.tradeBody": "Bij ruilen kies je een eigen bug, een collega en een bug terug. De ruil gebeurt pas na acceptatie.",
+  "tour.upgrade": "Upgraden",
+  "tour.upgradeBody": "Gebruik dubbelen of kies 3 verschillende bugs van dezelfde rarity voor een hogere tier. Je kunt totaal 1 upgrade per dag doen.",
   "tour.rank": "Rank",
-  "tour.rankBody": "Zie actieve collega's, badges en profielen.",
+  "tour.rankBody": "Bekijk wie actief is, hoeveel bugs iemand meldde, BugDex voortgang, badges en profielinformatie.",
   "tour.settings": "Instellingen",
-  "tour.settingsBody": "Zet meldingen aan of uit en start deze help opnieuw.",
+  "tour.settingsBody": "Beheer echte Android meldingen voor ruilen, nieuwe bugs, reacties, updates, BugDex rewards en beweegrewards. Hier kun je deze help opnieuw starten.",
   "leader.noBadges": "0 badges",
   "leader.bugsDex": "{bugs} bugs - BugDex {caught}/{total}",
   "leader.statusLeader": "Leader",
@@ -363,6 +399,7 @@ Object.assign(nl, {
   "Kies 3 bugs van dezelfde rarity.": "Kies 3 bugs van dezelfde rarity.",
   "Vandaag is al een upgrade gebruikt.": "Vandaag is al een upgrade gebruikt.",
   "Legendarisch kan niet verder upgraden.": "Legendarisch kan niet verder upgraden.",
+  "Mythisch kan niet verder upgraden.": "Mythisch kan niet verder upgraden.",
   "Je mist een gekozen bug.": "Je mist een gekozen bug.",
   "Nieuwe bug": "Nieuwe bug",
   "Nieuwe tip": "Nieuwe tip",
@@ -552,6 +589,7 @@ const en: Record<string, string> = {
   "bugdex.nice": "Nice",
   "bugdex.epicFind": "EPIC FIND",
   "bugdex.legendary": "LEGENDARY",
+  "bugdex.mythic": "MYTHIC",
   "bugdex.discovered": "Discovered bugs",
   "bugdex.allVisible": "All bugs visible",
   "bugdex.focusUnlocked": "Focus on your unlocked bugs",
@@ -605,6 +643,14 @@ const en: Record<string, string> = {
   "version.tap": "Tap for version {version}.",
   "version.later": "Later",
   "version.open": "Open release",
+  "changelog.kicker": "Version {version}",
+  "changelog.title": "New in BugBaas",
+  "changelog.1.5.8.help": "The refreshed changelog now shows updates as clear visual cards.",
+  "changelog.1.5.8.mythic": "Mythic BugDex finds get more attention with large insect artwork.",
+  "changelog.1.5.8.rewards": "Radar and foreground rewards show more clearly which bug you actually caught.",
+  "changelog.1.5.7.help": "Help has been expanded and now explains all main sections clearly.",
+  "changelog.1.5.7.mythic": "BugDex has a new Mythic tier with 8 real, special insects.",
+  "changelog.1.5.7.rewards": "Rewards, foreground bugs, radar bugs and upgrades can now progress toward Mythic.",
   "login.google": "Continue with Google",
   "login.hideEmail": "Hide email",
   "login.emailLogin": "Log in with email",
@@ -618,17 +664,29 @@ const en: Record<string, string> = {
   "login.googleNoToken": "Google login did not return a valid token.",
   "login.googleFailed": "Google login failed.",
   "tour.home": "Home",
-  "tour.homeBody": "News, quick actions and your latest progress.",
+  "tour.homeBody": "See your points, tier, daily status, quick actions and latest BugDex progress.",
+  "tour.profile": "Profile",
+  "tour.profileBody": "Open your profile from Home to view your name, character, badges, title, splats and reported bugs.",
+  "tour.movement": "Movement radar",
+  "tour.movementBody": "Connect Health Connect for walking, running and cycling. When a goal is ready you can claim it yourself or open it from the widget.",
   "tour.bugs": "Bugs",
-  "tour.bugsBody": "View everyone's reports and open details.",
+  "tour.bugsBody": "View all reports, tips, tricks and ideas. Use search and filters to find the right report fast.",
+  "tour.bugDetails": "Bug details",
+  "tour.bugDetailsBody": "Open a report to see description, steps, screenshots, comments and status. Upvotes give points to the reporter.",
   "tour.new": "Report",
-  "tour.newBody": "Create a new bug with details and optionally a screenshot.",
+  "tour.newBody": "Report a bug, tip, trick or idea with system, urgency, explanation, reproduction steps and optionally a screenshot.",
   "tour.bugdex": "BugDex",
-  "tour.bugdexBody": "View found bugs, duplicates and combine upgrades.",
+  "tour.bugdexBody": "BugDex shows only your unlocked bugs by default. Turn on unknown bugs if you want to preview the full collection.",
+  "tour.bugdexRewards": "Rewards",
+  "tour.bugdexRewardsBody": "You get BugDex rewards from reports, comments, fixes, daily login, foreground bugs, radar bugs and movement goals.",
+  "tour.trade": "Trade",
+  "tour.tradeBody": "For trades you choose one of your bugs, a colleague and a bug back. The swap only runs after acceptance.",
+  "tour.upgrade": "Upgrade",
+  "tour.upgradeBody": "Use duplicates or choose 3 different bugs of the same rarity for a higher tier. You can do 1 total upgrade per day.",
   "tour.rank": "Rank",
-  "tour.rankBody": "See active colleagues, badges and profiles.",
+  "tour.rankBody": "See who is active, how many bugs someone reported, BugDex progress, badges and profile info.",
   "tour.settings": "Settings",
-  "tour.settingsBody": "Turn notifications on or off and restart this help.",
+  "tour.settingsBody": "Manage real Android notifications for trades, new bugs, comments, updates, BugDex rewards and movement rewards. You can restart this help here.",
   "leader.noBadges": "0 badges",
   "leader.bugsDex": "{bugs} bugs - BugDex {caught}/{total}",
   "leader.statusLeader": "Leader",
@@ -716,6 +774,7 @@ Object.assign(en, {
   "Kies 3 bugs van dezelfde rarity.": "Choose 3 bugs of the same rarity.",
   "Vandaag is al een upgrade gebruikt.": "A daily upgrade was already used today.",
   "Legendarisch kan niet verder upgraden.": "Legendary cannot be upgraded further.",
+  "Mythisch kan niet verder upgraden.": "Mythic cannot be upgraded further.",
   "Je mist een gekozen bug.": "You are missing a selected bug.",
   "Nieuwe bug": "New bug",
   "Nieuwe tip": "New tip",
@@ -905,6 +964,7 @@ const fr: Record<string, string> = {
   "bugdex.nice": "Bien",
   "bugdex.epicFind": "DÉCOUVERTE ÉPIQUE",
   "bugdex.legendary": "LÉGENDAIRE",
+  "bugdex.mythic": "MYTHIQUE",
   "bugdex.discovered": "Bugs découverts",
   "bugdex.allVisible": "Tous les bugs visibles",
   "bugdex.focusUnlocked": "Focus sur tes bugs débloqués",
@@ -958,6 +1018,14 @@ const fr: Record<string, string> = {
   "version.tap": "Touche pour la version {version}.",
   "version.later": "Plus tard",
   "version.open": "Ouvrir la release",
+  "changelog.kicker": "Version {version}",
+  "changelog.title": "Nouveau dans BugBaas",
+  "changelog.1.5.8.help": "Le changelog renove affiche maintenant les nouveautes avec des cartes visuelles claires.",
+  "changelog.1.5.8.mythic": "Les trouvailles Mythiques du BugDex sont mieux mises en avant avec de grandes images d'insectes.",
+  "changelog.1.5.8.rewards": "Les rewards radar et foreground montrent plus clairement quel bug tu as vraiment attrape.",
+  "changelog.1.5.7.help": "L'aide a ete etendue et explique maintenant toutes les sections principales.",
+  "changelog.1.5.7.mythic": "BugDex a un nouveau tier Mythique avec 8 vrais insectes speciaux.",
+  "changelog.1.5.7.rewards": "Les rewards, bugs foreground, bugs radar et upgrades peuvent maintenant aller vers Mythique.",
   "login.google": "Continuer avec Google",
   "login.hideEmail": "Masquer l'e-mail",
   "login.emailLogin": "Connexion par e-mail",
@@ -971,17 +1039,29 @@ const fr: Record<string, string> = {
   "login.googleNoToken": "La connexion Google n'a pas renvoyé de token valide.",
   "login.googleFailed": "Connexion Google échouée.",
   "tour.home": "Accueil",
-  "tour.homeBody": "Actualités, actions rapides et dernière progression.",
+  "tour.homeBody": "Vois tes points, ton tier, le statut du jour, les actions rapides et ta progression BugDex.",
+  "tour.profile": "Profil",
+  "tour.profileBody": "Ouvre ton profil depuis l'accueil pour voir ton nom, personnage, badges, titre, splats et bugs signales.",
+  "tour.movement": "Radar mouvement",
+  "tour.movementBody": "Connecte Health Connect pour marche, course et velo. Quand un objectif est pret, reclame-le toi-meme ou ouvre-le depuis le widget.",
   "tour.bugs": "Bugs",
-  "tour.bugsBody": "Voir les signalements et ouvrir les détails.",
+  "tour.bugsBody": "Vois tous les signalements, conseils, tricks et idees. Utilise recherche et filtres pour trouver vite.",
+  "tour.bugDetails": "Details bug",
+  "tour.bugDetailsBody": "Ouvre un signalement pour voir description, etapes, captures, commentaires et statut. Les votes donnent des points a l'auteur.",
   "tour.new": "Signaler",
-  "tour.newBody": "Créer un bug avec des détails et éventuellement une capture.",
+  "tour.newBody": "Signale un bug, conseil, trick ou idee avec systeme, urgence, explication, etapes et eventuellement une capture.",
   "tour.bugdex": "BugDex",
-  "tour.bugdexBody": "Voir tes bugs trouvés, doublons et upgrades.",
+  "tour.bugdexBody": "Le BugDex montre par defaut seulement tes bugs debloques. Active les inconnus pour voir toute la collection.",
+  "tour.bugdexRewards": "Recompenses",
+  "tour.bugdexRewardsBody": "Tu gagnes des rewards BugDex via signalements, commentaires, fixes, daily login, bugs foreground, radar et objectifs mouvement.",
+  "tour.trade": "Echanger",
+  "tour.tradeBody": "Pour echanger, choisis un bug a toi, un collegue et un bug en retour. L'echange se fait seulement apres acceptation.",
+  "tour.upgrade": "Upgrade",
+  "tour.upgradeBody": "Utilise des doublons ou choisis 3 bugs differents de meme rarity pour un tier superieur. Tu peux faire 1 upgrade total par jour.",
   "tour.rank": "Classement",
-  "tour.rankBody": "Voir collègues actifs, badges et profils.",
+  "tour.rankBody": "Vois qui est actif, combien de bugs chacun a signales, sa progression BugDex, ses badges et son profil.",
   "tour.settings": "Réglages",
-  "tour.settingsBody": "Activer les notifications ou relancer cette aide.",
+  "tour.settingsBody": "Gere les vraies notifications Android pour echanges, nouveaux bugs, commentaires, updates, rewards BugDex et mouvement. Tu peux relancer cette aide ici.",
   "leader.noBadges": "0 badges",
   "leader.bugsDex": "{bugs} bugs - BugDex {caught}/{total}",
   "leader.statusLeader": "Leader",
@@ -1069,6 +1149,7 @@ Object.assign(fr, {
   "Kies 3 bugs van dezelfde rarity.": "Choisis 3 bugs de la même rareté.",
   "Vandaag is al een upgrade gebruikt.": "Un upgrade quotidien a deja ete utilise aujourd'hui.",
   "Legendarisch kan niet verder upgraden.": "Légendaire ne peut plus être amélioré.",
+  "Mythisch kan niet verder upgraden.": "Mythique ne peut plus être amélioré.",
   "Je mist een gekozen bug.": "Il te manque un bug sélectionné.",
   "Nieuwe bug": "Nouveau bug",
   "Nieuwe tip": "Nouveau conseil",
@@ -1078,6 +1159,54 @@ Object.assign(fr, {
   "Melding update": "Mise à jour du signalement",
   Ruilverzoek: "Demande d'échange"
 });
+
+Object.assign(nl, {
+  "Eerste vangst": "Eerste vangst",
+  Speurneus: "Speurneus",
+  Puntenslijper: "Puntenslijper",
+  Statusstrijder: "Statusstrijder",
+  Meesterkolonie: "Meesterkolonie"
+});
+
+Object.assign(en, {
+  "Eerste vangst": "First catch",
+  Speurneus: "Sharp scout",
+  Puntenslijper: "Point sharpener",
+  Statusstrijder: "Status fighter",
+  Meesterkolonie: "Master colony"
+});
+
+Object.assign(fr, {
+  "Eerste vangst": "Premiere capture",
+  Speurneus: "Fin limier",
+  Puntenslijper: "Tailleur de points",
+  Statusstrijder: "Combattant du statut",
+  Meesterkolonie: "Colonie maitre"
+});
+
+Object.assign(bugDexEntryNames.en, {
+  "koningin-alexandravlinder": "Queen Alexandra's birdwing",
+  "zonsondergangsmot": "Madagascan sunset moth",
+  "picasso-wants": "Picasso bug",
+  "roze-esdoornmot": "Rosy maple moth",
+  "giraffekevertje": "Giraffe weevil",
+  "doornbloembidsprinkhaan": "Spiny flower mantis",
+  "lantaarndrager": "Lantern bug",
+  "glorieuze-scarabee": "Glorious scarab"
+});
+
+Object.assign(bugDexEntryNames.fr, {
+  "koningin-alexandravlinder": "Ornithoptere de la reine Alexandra",
+  "zonsondergangsmot": "Uranie de Madagascar",
+  "picasso-wants": "Punaise Picasso",
+  "roze-esdoornmot": "Dryocampa rose",
+  "giraffekevertje": "Charancon girafe",
+  "doornbloembidsprinkhaan": "Mante fleur epineuse",
+  "lantaarndrager": "Fulgores porte-lanterne",
+  "glorieuze-scarabee": "Scarabee glorieux"
+});
+
+registerBugDexEntryTranslations();
 
 const dictionaries: Record<Language, Record<string, string>> = { en, fr, nl };
 
@@ -1103,7 +1232,8 @@ const rarityKeys: Record<BugDexRarity, string> = {
   Gewoon: "rarity.common",
   Zeldzaam: "rarity.rare",
   Episch: "rarity.epic",
-  Legendarisch: "rarity.legendary"
+  Legendarisch: "rarity.legendary",
+  Mythisch: "rarity.mythic"
 };
 
 Object.assign(nl, {
@@ -1120,7 +1250,8 @@ Object.assign(nl, {
   "rarity.common": "Gewoon",
   "rarity.rare": "Zeldzaam",
   "rarity.epic": "Episch",
-  "rarity.legendary": "Legendarisch"
+  "rarity.legendary": "Legendarisch",
+  "rarity.mythic": "Mythisch"
 });
 
 Object.assign(en, {
@@ -1137,7 +1268,8 @@ Object.assign(en, {
   "rarity.common": "Common",
   "rarity.rare": "Rare",
   "rarity.epic": "Epic",
-  "rarity.legendary": "Legendary"
+  "rarity.legendary": "Legendary",
+  "rarity.mythic": "Mythic"
 });
 
 Object.assign(fr, {
@@ -1155,6 +1287,10 @@ Object.assign(fr, {
   "rarity.rare": "Rare",
   "rarity.epic": "Épique",
   "rarity.legendary": "Légendaire"
+});
+
+Object.assign(fr, {
+  "rarity.mythic": "Mythique"
 });
 
 const I18nContext = createContext<I18nContextValue>({
@@ -1205,7 +1341,64 @@ export function rarityLabel(rarity: BugDexRarity, t: I18nContextValue["t"]): str
   return t(rarityKeys[rarity]);
 }
 
+export function bugDexEntryName(entry: BugDexEntry, t: I18nContextValue["t"]): string {
+  return translatedOrFallback(t, `bugdex.entry.${entry.id}.name`, entry.name);
+}
+
+export function bugDexEntryTitle(entry: BugDexEntry, t: I18nContextValue["t"]): string {
+  return translatedOrFallback(t, `bugdex.entry.${entry.id}.title`, entry.title);
+}
+
+export function bugDexEntryNote(entry: BugDexEntry, t: I18nContextValue["t"]): string {
+  return translatedOrFallback(t, `bugdex.entry.${entry.id}.note`, entry.note);
+}
+
+export function bugDexEntryFact(entry: BugDexEntry, t: I18nContextValue["t"]): string {
+  return translatedOrFallback(t, `bugdex.entry.${entry.id}.fact`, bugDexFacts[entry.id] ?? entry.note);
+}
+
+function translatedOrFallback(t: I18nContextValue["t"], key: string, fallback: string): string {
+  const value = t(key);
+  return value === key ? fallback : value;
+}
+
 function interpolate(text: string, params?: Record<string, string | number>): string {
   if (!params) return text;
   return Object.entries(params).reduce((current, [key, value]) => current.replaceAll(`{${key}}`, String(value)), text);
+}
+
+function registerBugDexEntryTranslations() {
+  const enRarity: Record<BugDexRarity, string> = {
+    Gewoon: "common",
+    Zeldzaam: "rare",
+    Episch: "epic",
+    Legendarisch: "legendary",
+    Mythisch: "mythic"
+  };
+  const frRarity: Record<BugDexRarity, string> = {
+    Gewoon: "commune",
+    Zeldzaam: "rare",
+    Episch: "epique",
+    Legendarisch: "legendaire",
+    Mythisch: "mythique"
+  };
+
+  for (const entry of bugDexEntries) {
+    const enName = bugDexEntryNames.en[entry.id] ?? entry.name;
+    const frName = bugDexEntryNames.fr[entry.id] ?? entry.name;
+    nl[`bugdex.entry.${entry.id}.name`] = entry.name;
+    nl[`bugdex.entry.${entry.id}.title`] = entry.title;
+    nl[`bugdex.entry.${entry.id}.note`] = entry.note;
+    nl[`bugdex.entry.${entry.id}.fact`] = bugDexFacts[entry.id] ?? entry.note;
+
+    en[`bugdex.entry.${entry.id}.name`] = enName;
+    en[`bugdex.entry.${entry.id}.title`] = `${enName} Catcher`;
+    en[`bugdex.entry.${entry.id}.note`] = `A ${enRarity[entry.rarity]} BugDex catch with a clear insect style.`;
+    en[`bugdex.entry.${entry.id}.fact`] = `${enName} stands out by shape, movement or markings, which makes it a memorable BugDex find.`;
+
+    fr[`bugdex.entry.${entry.id}.name`] = frName;
+    fr[`bugdex.entry.${entry.id}.title`] = `Chasseur ${frName}`;
+    fr[`bugdex.entry.${entry.id}.note`] = `Une trouvaille BugDex ${frRarity[entry.rarity]} au style insecte bien visible.`;
+    fr[`bugdex.entry.${entry.id}.fact`] = `${frName} se distingue par sa forme, son mouvement ou ses motifs, ce qui en fait une trouvaille BugDex memorable.`;
+  }
 }

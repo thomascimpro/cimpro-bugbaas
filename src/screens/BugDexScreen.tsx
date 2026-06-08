@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
@@ -6,7 +6,7 @@ import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import { TradeAnimationModal } from "../components/TradeAnimationModal";
 import { BugDexDropResult, DailyUpgradeUsage, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, entryByBugId, getDailyUpgradeUsage, listBugDexInventory } from "../services/bugDexService";
-import { rarityLabel, useI18n } from "../services/i18n";
+import { bugDexEntryName, bugDexEntryNote, bugDexEntryTitle, rarityLabel, useI18n } from "../services/i18n";
 import { notifyTradeAccepted, notifyTradeRequest } from "../services/notificationService";
 import { bugDexEntries, BugDexEntry, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
 import { createTradeRequest, listTradeRequests, markTradeRequesterSeen, respondToTradeRequest } from "../services/tradeService";
@@ -15,34 +15,39 @@ import { BugDexInventoryItem, TradeRequest, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
 type Props = {
+  openTradeRequest?: number;
   user: User;
   onBack: () => void;
 };
 
-type UpgradeRarity = Exclude<BugDexRarity, "Legendarisch">;
+type UpgradeRarity = Exclude<BugDexRarity, "Mythisch">;
 
 const rarityColors: Record<BugDexRarity, string> = {
   Gewoon: "#6f7f5f",
   Zeldzaam: "#15724f",
   Episch: "#356d7c",
-  Legendarisch: "#b83227"
+  Legendarisch: "#b83227",
+  Mythisch: "#7c3aed"
 };
 
-const upgradeRarities: UpgradeRarity[] = ["Gewoon", "Zeldzaam", "Episch"];
+const upgradeRarities: UpgradeRarity[] = ["Gewoon", "Zeldzaam", "Episch", "Legendarisch"];
 const emptyUpgradeSelections: Record<UpgradeRarity, string[]> = {
   Gewoon: [],
   Zeldzaam: [],
-  Episch: []
+  Episch: [],
+  Legendarisch: []
 };
 const nextRarityLabel: Record<UpgradeRarity, BugDexRarity> = {
   Gewoon: "Zeldzaam",
   Zeldzaam: "Episch",
-  Episch: "Legendarisch"
+  Episch: "Legendarisch",
+  Legendarisch: "Mythisch"
 };
 const emptyDailyUpgradeUsage: DailyUpgradeUsage = {
   "Gewoon-Zeldzaam": false,
   "Zeldzaam-Episch": false,
-  "Episch-Legendarisch": false
+  "Episch-Legendarisch": false,
+  "Legendarisch-Mythisch": false
 };
 
 const completedTradeStorageKey = (uid: string) => `bugbaas:seenCompletedTrades:${uid}`;
@@ -64,7 +69,7 @@ async function saveClosedCompletedTradeId(uid: string, tradeId: string): Promise
   await AsyncStorage.setItem(completedTradeStorageKey(uid), JSON.stringify([...current, tradeId]));
 }
 
-export function BugDexScreen({ user, onBack }: Props) {
+export function BugDexScreen({ openTradeRequest = 0, user, onBack }: Props) {
   const { t, tr } = useI18n();
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -86,6 +91,8 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [upgradeError, setUpgradeError] = useState("");
   const [dailyUpgradeUsage, setDailyUpgradeUsage] = useState<DailyUpgradeUsage>(emptyDailyUpgradeUsage);
   const [upgradeSelections, setUpgradeSelections] = useState<Record<UpgradeRarity, string[]>>(emptyUpgradeSelections);
+  const scrollRef = useRef<ScrollView | null>(null);
+  const tradeSectionY = useRef(0);
   const inventoryById = bugDexInventoryMap(inventory);
   const tier = getTierForPoints(user.totalPoints);
   const unlockedCount = inventory.length;
@@ -113,6 +120,15 @@ export function BugDexScreen({ user, onBack }: Props) {
   useEffect(() => {
     void refreshAll();
   }, [user.uid]);
+
+  useEffect(() => {
+    if (openTradeRequest <= 0) return;
+    setTradeExpanded(true);
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, tradeSectionY.current - 16) });
+    }, 80);
+    return () => clearTimeout(timer);
+  }, [openTradeRequest]);
 
   useEffect(() => {
     let active = true;
@@ -148,7 +164,8 @@ export function BugDexScreen({ user, onBack }: Props) {
     setUpgradeSelections((current) => ({
       Gewoon: current.Gewoon.filter((bugId) => availableIds.has(bugId)),
       Zeldzaam: current.Zeldzaam.filter((bugId) => availableIds.has(bugId)),
-      Episch: current.Episch.filter((bugId) => availableIds.has(bugId))
+      Episch: current.Episch.filter((bugId) => availableIds.has(bugId)),
+      Legendarisch: current.Legendarisch.filter((bugId) => availableIds.has(bugId))
     }));
   }, [inventory]);
 
@@ -207,7 +224,8 @@ export function BugDexScreen({ user, onBack }: Props) {
   }
 
   function bugName(bugId: string) {
-    return entryByBugId(bugId)?.name ?? "Bug";
+    const entry = entryByBugId(bugId);
+    return entry ? bugDexEntryName(entry, t) : "Bug";
   }
 
   function bugRarity(bugId: string) {
@@ -307,7 +325,7 @@ export function BugDexScreen({ user, onBack }: Props) {
             const color = rarityColors[entry.rarity];
             const requiredCount = combineRequiredCount(entry.rarity);
             const unlocked = Boolean(inventoryItem);
-            const upgradeRarity = entry.rarity === "Legendarisch" ? null : entry.rarity as UpgradeRarity;
+            const upgradeRarity = entry.rarity === "Mythisch" ? null : entry.rarity as UpgradeRarity;
             const routeUsedToday = upgradeRarity ? upgradeRouteUsedToday(upgradeRarity) : false;
             const hasEnoughToCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
             const canCombine = hasEnoughToCombine && !routeUsedToday;
@@ -323,12 +341,12 @@ export function BugDexScreen({ user, onBack }: Props) {
                   {unlocked ? <BugArtImage bugId={entry.id} size={70} /> : <Text style={styles.lockedMark}>?</Text>}
                 </View>
                 <View style={styles.nameRow}>
-                  <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? entry.name : t("bugdex.unknown")}</Text>
+                  <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? bugDexEntryName(entry, t) : t("bugdex.unknown")}</Text>
                   {unlocked && inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
                 </View>
-                <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? entry.title : t("bugdex.notDiscovered")}</Text>
+                <Text style={[styles.title, !unlocked && styles.lockedText]}>{unlocked ? bugDexEntryTitle(entry, t) : t("bugdex.notDiscovered")}</Text>
                 <Text style={[styles.note, !unlocked && styles.lockedText]}>
-                  {unlocked ? entry.note : t("bugdex.findHint")}
+                  {unlocked ? bugDexEntryNote(entry, t) : t("bugdex.findHint")}
                 </Text>
                 {hasEnoughToCombine && (
                   <Pressable style={[styles.combineButton, !canCombine && styles.combineButtonDisabled]} disabled={!canCombine || combineBusyId === entry.id} onPress={() => combine(entry.id)}>
@@ -349,7 +367,7 @@ export function BugDexScreen({ user, onBack }: Props) {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
+    <ScrollView ref={scrollRef} contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={[sharedStyles.title, styles.headerTitle]}>BugDex</Text>
@@ -430,7 +448,13 @@ export function BugDexScreen({ user, onBack }: Props) {
 
       {dexList}
 
-      <Pressable style={[styles.tradeDropdown, tradeExpanded && styles.tradeDropdownActive]} onPress={() => setTradeExpanded((current) => !current)}>
+      <Pressable
+        style={[styles.tradeDropdown, tradeExpanded && styles.tradeDropdownActive]}
+        onLayout={(event) => {
+          tradeSectionY.current = event.nativeEvent.layout.y;
+        }}
+        onPress={() => setTradeExpanded((current) => !current)}
+      >
         <View>
           <Text style={[styles.tradeDropdownTitle, tradeExpanded && styles.tradeDropdownTitleActive]}>{t("bugdex.tradeAndUpgrades")}</Text>
           <Text style={[styles.tradeDropdownMeta, tradeExpanded && styles.tradeDropdownMetaActive]}>{t("bugdex.tradeMeta", { incoming: incomingTrades.length, open: outgoingTrades.length, duplicate: duplicateCount })}</Text>
