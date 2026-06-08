@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.6
+
+- BugDex upgrades zijn nu totaal 1x per dag: na een Gewoon, Zeldzaam of Episch upgrade blokkeren alle upgrade-opties tot morgen.
+- Oude per-route upgrade-events van dezelfde dag tellen ook mee, zodat bestaande daglimieten niet omzeild worden.
+- Upgrade-uitleg in BugDex aangepast naar de nieuwe daglimiet.
+
 ## 1.5.5
 
 - Beweegdoel rewards geven nu een echte Android-melding zodra er een radar bug reward klaarstaat.

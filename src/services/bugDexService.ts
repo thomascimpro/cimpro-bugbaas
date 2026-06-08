@@ -114,13 +114,20 @@ export async function getDailyUpgradeUsage(user: User): Promise<DailyUpgradeUsag
     if (!targetRarity) throw new Error("Ongeldige upgrade-route.");
     return [upgradeRouteId(rarity, targetRarity), upgradeEventId(day, rarity, targetRarity)] as const;
   });
+  const dailyEventId = dailyUpgradeEventId(day);
 
   if (!isFirebaseConfigured) {
-    return Object.fromEntries(entries.map(([routeId, eventId]) => [routeId, demoEvents.has(`${user.uid}:${eventId}`)])) as DailyUpgradeUsage;
+    const usedToday = demoEvents.has(`${user.uid}:${dailyEventId}`)
+      || entries.some(([, eventId]) => demoEvents.has(`${user.uid}:${eventId}`));
+    return Object.fromEntries(entries.map(([routeId]) => [routeId, usedToday])) as DailyUpgradeUsage;
   }
 
-  const snapshots = await Promise.all(entries.map(([, eventId]) => getDoc(doc(db, "users", user.uid, "bugdexEvents", eventId))));
-  return Object.fromEntries(entries.map(([routeId], index) => [routeId, snapshots[index].exists()])) as DailyUpgradeUsage;
+  const snapshots = await Promise.all([
+    getDoc(doc(db, "users", user.uid, "bugdexEvents", dailyEventId)),
+    ...entries.map(([, eventId]) => getDoc(doc(db, "users", user.uid, "bugdexEvents", eventId)))
+  ]);
+  const usedToday = snapshots.some((snapshot) => snapshot.exists());
+  return Object.fromEntries(entries.map(([routeId]) => [routeId, usedToday])) as DailyUpgradeUsage;
 }
 
 export async function claimDailyLoginBug(user: User): Promise<BugDexDropResult | null> {
@@ -242,11 +249,11 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
   const currentInventory = await listBugDexInventory(user);
   const targetEntry = pickCombineTarget(targetRarity, currentInventory);
   const now = new Date().toISOString();
-  const routeEventId = upgradeEventId(localDayId(), sourceEntry.rarity, targetRarity);
+  const day = localDayId();
+  const dailyEventId = dailyUpgradeEventId(day);
 
   if (!isFirebaseConfigured) {
-    const demoKey = `${user.uid}:${routeEventId}`;
-    if (demoEvents.has(demoKey)) throw new Error(`Vandaag is ${sourceEntry.rarity} -> ${targetRarity} al gebruikt.`);
+    if (hasDemoUpgradeUsedToday(user.uid, day)) throw new Error("Vandaag is al een upgrade gebruikt.");
     const inventory = demoInventory.get(user.uid) ?? new Map<string, BugDexInventoryItem>();
     const sourceItem = inventory.get(bugId);
     if (!sourceItem || sourceItem.count < requiredCount) throw new Error(`Je hebt x${requiredCount} nodig om te combineren.`);
@@ -257,17 +264,18 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
       ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
       : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
     inventory.set(targetEntry.id, targetItem);
-    demoEvents.add(demoKey);
+    demoEvents.add(`${user.uid}:${dailyEventId}`);
     demoInventory.set(user.uid, inventory);
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   }
 
   const sourceRef = doc(db, "users", user.uid, "bugdex", bugId);
   const targetRef = doc(db, "users", user.uid, "bugdex", targetEntry.id);
-  const routeEventRef = doc(db, "users", user.uid, "bugdexEvents", routeEventId);
+  const dailyEventRef = doc(db, "users", user.uid, "bugdexEvents", dailyEventId);
+  const legacyRouteEventRefs = getUpgradeEventIdsForDay(day).map((eventId) => doc(db, "users", user.uid, "bugdexEvents", eventId));
   return runTransaction(db, async (transaction) => {
-    const routeEventSnapshot = await transaction.get(routeEventRef);
-    if (routeEventSnapshot.exists()) throw new Error(`Vandaag is ${sourceEntry.rarity} -> ${targetRarity} al gebruikt.`);
+    const upgradeEventSnapshots = await Promise.all([transaction.get(dailyEventRef), ...legacyRouteEventRefs.map((ref) => transaction.get(ref))]);
+    if (upgradeEventSnapshots.some((snapshot) => snapshot.exists())) throw new Error("Vandaag is al een upgrade gebruikt.");
     const sourceSnapshot = await transaction.get(sourceRef);
     if (!sourceSnapshot.exists()) throw new Error("Bug niet gevonden.");
     const sourceItem = sourceSnapshot.data() as BugDexInventoryItem;
@@ -281,7 +289,7 @@ export async function combineBugDexDuplicates(user: User, bugId: string): Promis
       : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
     transaction.set(sourceRef, { ...sourceItem, count: nextSourceCount, lastUnlockedAt: now });
     transaction.set(targetRef, targetItem);
-    transaction.set(routeEventRef, upgradeEventPayload(routeEventId, sourceEntry.rarity, targetRarity, targetEntry.id, now));
+    transaction.set(dailyEventRef, upgradeEventPayload(dailyEventId, sourceEntry.rarity, targetRarity, targetEntry.id, now));
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   });
 }
@@ -299,11 +307,11 @@ export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]
   const currentInventory = await listBugDexInventory(user);
   const targetEntry = pickCombineTarget(targetRarity, currentInventory);
   const now = new Date().toISOString();
-  const routeEventId = upgradeEventId(localDayId(), sourceRarity, targetRarity);
+  const day = localDayId();
+  const dailyEventId = dailyUpgradeEventId(day);
 
   if (!isFirebaseConfigured) {
-    const demoKey = `${user.uid}:${routeEventId}`;
-    if (demoEvents.has(demoKey)) throw new Error(`Vandaag is ${sourceRarity} -> ${targetRarity} al gebruikt.`);
+    if (hasDemoUpgradeUsedToday(user.uid, day)) throw new Error("Vandaag is al een upgrade gebruikt.");
     const inventory = demoInventory.get(user.uid) ?? new Map<string, BugDexInventoryItem>();
     for (const bugId of uniqueBugIds) {
       const item = inventory.get(bugId);
@@ -319,17 +327,18 @@ export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]
       ? { ...existingTarget, count: existingTarget.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingTarget.sources, "combine"])) }
       : { bugId: targetEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: targetEntry.rarity, sources: ["combine"] };
     inventory.set(targetEntry.id, targetItem);
-    demoEvents.add(demoKey);
+    demoEvents.add(`${user.uid}:${dailyEventId}`);
     demoInventory.set(user.uid, inventory);
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   }
 
   const sourceRefs = uniqueBugIds.map((bugId) => doc(db, "users", user.uid, "bugdex", bugId));
   const targetRef = doc(db, "users", user.uid, "bugdex", targetEntry.id);
-  const routeEventRef = doc(db, "users", user.uid, "bugdexEvents", routeEventId);
+  const dailyEventRef = doc(db, "users", user.uid, "bugdexEvents", dailyEventId);
+  const legacyRouteEventRefs = getUpgradeEventIdsForDay(day).map((eventId) => doc(db, "users", user.uid, "bugdexEvents", eventId));
   return runTransaction(db, async (transaction) => {
-    const routeEventSnapshot = await transaction.get(routeEventRef);
-    if (routeEventSnapshot.exists()) throw new Error(`Vandaag is ${sourceRarity} -> ${targetRarity} al gebruikt.`);
+    const upgradeEventSnapshots = await Promise.all([transaction.get(dailyEventRef), ...legacyRouteEventRefs.map((ref) => transaction.get(ref))]);
+    if (upgradeEventSnapshots.some((snapshot) => snapshot.exists())) throw new Error("Vandaag is al een upgrade gebruikt.");
     const sourceSnapshots = await Promise.all(sourceRefs.map((ref) => transaction.get(ref)));
     const sourceItems = sourceSnapshots.map((snapshot) => snapshot.exists() ? snapshot.data() as BugDexInventoryItem : null);
     if (sourceItems.some((item) => !item || item.count < 1)) throw new Error("Je mist een gekozen bug.");
@@ -345,7 +354,7 @@ export async function combineDifferentBugDexUpgrade(user: User, bugIds: string[]
       transaction.set(sourceRefs[index], { ...item, count: item.count - 1, lastUnlockedAt: now });
     });
     transaction.set(targetRef, targetItem);
-    transaction.set(routeEventRef, upgradeEventPayload(routeEventId, sourceRarity, targetRarity, targetEntry.id, now));
+    transaction.set(dailyEventRef, upgradeEventPayload(dailyEventId, sourceRarity, targetRarity, targetEntry.id, now));
     return { rewardType: "bug", entry: targetEntry, item: targetItem, isNew: !existingTarget, source: "combine" };
   });
 }
@@ -408,8 +417,25 @@ function upgradeRouteId(sourceRarity: BugDexRarity, targetRarity: BugDexRarity):
   return `${sourceRarity}-${targetRarity}` as UpgradeRouteId;
 }
 
+function dailyUpgradeEventId(day: string): string {
+  return `upgrade-${day}`;
+}
+
 function upgradeEventId(day: string, sourceRarity: BugDexRarity, targetRarity: BugDexRarity): string {
   return `upgrade-${day}-${sourceRarity}-to-${targetRarity}`;
+}
+
+function getUpgradeEventIdsForDay(day: string): string[] {
+  return upgradeSourceRarities.map((rarity) => {
+    const targetRarity = nextRarity(rarity);
+    if (!targetRarity) throw new Error("Ongeldige upgrade-route.");
+    return upgradeEventId(day, rarity, targetRarity);
+  });
+}
+
+function hasDemoUpgradeUsedToday(uid: string, day: string): boolean {
+  return demoEvents.has(`${uid}:${dailyUpgradeEventId(day)}`)
+    || getUpgradeEventIdsForDay(day).some((eventId) => demoEvents.has(`${uid}:${eventId}`));
 }
 
 function upgradeEventPayload(id: string, sourceRarity: BugDexRarity, targetRarity: BugDexRarity, targetBugId: string, createdAt: string) {
