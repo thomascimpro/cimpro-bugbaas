@@ -497,7 +497,7 @@ function VersionToast({ notice, onDismiss }: { notice: VersionNotice | null; onD
     void Linking.openURL(notice.releaseUrl).then(onDismiss).catch(() => undefined);
   };
   return (
-    <View accessibilityLabel="Open latest release" style={styles.versionToast}>
+    <View accessibilityLabel={t("a11y.openLatestRelease")} style={styles.versionToast}>
       <Text style={styles.versionToastTitle}>{t("version.available")}</Text>
       <Text style={styles.versionToastText}>{t("version.tap", { version: notice.latestVersion })}</Text>
       <View style={styles.versionToastActions}>

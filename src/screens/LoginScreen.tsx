@@ -18,7 +18,7 @@ type Props = {
 };
 
 export function LoginScreen({ error, loading, onGoogleSubmit, onSubmit }: Props) {
-  const { t } = useI18n();
+  const { t, tr } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [createAccount, setCreateAccount] = useState(false);
@@ -158,7 +158,7 @@ export function LoginScreen({ error, loading, onGoogleSubmit, onSubmit }: Props)
             )}
           </>
         )}
-        {!!(error || googleError) && <Text style={sharedStyles.error}>{error || googleError}</Text>}
+        {!!(error || googleError) && <Text style={sharedStyles.error}>{tr(error || googleError)}</Text>}
       </View>
     </SafeAreaView>
   );

@@ -171,6 +171,16 @@ export function BugDexScreen({ user, onBack }: Props) {
     return dailyUpgradeUsage[`${sourceRarity}-${nextRarityLabel[sourceRarity]}` as keyof DailyUpgradeUsage];
   }
 
+  function serviceErrorText(message: string) {
+    const routeMatch = message.match(/^Vandaag is (.+) -> (.+) al gebruikt\.$/);
+    if (routeMatch) return t("bugdex.routeAlreadyUsed", { from: tr(routeMatch[1]), to: tr(routeMatch[2]) });
+
+    const requiredMatch = message.match(/^Je hebt x(\d+) nodig om te combineren\.$/);
+    if (requiredMatch) return t("bugdex.needCount", { count: requiredMatch[1] });
+
+    return tr(message);
+  }
+
   async function chooseRecipient(uid: string) {
     const recipient = users.find((item) => item.uid === uid);
     setTradeRecipientId(uid);
@@ -254,7 +264,7 @@ export function BugDexScreen({ user, onBack }: Props) {
                 </Text>
                 {hasEnoughToCombine && (
                   <Pressable style={[styles.combineButton, !canCombine && styles.combineButtonDisabled]} disabled={!canCombine || combineBusyId === entry.id} onPress={() => combine(entry.id)}>
-                    <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : routeUsedToday ? t("bugdex.tomorrowAgain") : `Combine x${requiredCount}`}</Text>
+                    <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : routeUsedToday ? t("bugdex.tomorrowAgain") : t("bugdex.combineCount", { count: requiredCount })}</Text>
                   </Pressable>
                 )}
               </View>
@@ -439,7 +449,7 @@ export function BugDexScreen({ user, onBack }: Props) {
         {outgoingTrades.map((trade) => (
           <Text key={trade.id} style={styles.tradePending}>{t("bugdex.openTo", { bug: bugName(trade.offerBugId), name: trade.toUserName })}</Text>
         ))}
-        {!!tradeError && <Text style={sharedStyles.error}>{tradeError}</Text>}
+        {!!tradeError && <Text style={sharedStyles.error}>{serviceErrorText(tradeError)}</Text>}
       </View>
 
       <View style={styles.upgradePanel}>
@@ -484,7 +494,7 @@ export function BugDexScreen({ user, onBack }: Props) {
               </View>
               {ready ? (
                 <Pressable style={[styles.upgradeButton, { backgroundColor: canUpgrade ? rarityColors[targetRarity] : "#87958e" }]} disabled={!canUpgrade || upgradeBusy === rarity} onPress={() => upgradeDifferent(rarity, selectedBugIds)}>
-                  <Text style={styles.upgradeButtonText}>{upgradeBusy === rarity ? "..." : routeUsedToday ? t("common.tomorrow") : canUpgrade ? "Upgrade" : t("bugdex.chooseThree")}</Text>
+                  <Text style={styles.upgradeButtonText}>{upgradeBusy === rarity ? "..." : routeUsedToday ? t("common.tomorrow") : canUpgrade ? t("bugdex.upgradeAction") : t("bugdex.chooseThree")}</Text>
                 </Pressable>
               ) : (
                 <Text style={styles.upgradeLocked}>{t("bugdex.notYet")}</Text>
@@ -492,7 +502,7 @@ export function BugDexScreen({ user, onBack }: Props) {
             </View>
           );
         })}
-        {!!upgradeError && <Text style={sharedStyles.error}>{upgradeError}</Text>}
+        {!!upgradeError && <Text style={sharedStyles.error}>{serviceErrorText(upgradeError)}</Text>}
       </View>
         </>
       )}

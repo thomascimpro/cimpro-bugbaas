@@ -11,11 +11,11 @@ import { sharedStyles } from "./sharedStyles";
 
 const statuses: BugStatus[] = ["Bevestigd", "In behandeling", "Gefixt", "Afgekeurd", "Dubbel"];
 const reactions = ["🐞", "🪲", "🐛", "💥", "🔥", "🎉"];
-const reportTypeMeta: Record<ReportType, { label: string; color: string; background: string }> = {
-  bug: { label: "BUG", color: "#b83227", background: "#fff1ef" },
-  tip: { label: "TIP", color: "#15724f", background: "#e9f6ef" },
-  workaround: { label: "TRICK", color: "#6b4bb3", background: "#f0ecff" },
-  idea: { label: "IDEE", color: "#986b08", background: "#fff7d7" }
+const reportTypeMeta: Record<ReportType, { labelKey: string; color: string; background: string }> = {
+  bug: { labelKey: "report.badge.bug", color: "#b83227", background: "#fff1ef" },
+  tip: { labelKey: "report.badge.tip", color: "#15724f", background: "#e9f6ef" },
+  workaround: { labelKey: "report.badge.workaround", color: "#6b4bb3", background: "#f0ecff" },
+  idea: { labelKey: "report.badge.idea", color: "#986b08", background: "#fff7d7" }
 };
 
 type Props = {
@@ -29,7 +29,7 @@ type Props = {
 };
 
 export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdded, onOpenProfile, onDeleted }: Props) {
-  const { t } = useI18n();
+  const { t, tr } = useI18n();
   const [busy, setBusy] = useState(false);
   const [voteBusy, setVoteBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
@@ -126,7 +126,7 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
       <Text style={sharedStyles.subtitle}>{bug.project} - {bug.reporterName}</Text>
       <View style={sharedStyles.row}>
         <View style={[styles.typeBadge, { backgroundColor: typeMeta.background, borderColor: typeMeta.color }]}>
-          <Text style={[styles.typeBadgeText, { color: typeMeta.color }]}>{typeMeta.label}</Text>
+          <Text style={[styles.typeBadgeText, { color: typeMeta.color }]}>{t(typeMeta.labelKey)}</Text>
         </View>
         {isBug && (
           <>
@@ -167,7 +167,7 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
           ))}
         </View>
         <TextInput
-          accessibilityLabel="Comment text"
+          accessibilityLabel={t("a11y.commentText")}
           multiline
           maxLength={500}
           placeholder={t("detail.commentPlaceholder")}
@@ -175,7 +175,7 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
           value={commentText}
           onChangeText={setCommentText}
         />
-        <Pressable accessibilityLabel="Post comment" style={sharedStyles.button} disabled={commentBusy} onPress={submitComment}>
+        <Pressable accessibilityLabel={t("a11y.postComment")} style={sharedStyles.button} disabled={commentBusy} onPress={submitComment}>
           {commentBusy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>{t("detail.postComment")}</Text>}
         </Pressable>
         {comments.length ? (
@@ -223,7 +223,7 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
           {deleteBusy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>{t("detail.deleteReport")}</Text>}
         </Pressable>
       )}
-      {!!error && <Text style={sharedStyles.error}>{error}</Text>}
+      {!!error && <Text style={sharedStyles.error}>{tr(error)}</Text>}
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
         <Text style={sharedStyles.secondaryButtonText}>{t("common.back")}</Text>
       </Pressable>

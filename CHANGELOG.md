@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.1
+
+- Resterende zichtbare labels bij bug melden, bugdetails, BugDex upgrades en report badges vertaald.
+- Beweeg radar gebruikt nu taal-keys voor Lopen, Hardlopen, Fietsen en Health Connect datatypes.
+- Bekende foutmeldingen en notificatietitels lopen nu via de vertaal-laag.
+- Accessibility labels voor update, screenshot, commentaar en notificaties gelokaliseerd.
+
 ## 1.5.0
 
 - Taalondersteuning toegevoegd voor Nederlands, Engels en Frans.

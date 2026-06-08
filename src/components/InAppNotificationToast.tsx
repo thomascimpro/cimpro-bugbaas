@@ -1,5 +1,6 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useI18n } from "../services/i18n";
 import { AppNotification } from "../types";
 
 type Props = {
@@ -9,18 +10,19 @@ type Props = {
 };
 
 export function InAppNotificationToast({ notification, onClose, onOpen }: Props) {
+  const { t, tr } = useI18n();
   if (!notification) return null;
 
   return (
     <View style={styles.wrap}>
       <Pressable style={styles.card} onPress={() => onOpen?.(notification)}>
         <View style={styles.textWrap}>
-          <Text style={styles.title}>{notification.title}</Text>
+          <Text style={styles.title}>{tr(notification.title)}</Text>
           <Text numberOfLines={2} style={styles.body}>
-            {notification.body}
+            {tr(notification.body)}
           </Text>
         </View>
-        <Pressable accessibilityLabel="Close notification" style={styles.closeButton} onPress={onClose}>
+        <Pressable accessibilityLabel={t("a11y.closeNotification")} style={styles.closeButton} onPress={onClose}>
           <Text style={styles.closeText}>X</Text>
         </Pressable>
       </Pressable>

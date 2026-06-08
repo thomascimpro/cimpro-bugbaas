@@ -10,11 +10,11 @@ import { sharedStyles } from "./sharedStyles";
 
 const severities: BugSeverity[] = ["Laag", "Normaal", "Hoog", "Kritiek"];
 const projectOptions = ["TBox", "TConnect", "SkySpark", "Infinite", "VTScada", "Alert", "Anders"];
-const reportTypes: Array<{ value: ReportType; label: string; descriptionKey: string }> = [
-  { value: "bug", label: "Bug", descriptionKey: "new.reportBugDesc" },
-  { value: "tip", label: "Tip", descriptionKey: "new.reportTipDesc" },
-  { value: "workaround", label: "Trick", descriptionKey: "new.reportWorkaroundDesc" },
-  { value: "idea", label: "Idee", descriptionKey: "new.reportIdeaDesc" }
+const reportTypes: Array<{ value: ReportType; labelKey: string; descriptionKey: string }> = [
+  { value: "bug", labelKey: "report.type.bug", descriptionKey: "new.reportBugDesc" },
+  { value: "tip", labelKey: "report.type.tip", descriptionKey: "new.reportTipDesc" },
+  { value: "workaround", labelKey: "report.type.workaround", descriptionKey: "new.reportWorkaroundDesc" },
+  { value: "idea", labelKey: "report.type.idea", descriptionKey: "new.reportIdeaDesc" }
 ];
 const maxScreenshotSize = 640;
 const screenshotQuality = 0.35;
@@ -38,7 +38,7 @@ type Props = {
 };
 
 export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
-  const { t } = useI18n();
+  const { t, tr } = useI18n();
   const [reportType, setReportType] = useState<ReportType>("bug");
   const [typeOpen, setTypeOpen] = useState(false);
   const [title, setTitle] = useState("");
@@ -181,7 +181,7 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
       <Text style={sharedStyles.label}>{t("new.type")}</Text>
       <Pressable style={styles.selectButton} onPress={() => setTypeOpen((current) => !current)}>
         <View>
-          <Text style={styles.selectText}>{selectedReportType.label}</Text>
+          <Text style={styles.selectText}>{t(selectedReportType.labelKey)}</Text>
           <Text style={styles.selectDescription}>{t(selectedReportType.descriptionKey)}</Text>
         </View>
         <Text style={styles.selectChevron}>{typeOpen ? "^" : "v"}</Text>
@@ -197,7 +197,7 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
                 setTypeOpen(false);
               }}
             >
-              <Text style={[styles.selectOptionText, reportType === item.value && styles.selectOptionTextActive]}>{item.label}</Text>
+              <Text style={[styles.selectOptionText, reportType === item.value && styles.selectOptionTextActive]}>{t(item.labelKey)}</Text>
               <Text style={[styles.selectOptionMeta, reportType === item.value && styles.selectOptionTextActive]}>{t(item.descriptionKey)}</Text>
             </Pressable>
           ))}
@@ -245,18 +245,18 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
       {screenshotPreviewUri && (
         <View style={styles.previewWrap}>
           <Image source={{ uri: screenshotPreviewUri }} style={styles.previewImage} />
-          <Pressable accessibilityLabel="Remove screenshot" style={styles.removeImageButton} onPress={removeScreenshot}>
+          <Pressable accessibilityLabel={t("a11y.removeScreenshot")} style={styles.removeImageButton} onPress={removeScreenshot}>
             <Text style={styles.removeImageText}>X</Text>
           </Pressable>
         </View>
       )}
-      <Pressable accessibilityLabel="Choose screenshot" style={sharedStyles.secondaryButton} onPress={pickImage}>
+      <Pressable accessibilityLabel={t("a11y.chooseScreenshot")} style={sharedStyles.secondaryButton} onPress={pickImage}>
         <Text style={sharedStyles.secondaryButtonText}>{t("new.chooseScreenshot")}</Text>
       </Pressable>
-      <Pressable accessibilityLabel="Save bug" style={sharedStyles.button} disabled={busy} onPress={save}>
+      <Pressable accessibilityLabel={t("a11y.saveBug")} style={sharedStyles.button} disabled={busy} onPress={save}>
         {busy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>{t("common.save")}</Text>}
       </Pressable>
-      {!!error && <Text style={sharedStyles.error}>{error}</Text>}
+      {!!error && <Text style={sharedStyles.error}>{tr(error)}</Text>}
     </ScrollView>
   );
 }

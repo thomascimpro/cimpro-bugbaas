@@ -14,11 +14,11 @@ const bugArtBySeverity = {
   Kritiek: ["schorpioen", "neushoornkever", "goliathkever"]
 } as const;
 
-const reportTypeMeta: Record<ReportType, { label: string; color: string; background: string; art?: BugArtId }> = {
-  bug: { label: "BUG", color: "#b83227", background: "#fff1ef" },
-  tip: { label: "TIP", color: "#15724f", background: "#e9f6ef", art: "gaasvlieg" },
-  workaround: { label: "TRICK", color: "#6b4bb3", background: "#f0ecff", art: "pissebed" },
-  idea: { label: "IDEE", color: "#986b08", background: "#fff7d7", art: "juweelkever" }
+const reportTypeMeta: Record<ReportType, { labelKey: string; color: string; background: string; art?: BugArtId }> = {
+  bug: { labelKey: "report.badge.bug", color: "#b83227", background: "#fff1ef" },
+  tip: { labelKey: "report.badge.tip", color: "#15724f", background: "#e9f6ef", art: "gaasvlieg" },
+  workaround: { labelKey: "report.badge.workaround", color: "#6b4bb3", background: "#f0ecff", art: "pissebed" },
+  idea: { labelKey: "report.badge.idea", color: "#986b08", background: "#fff7d7", art: "juweelkever" }
 };
 
 function bugArtForReport(bug: BugReport) {
@@ -49,7 +49,7 @@ export function BugCard({ bug, onPress }: { bug: BugReport; onPress: () => void 
         <Text style={styles.meta} numberOfLines={1}>{bug.reporterName}</Text>
         <View style={styles.row}>
           <View style={[styles.typeBadge, { backgroundColor: meta.background, borderColor: meta.color }]}>
-            <Text style={[styles.typeBadgeText, { color: meta.color }]}>{meta.label}</Text>
+            <Text style={[styles.typeBadgeText, { color: meta.color }]}>{t(meta.labelKey)}</Text>
           </View>
           {reportType === "bug" && (
             <>

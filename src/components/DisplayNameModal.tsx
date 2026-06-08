@@ -11,7 +11,7 @@ type Props = {
 };
 
 export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
-  const { t } = useI18n();
+  const { t, tr } = useI18n();
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -62,7 +62,7 @@ export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
               <Text style={styles.cancelButtonText}>{t("common.cancel")}</Text>
             </Pressable>
           )}
-          {!!error && <Text style={styles.error}>{error}</Text>}
+          {!!error && <Text style={styles.error}>{tr(error)}</Text>}
         </View>
       </View>
     </Modal>

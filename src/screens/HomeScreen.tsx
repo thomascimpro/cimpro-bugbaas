@@ -158,7 +158,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
               return (
                 <View key={goal.id} style={styles.movementGoal}>
                   <View style={styles.movementLine}>
-                    <Text style={styles.movementLabel}>{goal.label}</Text>
+                    <Text style={styles.movementLabel}>{movementGoalLabel(goal, t)}</Text>
                     <Text style={styles.movementKm}>{formatKm(goal.km)}/{formatKm(goal.targetKm)} km</Text>
                   </View>
                   <View style={styles.movementTrack}>
@@ -171,7 +171,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
           <View style={styles.movementSources}>
             {movementDataTypes.map((item) => (
               <View key={item.id} style={[styles.movementSourcePill, item.available && styles.movementSourcePillActive]}>
-                <Text style={[styles.movementSourceText, item.available && styles.movementSourceTextActive]}>{tr(item.label)}: {movementStatusText(item, t)}</Text>
+                <Text style={[styles.movementSourceText, item.available && styles.movementSourceTextActive]}>{movementDataTypeLabel(item, t)}: {movementStatusText(item, t)}</Text>
               </View>
             ))}
           </View>
@@ -302,6 +302,14 @@ export function HomeScreen({ user, onNavigate }: Props) {
 function formatKm(km: number): string {
   if (km >= 10) return String(Math.floor(km));
   return km.toFixed(1).replace(".0", "");
+}
+
+function movementGoalLabel(goal: MovementRadarProgress["goals"][number], t: (key: string) => string): string {
+  return t(`movement.goal.${goal.id}`);
+}
+
+function movementDataTypeLabel(status: MovementDataTypeStatus, t: (key: string) => string): string {
+  return t(`movement.data.${status.id}`);
 }
 
 function movementStatusText(status: MovementDataTypeStatus, t: (key: string, params?: Record<string, string | number>) => string): string {
