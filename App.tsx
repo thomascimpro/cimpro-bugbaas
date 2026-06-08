@@ -38,6 +38,7 @@ import {
   notifyComment,
   notifyNewBug,
   saveNotificationSettings,
+  showMovementRewardNotification,
   showPhoneNotification,
   subscribeUserNotifications
 } from "./src/services/notificationService";
@@ -71,6 +72,7 @@ function AppContent() {
   const movementCheckInProgress = useRef(false);
   const versionCheckInProgress = useRef(false);
   const userRef = useRef<User | null>(null);
+  const notificationSettingsRef = useRef<NotificationSettings>(defaultNotificationSettings);
   const foregroundBugEnabled = Boolean(
     user
     && user.nameSet === true
@@ -85,6 +87,10 @@ function AppContent() {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  useEffect(() => {
+    notificationSettingsRef.current = notificationSettings;
+  }, [notificationSettings]);
 
   useEffect(() => {
     return subscribeAuth(async (nextUser) => {
@@ -296,7 +302,10 @@ function AppContent() {
     if (!currentUser || currentUser.nameSet !== true || movementCheckInProgress.current) return;
     movementCheckInProgress.current = true;
     try {
-      await claimMovementRadarBonuses(currentUser.uid);
+      const result = await claimMovementRadarBonuses(currentUser.uid);
+      if (result.awarded > 0 && notificationSettingsRef.current.movement) {
+        await showMovementRewardNotification(result.awarded);
+      }
     } catch {
       // Movement radar bonuses are optional and must never interrupt the app.
     } finally {

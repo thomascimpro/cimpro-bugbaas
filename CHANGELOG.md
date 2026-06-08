@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.5
+
+- Beweegdoel rewards geven nu een echte Android-melding zodra er een radar bug reward klaarstaat.
+- Nieuwe setting `Beweeg rewards` toegevoegd om deze meldingen uit te zetten.
+- Ruilmeldingen blijven als echte Android-melding werken.
+
 ## 1.5.4
 
 - Random foreground bugs tijdens app-gebruik verschijnen veel minder vaak: maximaal ongeveer 1 spawn-poging per 10 minuten.

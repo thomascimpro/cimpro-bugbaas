@@ -61,7 +61,7 @@ export type BugDexInventoryItem = {
   lastTradeId?: string;
 };
 
-export type NotificationType = "trade" | "new_bug" | "comment" | "bug_update" | "bugdex";
+export type NotificationType = "trade" | "new_bug" | "comment" | "bug_update" | "bugdex" | "movement";
 
 export type NotificationSettings = Record<NotificationType, boolean>;
 

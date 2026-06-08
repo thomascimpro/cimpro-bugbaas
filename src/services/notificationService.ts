@@ -10,7 +10,8 @@ export const defaultNotificationSettings: NotificationSettings = {
   new_bug: true,
   comment: true,
   bug_update: true,
-  bugdex: true
+  bugdex: true,
+  movement: true
 };
 
 const demoNotifications = new Map<string, AppNotification[]>();
@@ -207,5 +208,20 @@ export async function notifyTradeAccepted(requesterId: string, actor: User, rece
     body: `${actor.displayName} accepteerde je ruil. Je ontving ${receivedBugName}.`,
     actorId: actor.uid,
     actorName: actor.displayName
+  });
+}
+
+export async function showMovementRewardNotification(count: number): Promise<void> {
+  await showPhoneNotification({
+    actorId: "movement-radar",
+    actorName: "BugBaas",
+    body: count === 1
+      ? "Er staat een radar bug reward voor je klaar."
+      : `Er staan ${count} radar bug rewards voor je klaar.`,
+    createdAt: nowIso(),
+    id: `movement-${Date.now()}`,
+    read: false,
+    title: "Beweegdoel behaald",
+    type: "movement"
   });
 }
