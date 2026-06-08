@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.7
+
+- Afgeronde ruil-popup wordt nu lokaal per gebruiker onthouden na `Klaar`.
+- BugDex wacht met tonen van oude geaccepteerde ruilen tot de lokale gezien-lijst geladen is.
+- Firestore `requesterSeenAt` blijft bestaan, maar een oude ruil kan op hetzelfde toestel niet meer terug blijven komen.
+
 ## 1.5.6
 
 - BugDex upgrades zijn nu totaal 1x per dag: na een Gewoon, Zeldzaam of Episch upgrade blokkeren alle upgrade-opties tot morgen.

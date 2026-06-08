@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
@@ -44,6 +45,25 @@ const emptyDailyUpgradeUsage: DailyUpgradeUsage = {
   "Episch-Legendarisch": false
 };
 
+const completedTradeStorageKey = (uid: string) => `bugbaas:seenCompletedTrades:${uid}`;
+
+async function readClosedCompletedTradeIds(uid: string): Promise<string[]> {
+  const raw = await AsyncStorage.getItem(completedTradeStorageKey(uid));
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+async function saveClosedCompletedTradeId(uid: string, tradeId: string): Promise<void> {
+  const current = await readClosedCompletedTradeIds(uid);
+  if (current.includes(tradeId)) return;
+  await AsyncStorage.setItem(completedTradeStorageKey(uid), JSON.stringify([...current, tradeId]));
+}
+
 export function BugDexScreen({ user, onBack }: Props) {
   const { t, tr } = useI18n();
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
@@ -53,6 +73,7 @@ export function BugDexScreen({ user, onBack }: Props) {
   const [drop, setDrop] = useState<BugDexDropResult | null>(null);
   const [completedTrade, setCompletedTrade] = useState<TradeRequest | null>(null);
   const [closedCompletedTradeIds, setClosedCompletedTradeIds] = useState<string[]>([]);
+  const [closedCompletedTradeIdsLoaded, setClosedCompletedTradeIdsLoaded] = useState(false);
   const [combineBusyId, setCombineBusyId] = useState("");
   const [tradeOfferId, setTradeOfferId] = useState("");
   const [tradeRecipientId, setTradeRecipientId] = useState("");
@@ -94,6 +115,24 @@ export function BugDexScreen({ user, onBack }: Props) {
   }, [user.uid]);
 
   useEffect(() => {
+    let active = true;
+    setClosedCompletedTradeIdsLoaded(false);
+    setClosedCompletedTradeIds([]);
+    void readClosedCompletedTradeIds(user.uid).then((ids) => {
+      if (!active) return;
+      setClosedCompletedTradeIds(ids);
+      setClosedCompletedTradeIdsLoaded(true);
+    }).catch(() => {
+      if (!active) return;
+      setClosedCompletedTradeIdsLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [user.uid]);
+
+  useEffect(() => {
+    if (!closedCompletedTradeIdsLoaded) return;
     const acceptedOwnTrade = trades.find((trade) =>
       trade.fromUserId === user.uid &&
       trade.status === "Geaccepteerd" &&
@@ -102,7 +141,7 @@ export function BugDexScreen({ user, onBack }: Props) {
     );
     if (!acceptedOwnTrade || completedTrade) return;
     setCompletedTrade(acceptedOwnTrade);
-  }, [closedCompletedTradeIds, completedTrade, trades, user.uid]);
+  }, [closedCompletedTradeIds, closedCompletedTradeIdsLoaded, completedTrade, trades, user.uid]);
 
   useEffect(() => {
     const availableIds = new Set(inventory.filter((item) => item.count > 0).map((item) => item.bugId));
@@ -242,6 +281,7 @@ export function BugDexScreen({ user, onBack }: Props) {
     const trade = completedTrade;
     if (!trade) return;
     setClosedCompletedTradeIds((current) => current.includes(trade.id) ? current : [...current, trade.id]);
+    void saveClosedCompletedTradeId(user.uid, trade.id).catch(() => undefined);
     setCompletedTrade(null);
     setTradeExpanded(false);
     if (trade.fromUserId === user.uid && trade.status === "Geaccepteerd" && !trade.requesterSeenAt) {
