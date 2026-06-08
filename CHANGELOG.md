@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.4.1
+
+- Home Claim knop voor Beweeg radar verschijnt alleen wanneer er echt km-rewards te claimen zijn.
+
 ## 1.4.0
 
 - Beweeg radar widget checkt nu periodiek native op beschikbare km-rewards en zet die direct klaar op de widget.

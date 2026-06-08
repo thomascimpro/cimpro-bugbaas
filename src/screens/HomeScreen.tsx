@@ -30,6 +30,7 @@ export function HomeScreen({ user, onNavigate }: Props) {
   const dexCount = inventory.length;
   const dexPreviewEntries = inventory.slice(0, 3).map((item) => entryByBugId(item.bugId)).filter((entry): entry is BugDexEntry => Boolean(entry));
   const missions = weeklyMissionSet(user, bugs);
+  const canClaimMovement = Boolean(movementProgress && movementProgress.claimableRewards > 0);
 
   useEffect(() => {
     listUsers().then(setUsers);
@@ -98,17 +99,19 @@ export function HomeScreen({ user, onNavigate }: Props) {
             <Text style={styles.movementTitle}>Beweeg radar</Text>
             <View style={styles.movementHeaderActions}>
               <Text style={styles.movementReward}>{movementProgress.awardedToday}/{movementProgress.maxRewards} bugs</Text>
-              <Pressable
-                disabled={movementClaiming}
-                onPress={handleMovementClaim}
-                style={({ pressed }) => [
-                  styles.movementClaimButton,
-                  pressed && styles.movementClaimButtonPressed,
-                  movementClaiming && styles.movementClaimButtonDisabled
-                ]}
-              >
-                <Text style={styles.movementClaimText}>{movementClaiming ? "..." : "Claim"}</Text>
-              </Pressable>
+              {canClaimMovement && (
+                <Pressable
+                  disabled={movementClaiming}
+                  onPress={handleMovementClaim}
+                  style={({ pressed }) => [
+                    styles.movementClaimButton,
+                    pressed && styles.movementClaimButtonPressed,
+                    movementClaiming && styles.movementClaimButtonDisabled
+                  ]}
+                >
+                  <Text style={styles.movementClaimText}>{movementClaiming ? "..." : "Claim"}</Text>
+                </Pressable>
+              )}
             </View>
           </View>
           <View style={styles.movementGoals}>
