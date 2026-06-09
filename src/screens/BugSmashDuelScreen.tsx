@@ -42,6 +42,24 @@ const DuelTargetBugArt = React.memo(BugArtImage);
 const duelGameTickMs = 55;
 const maxVisibleDuelTargets = 10;
 
+type HelperImpactKind = "burst" | "shield" | "splash" | "sticky" | "zap";
+
+type HelperImpact = {
+  id: string;
+  bugId: string;
+  color: string;
+  kind: HelperImpactKind;
+  x: number;
+  y: number;
+};
+
+type VisibleDuelTarget = {
+  bugId: string;
+  entry: NonNullable<ReturnType<typeof entryByBugId>>;
+  index: number;
+  motion: ReturnType<typeof targetMotion>;
+};
+
 const rarityColors: Record<BugDexRarity, string> = {
   Gewoon: "#6f7f5f",
   Zeldzaam: "#15724f",
@@ -94,6 +112,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const [score, setScore] = useState(0);
   const [hitCounts, setHitCounts] = useState<Record<string, number>>({});
   const [caughtBugIds, setCaughtBugIds] = useState<string[]>([]);
+  const [helperImpacts, setHelperImpacts] = useState<HelperImpact[]>([]);
   const [requesterStartAtByDuelId, setRequesterStartAtByDuelId] = useState<Record<string, string>>({});
   const submittedRef = useRef(false);
   const scoreRef = useRef(0);
@@ -101,6 +120,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const comboRef = useRef(0);
   const hitCountsRef = useRef<Record<string, number>>({});
   const hitFeedbackValues = useRef(new Map<string, Animated.Value>()).current;
+  const helperCooldownAtRef = useRef<Record<string, number>>({});
+  const helperImpactIdRef = useRef(0);
   const lastCatchAtRef = useRef(0);
   const lastHitSoundAtRef = useRef(0);
   const assist = useMemo(() => bugSmashDuelBalanceForUser({ activeBugSquad: activeSquadIds }), [activeSquadIds]);
@@ -127,11 +148,13 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     comboRef.current = 0;
     hitCountsRef.current = {};
     hitFeedbackValues.clear();
+    helperCooldownAtRef.current = {};
     lastCatchAtRef.current = 0;
     lastHitSoundAtRef.current = 0;
     setScore(0);
     setCaughtBugIds([]);
     setHitCounts({});
+    setHelperImpacts([]);
   }
 
   useEffect(() => {
@@ -206,14 +229,19 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       const effectiveStartAt = trainingDuel ? runningDuel.startAt : activeRequesterStartAt || runningDuel.startAt;
       const startAt = effectiveStartAt ? Date.parse(effectiveStartAt) : timestamp;
       const endAt = startAt + runningDuel.durationMs;
-      if (timestamp >= endAt && !submittedRef.current) {
-        submittedRef.current = true;
-        if (trainingDuel) return;
-        const bonusScore = duelBonusScore(scoreRef.current, assist);
-        void submitBugSmashDuelScore(user, runningDuel.id, scoreRef.current + bonusScore, caughtBugIdsRef.current, bonusScore)
-          .then((duel) => setActiveDuel(duel))
-          .catch(() => setError(t("duel.submitFailed")));
+      if (timestamp >= endAt) {
+        if (!submittedRef.current) {
+          submittedRef.current = true;
+          if (!trainingDuel) {
+            const bonusScore = duelBonusScore(scoreRef.current, assist);
+            void submitBugSmashDuelScore(user, runningDuel.id, scoreRef.current + bonusScore, caughtBugIdsRef.current, bonusScore)
+              .then((duel) => setActiveDuel(duel))
+              .catch(() => setError(t("duel.submitFailed")));
+          }
+        }
+        return;
       }
+      runHelperTowers(runningDuel, timestamp);
     }, duelGameTickMs);
     return () => clearInterval(interval);
   }, [activeDuel?.id, activeDuel?.status, activeDuel?.startAt, activeDuel?.durationMs, trainingDuel?.id, trainingDuel?.startAt, trainingDuel?.durationMs, activeRequesterStartAt, requesterNeedsManualStart, assist, t, user]);
@@ -332,6 +360,10 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   }
 
   function hitBug(bugId: string) {
+    applyBugHit(bugId, "tap");
+  }
+
+  function applyBugHit(bugId: string, source: "helper" | "tap") {
     const runningDuel = trainingDuel ?? activeDuel;
     if (!runningDuel || !isRunning(runningDuel, now)) return;
     const entry = entryByBugId(bugId);
@@ -341,11 +373,11 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     const currentHits = hitCountsRef.current;
     const nextHits = (currentHits[bugId] ?? 0) + 1;
     hitCountsRef.current = { ...currentHits, [bugId]: nextHits };
-    playBugSwatterFeedback(hitFeedbackFor(bugId));
+    if (source === "tap") playBugSwatterFeedback(hitFeedbackFor(bugId));
     setHitCounts(hitCountsRef.current);
     if (nextHits < requiredTaps) {
       const hitAt = Date.now();
-      if (hitAt - lastHitSoundAtRef.current > 90) {
+      if (source === "tap" && hitAt - lastHitSoundAtRef.current > 90) {
         lastHitSoundAtRef.current = hitAt;
         playBugSound("bug_hit");
       }
@@ -359,6 +391,39 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     scoreRef.current += scoreByRarity[entry.rarity] + duelCatchBonusPoints(entry.rarity, bugId, assist) + duelComboBonusPoint(comboRef.current);
     setCaughtBugIds(caughtBugIdsRef.current);
     setScore(scoreRef.current);
+  }
+
+  function runHelperTowers(duel: BugSmashDuel, timestamp: number) {
+    if (!activeSquadBonuses.length || !isRunning(duel, timestamp)) return;
+    const visibleTargets = collectVisibleTargets(duel, timestamp, caughtBugIdsRef.current, assist);
+    if (!visibleTargets.length) return;
+
+    activeSquadBonuses.forEach((bonus, helperIndex) => {
+      const spec = helperSpecForBonus(bonus);
+      const readyAt = helperCooldownAtRef.current[bonus.bugId] ?? 0;
+      if (timestamp < readyAt) return;
+      const target = selectHelperTarget(visibleTargets, bonus, hitCountsRef.current, timestamp);
+      if (!target) return;
+
+      helperCooldownAtRef.current[bonus.bugId] = timestamp + spec.cooldownMs + helperIndex * 260;
+      addHelperImpact(bonus.bugId, target.motion.x, target.motion.y, spec.color, spec.kind);
+      for (let hit = 0; hit < spec.hits; hit += 1) applyBugHit(target.bugId, "helper");
+
+      if (spec.splashTargets > 0) {
+        visibleTargets
+          .filter((item) => item.bugId !== target.bugId && distanceBetweenTargets(item, target) <= spec.splashRadius)
+          .slice(0, spec.splashTargets)
+          .forEach((item) => applyBugHit(item.bugId, "helper"));
+      }
+    });
+  }
+
+  function addHelperImpact(bugId: string, x: number, y: number, color: string, kind: HelperImpactKind) {
+    const id = `helper-${helperImpactIdRef.current++}`;
+    setHelperImpacts((current) => [...current.slice(-8), { id, bugId, color, kind, x, y }]);
+    setTimeout(() => {
+      setHelperImpacts((current) => current.filter((item) => item.id !== id));
+    }, 520);
   }
 
   function startAcceptedDuel() {
@@ -443,7 +508,11 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
           {countdown > 0 ? (
             <Text style={styles.countdown}>{countdown}</Text>
           ) : isRunning(gameDuel, now) ? (
-            renderTargets(gameDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)
+            <>
+              {renderTargets(gameDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)}
+              {renderHelperImpacts(helperImpacts)}
+              {renderHelperTowers(activeSquadBonuses, helperCooldownAtRef.current, now, t)}
+            </>
           ) : trainingDuel && submittedRef.current ? (
             <View style={styles.trainingResult}>
               <Text style={styles.trainingResultTitle}>{t("duel.trainingDone")}</Text>
@@ -564,7 +633,11 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                 {countdown > 0 ? (
                   <Text style={styles.countdown}>{countdown}</Text>
                 ) : isRunning(playableDuel, now) ? (
-                  renderTargets(playableDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)
+                  <>
+                    {renderTargets(playableDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)}
+                    {renderHelperImpacts(helperImpacts)}
+                    {renderHelperTowers(activeSquadBonuses, helperCooldownAtRef.current, now, t)}
+                  </>
                 ) : (
                   <ActivityIndicator color="#d7bd57" size="large" />
                 )}
@@ -718,6 +791,34 @@ function renderSquadJars(activeSquadIds: string[], bonuses: ReturnType<typeof ac
   );
 }
 
+function renderHelperTowers(bonuses: ReturnType<typeof activeBugSquadBonusList>, cooldowns: Record<string, number>, timestamp: number, t: (key: string) => string) {
+  if (!bonuses.length) return null;
+  return (
+    <View pointerEvents="none" style={styles.helperTowerDock}>
+      {bonuses.map((bonus, index) => {
+        const spec = helperSpecForBonus(bonus);
+        const readyAt = cooldowns[bonus.bugId] ?? 0;
+        const cooldownLeft = Math.max(0, readyAt - timestamp);
+        const charge = 1 - Math.min(1, cooldownLeft / spec.cooldownMs);
+        return (
+          <View key={`${bonus.bugId}:${index}`} style={[styles.helperTower, { borderColor: spec.color }]}>
+            <HelperTowerPulse color={spec.color} ready={cooldownLeft <= 0} />
+            <BugArtImage bugId={bonus.bugId} size={38} />
+            <View style={styles.helperChargeTrack}>
+              <View style={[styles.helperChargeFill, { backgroundColor: spec.color, width: `${Math.round(charge * 100)}%` }]} />
+            </View>
+            <Text style={styles.helperTowerText} numberOfLines={1}>{helperKindLabel(spec.kind, t)}</Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+function renderHelperImpacts(impacts: HelperImpact[]) {
+  return impacts.map((impact) => <HelperImpactEffect key={impact.id} impact={impact} />);
+}
+
 function renderTargets(
   duel: BugSmashDuel,
   timestamp: number,
@@ -727,17 +828,7 @@ function renderTargets(
   hitFeedbackValues: Map<string, Animated.Value>,
   onHit: (bugId: string) => void
 ) {
-  const startAt = duel.startAt ? Date.parse(duel.startAt) : timestamp;
-  const elapsed = timestamp - startAt;
-  return duel.bugIds.flatMap((bugId, index) => {
-    if (caughtBugIds.includes(bugId)) return null;
-    const entry = entryByBugId(bugId);
-    if (!entry) return null;
-    const motion = targetMotion(index, duel.seed, elapsed, entry.rarity, assist);
-    if (!motion.visible) return null;
-    return [{ bugId, entry, index, motion }];
-  })
-    .filter((target): target is NonNullable<typeof target> => Boolean(target))
+  return collectVisibleTargets(duel, timestamp, caughtBugIds, assist)
     .sort((a, b) => targetPriority(b.entry.rarity, b.motion.progress) - targetPriority(a.entry.rarity, a.motion.progress))
     .slice(0, maxVisibleDuelTargets)
     .map(({ bugId, entry, index, motion }) => {
@@ -769,6 +860,138 @@ function renderTargets(
       </Pressable>
     );
   });
+}
+
+function collectVisibleTargets(duel: BugSmashDuel, timestamp: number, caughtBugIds: string[], assist: BugSmashDuelBalance): VisibleDuelTarget[] {
+  const startAt = duel.startAt ? Date.parse(duel.startAt) : timestamp;
+  const elapsed = timestamp - startAt;
+  return duel.bugIds.flatMap((bugId, index) => {
+    if (caughtBugIds.includes(bugId)) return [];
+    const entry = entryByBugId(bugId);
+    if (!entry) return [];
+    const motion = targetMotion(index, duel.seed, elapsed, entry.rarity, assist);
+    if (!motion.visible) return [];
+    return [{ bugId, entry, index, motion }];
+  });
+}
+
+function selectHelperTarget(targets: VisibleDuelTarget[], bonus: ReturnType<typeof activeBugSquadBonusList>[number], hitCounts: Record<string, number>, timestamp: number) {
+  const ranked = [...targets].sort((a, b) => helperTargetScore(b, bonus, hitCounts, timestamp) - helperTargetScore(a, bonus, hitCounts, timestamp));
+  return ranked[0];
+}
+
+function helperTargetScore(target: VisibleDuelTarget, bonus: ReturnType<typeof activeBugSquadBonusList>[number], hitCounts: Record<string, number>, timestamp: number) {
+  const required = baseTapsByRarity[target.entry.rarity];
+  const hits = hitCounts[target.bugId] ?? 0;
+  const almostCaught = hits >= Math.max(1, required - 1) ? 3 : 0;
+  const urgency = target.motion.progress > 0.75 ? 2 : target.motion.progress > 0.55 ? 1 : 0;
+  const rarityValue = scoreByRarity[target.entry.rarity] * helperRarityPreference(bonus.category);
+  const jitter = (stableHash(`${bonus.bugId}:${target.bugId}:${Math.floor(timestamp / 1800)}`) % 100) / 1000;
+  return rarityValue + urgency + almostCaught + jitter;
+}
+
+function helperRarityPreference(category: BugSquadBonusCategory) {
+  if (category === "focus_boost" || category === "knowledge_boost" || category === "quest_boost" || category === "radar_rarity") return 1.1;
+  if (category === "movement_boost" || category === "streak_protection") return 0.5;
+  return 0.75;
+}
+
+function distanceBetweenTargets(first: VisibleDuelTarget, second: VisibleDuelTarget) {
+  const dx = first.motion.x - second.motion.x;
+  const dy = first.motion.y - second.motion.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function helperSpecForBonus(bonus: ReturnType<typeof activeBugSquadBonusList>[number]) {
+  const rarityBoost = bonus.rarity === "Mythisch" ? 4 : bonus.rarity === "Legendarisch" ? 3 : bonus.rarity === "Episch" ? 2 : bonus.rarity === "Zeldzaam" ? 1 : 0;
+  const kind = helperKindForCategory(bonus.category);
+  return {
+    color: helperColorForKind(kind),
+    cooldownMs: 8200 - rarityBoost * 650,
+    hits: bonus.rarity === "Mythisch" ? 2 : 1,
+    kind,
+    splashRadius: kind === "splash" ? 18 + rarityBoost * 2 : 0,
+    splashTargets: kind === "splash" && rarityBoost >= 2 ? Math.min(2, rarityBoost - 1) : 0
+  };
+}
+
+function helperKindForCategory(category: BugSquadBonusCategory): HelperImpactKind {
+  if (category === "catch_assist" || category === "catch_time") return "sticky";
+  if (category === "radar_spawn" || category === "radar_rarity" || category === "xp_boost") return "splash";
+  if (category === "movement_boost" || category === "streak_protection") return "shield";
+  if (category === "focus_boost" || category === "knowledge_boost" || category === "support_boost" || category === "quest_boost") return "zap";
+  return "burst";
+}
+
+function helperColorForKind(kind: HelperImpactKind) {
+  if (kind === "splash") return "#f59e0b";
+  if (kind === "sticky") return "#65a30d";
+  if (kind === "shield") return "#38bdf8";
+  if (kind === "zap") return "#a78bfa";
+  return "#d7bd57";
+}
+
+function helperKindLabel(kind: HelperImpactKind, t: (key: string) => string) {
+  return t(`duel.helper.${kind}`);
+}
+
+function HelperTowerPulse({ color, ready }: { color: string; ready: boolean }) {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!ready) {
+      pulse.setValue(0);
+      return () => undefined;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { duration: 720, toValue: 1, useNativeDriver: true }),
+        Animated.timing(pulse, { duration: 0, toValue: 0, useNativeDriver: true })
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, ready]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.helperPulse,
+        {
+          borderColor: color,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0] }),
+          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1.45] }) }]
+        }
+      ]}
+    />
+  );
+}
+
+function HelperImpactEffect({ impact }: { impact: HelperImpact }) {
+  const pulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(pulse, { duration: 480, toValue: 1, useNativeDriver: true }).start();
+  }, [pulse]);
+
+  const symbol = impact.kind === "zap" ? "✦" : impact.kind === "sticky" ? "✹" : impact.kind === "shield" ? "◇" : impact.kind === "splash" ? "●" : "✷";
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.helperImpact,
+        {
+          borderColor: impact.color,
+          left: `${impact.x}%`,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.95, 0] }),
+          top: `${impact.y}%`,
+          transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1.8] }) }]
+        }
+      ]}
+    >
+      <Text style={[styles.helperImpactSymbol, { color: impact.color }]}>{symbol}</Text>
+    </Animated.View>
+  );
 }
 
 function targetPriority(rarity: BugDexRarity, progress: number) {
@@ -1036,6 +1259,77 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "900",
     minWidth: 70,
+    textAlign: "center"
+  },
+  helperChargeFill: {
+    borderRadius: 999,
+    height: 4
+  },
+  helperChargeTrack: {
+    backgroundColor: "rgba(255,255,255,0.36)",
+    borderRadius: 999,
+    height: 4,
+    marginTop: 3,
+    overflow: "hidden",
+    width: 40
+  },
+  helperImpact: {
+    alignItems: "center",
+    borderRadius: 999,
+    borderWidth: 2,
+    height: 46,
+    justifyContent: "center",
+    marginLeft: -23,
+    marginTop: -23,
+    position: "absolute",
+    width: 46,
+    zIndex: 8
+  },
+  helperImpactSymbol: {
+    fontSize: 19,
+    fontWeight: "900",
+    lineHeight: 22,
+    textShadowColor: "rgba(16,32,24,0.75)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3
+  },
+  helperPulse: {
+    borderRadius: 999,
+    borderWidth: 2,
+    height: 62,
+    left: -7,
+    position: "absolute",
+    top: -7,
+    width: 62
+  },
+  helperTower: {
+    alignItems: "center",
+    backgroundColor: "rgba(16,32,24,0.88)",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 68,
+    justifyContent: "center",
+    paddingTop: 4,
+    position: "relative",
+    width: 60
+  },
+  helperTowerDock: {
+    alignItems: "flex-end",
+    bottom: 8,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    left: 0,
+    position: "absolute",
+    right: 0,
+    zIndex: 9
+  },
+  helperTowerText: {
+    color: "#dce9df",
+    fontSize: 8,
+    fontWeight: "900",
+    marginTop: 2,
+    maxWidth: 52,
     textAlign: "center"
   },
   header: {
