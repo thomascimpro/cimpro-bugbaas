@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.18
+
+- Nieuwe legacy APK met verhoogde Android versionCode, zodat toestellen de update boven 2.1.17 accepteren.
+
 ## 2.1.17
 
 - Bug Squad helpers mikken nu alleen op bugs die echt zichtbaar in de arena staan, zodat aanvallen niet meer op verborgen targets lijken te missen.
