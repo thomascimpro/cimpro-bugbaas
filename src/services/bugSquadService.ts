@@ -63,7 +63,7 @@ const bonusCaps: Record<BugSquadBonusCategory, number> = {
 };
 
 const categoriesByInsect: Record<InsectVariant, BugSquadBonusCategory[]> = {
-  beetle: ["movement_boost", "quest_boost", "shard_boost"],
+  beetle: ["movement_boost", "quest_boost", "focus_boost"],
   crawler: ["catch_assist", "streak_protection"],
   dragonfly: ["radar_spawn", "radar_rarity", "catch_time"],
   grasshopper: ["catch_assist", "movement_boost"],

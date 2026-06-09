@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { Alert, DimensionValue, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, DimensionValue, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RouteName } from "../../App";
 import { BugArtImage } from "../components/BugArtImage";
 import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
 import { entryByBugId, listBugDexInventory } from "../services/bugDexService";
 import { bugLampStatus } from "../services/bugLampService";
+import { maxActiveBugSquadSize, sanitizeActiveBugSquad } from "../services/bugSquadService";
 import { claimMovementRadarBonuses, getMovementRadarProgress, MovementRadarProgress } from "../services/movementRadarService";
-import { BugDexEntry, bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
+import { bugDexEntries, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
 import { languages, useI18n } from "../services/i18n";
 import { listUsers } from "../services/userService";
 import { weeklyMissionLabel, weeklyMissionSet } from "../services/weeklyMissionService";
@@ -18,11 +19,20 @@ type Props = {
   movementBoost?: number;
   onActivateBugLamp?: () => Promise<void>;
   onMovementRegistered?: (estimatedKm: number) => Promise<void>;
+  onOpenBugDexWorkshop?: () => void;
   user: User;
   onNavigate: (route: RouteName) => void;
 };
 
-export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRegistered, user, onNavigate }: Props) {
+const rarityColors: Record<BugDexRarity, string> = {
+  Gewoon: "#6f7f5f",
+  Zeldzaam: "#15724f",
+  Episch: "#356d7c",
+  Legendarisch: "#b83227",
+  Mythisch: "#7c3aed"
+};
+
+export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRegistered, onOpenBugDexWorkshop, user, onNavigate }: Props) {
   const { language, setLanguage, t, tr } = useI18n();
   const tier = getTierForPoints(user.totalPoints);
   const [users, setUsers] = useState<User[]>([]);
@@ -36,7 +46,9 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementReg
   const leaders = users.slice(0, 3);
   const userRank = Math.max(1, users.findIndex((item) => item.uid === user.uid) + 1);
   const dexCount = inventory.length;
-  const dexPreviewEntries = inventory.slice(0, 3).map((item) => entryByBugId(item.bugId)).filter((entry): entry is BugDexEntry => Boolean(entry));
+  const activeSquadEntries = sanitizeActiveBugSquad(user.activeBugSquad, inventory)
+    .map((bugId) => entryByBugId(bugId))
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const missions = weeklyMissionSet(user, bugs);
   const canClaimMovement = Boolean(movementProgress && movementProgress.claimableRewards > 0);
   const movementDataTypes = movementProgress?.dataTypes ?? [];
@@ -113,11 +125,11 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementReg
                   ))}
                 </View>
               )}
-              <Pressable style={styles.profilePill} onPress={() => onNavigate("profile")}>
-                <Text style={styles.profileText}>{t("home.profile")}</Text>
+              <Pressable accessibilityLabel={t("home.profile")} accessibilityRole="button" hitSlop={8} style={styles.profilePill} onPress={() => onNavigate("profile")}>
+                <ProfileIcon />
               </Pressable>
-              <Pressable style={styles.settingsPill} onPress={() => onNavigate("settings")}>
-                <Text style={styles.settingsText}>{t("home.settings")}</Text>
+              <Pressable accessibilityLabel={t("home.settings")} accessibilityRole="button" hitSlop={8} style={styles.settingsPill} onPress={() => onNavigate("settings")}>
+                <SettingsIcon />
               </Pressable>
             </View>
           </View>
@@ -279,11 +291,27 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementReg
           <Text style={styles.dexMeta}>{dexCount}/{bugDexEntries.length} {t("home.caught")}</Text>
         </View>
         <View style={styles.dexBugs}>
-          {dexPreviewEntries.length ? dexPreviewEntries.map((entry) => (
-            <BugArtImage key={entry.id} bugId={entry.id} size={50} />
-          )) : (
-            <Text style={styles.dexEmptyText}>{t("home.emptyDex")}</Text>
-          )}
+          {Array.from({ length: maxActiveBugSquadSize }).map((_, index) => {
+            const entry = activeSquadEntries[index];
+            return (
+              <View key={entry?.id ?? index} style={styles.dexBugJar}>
+                <View style={[styles.dexBugJarLid, entry && { backgroundColor: rarityColors[entry.rarity] }]} />
+                <View style={[styles.dexBugSlot, entry && { borderColor: rarityColors[entry.rarity] }]}>
+                  <View style={styles.dexBugJarShine} />
+                  {entry ? <BugArtImage bugId={entry.id} size={34} /> : <Text style={styles.dexEmptySlot}>+</Text>}
+                  <View style={styles.dexBugJarBase} />
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      </Pressable>
+      <Pressable style={styles.workshopCard} onPress={onOpenBugDexWorkshop ?? (() => onNavigate("bugdex"))}>
+        <Image source={require("../../assets/generated/bugdex-workshop-shortcut.png")} style={styles.workshopImage} />
+        <View style={styles.workshopText}>
+          <Text style={styles.workshopTitle}>{t("home.workshopTitle")}</Text>
+          <Text style={styles.workshopBody} numberOfLines={2}>{t("home.workshopBody")}</Text>
+          <Text style={styles.workshopCta}>{t("home.workshopCta")}</Text>
         </View>
       </Pressable>
       <View style={styles.missionCard}>
@@ -352,6 +380,29 @@ function movementGoalLabel(goal: MovementRadarProgress["goals"][number], t: (key
   return t(`movement.goal.${goal.id}`);
 }
 
+function ProfileIcon() {
+  return (
+    <View style={styles.profileIcon}>
+      <View style={styles.profileIconHead} />
+      <View style={styles.profileIconBody} />
+    </View>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <View style={styles.settingsIcon}>
+      <View style={styles.settingsCog}>
+        <View style={styles.settingsDot} />
+      </View>
+      <View style={[styles.settingsSpoke, styles.settingsSpokeTop]} />
+      <View style={[styles.settingsSpoke, styles.settingsSpokeRight]} />
+      <View style={[styles.settingsSpoke, styles.settingsSpokeBottom]} />
+      <View style={[styles.settingsSpoke, styles.settingsSpokeLeft]} />
+    </View>
+  );
+}
+
 function showMovementConnectInfo(t: (key: string) => string): void {
   Alert.alert(
     t("health.connectTitle"),
@@ -391,10 +442,12 @@ const styles = StyleSheet.create({
     minWidth: 0
   },
   profilePill: {
+    alignItems: "center",
     backgroundColor: "#d7bd57",
     borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6
+    height: 34,
+    justifyContent: "center",
+    width: 38
   },
   heroActions: {
     alignItems: "stretch",
@@ -435,18 +488,83 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "900"
   },
+  profileIcon: {
+    alignItems: "center",
+    height: 22,
+    justifyContent: "center",
+    width: 22
+  },
+  profileIconHead: {
+    backgroundColor: "#102018",
+    borderRadius: 999,
+    height: 8,
+    marginBottom: 2,
+    width: 8
+  },
+  profileIconBody: {
+    backgroundColor: "#102018",
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    height: 9,
+    width: 16
+  },
   profileText: {
     color: "#102018",
     fontSize: 12,
     fontWeight: "900"
   },
   settingsPill: {
+    alignItems: "center",
     backgroundColor: "rgba(253,254,251,0.14)",
     borderColor: "rgba(253,254,251,0.34)",
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6
+    height: 34,
+    justifyContent: "center",
+    width: 38
+  },
+  settingsIcon: {
+    alignItems: "center",
+    height: 22,
+    justifyContent: "center",
+    width: 22
+  },
+  settingsCog: {
+    alignItems: "center",
+    borderColor: "#ffffff",
+    borderRadius: 999,
+    borderWidth: 2,
+    height: 15,
+    justifyContent: "center",
+    width: 15,
+    zIndex: 2
+  },
+  settingsDot: {
+    backgroundColor: "#ffffff",
+    borderRadius: 999,
+    height: 4,
+    width: 4
+  },
+  settingsSpoke: {
+    backgroundColor: "#ffffff",
+    borderRadius: 999,
+    height: 3,
+    position: "absolute",
+    width: 8
+  },
+  settingsSpokeTop: {
+    top: 1,
+    transform: [{ rotate: "90deg" }]
+  },
+  settingsSpokeRight: {
+    right: 1
+  },
+  settingsSpokeBottom: {
+    bottom: 1,
+    transform: [{ rotate: "90deg" }]
+  },
+  settingsSpokeLeft: {
+    left: 1
   },
   settingsText: {
     color: "#ffffff",
@@ -759,12 +877,97 @@ const styles = StyleSheet.create({
   dexBugs: {
     alignItems: "center",
     flexDirection: "row",
-    gap: 0
+    gap: 6
   },
-  dexEmptyText: {
-    color: "#52665d",
-    fontSize: 12,
+  dexBugJar: {
+    alignItems: "center",
+    width: 42
+  },
+  dexBugJarLid: {
+    backgroundColor: "#6d5441",
+    borderColor: "#3e2e24",
+    borderRadius: 5,
+    borderWidth: 1,
+    height: 7,
+    marginBottom: -2,
+    width: 28,
+    zIndex: 2
+  },
+  dexBugSlot: {
+    alignItems: "center",
+    backgroundColor: "rgba(220,244,250,0.62)",
+    borderColor: "rgba(16,32,24,0.16)",
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    borderRadius: 10,
+    borderWidth: 2,
+    height: 46,
+    justifyContent: "center",
+    overflow: "hidden",
+    width: 46
+  },
+  dexBugJarShine: {
+    backgroundColor: "rgba(255,255,255,0.52)",
+    borderRadius: 999,
+    height: 28,
+    left: 7,
+    position: "absolute",
+    top: 7,
+    transform: [{ rotate: "9deg" }],
+    width: 5
+  },
+  dexBugJarBase: {
+    backgroundColor: "rgba(41,67,56,0.18)",
+    borderRadius: 999,
+    bottom: 4,
+    height: 4,
+    left: 8,
+    position: "absolute",
+    right: 8
+  },
+  dexEmptySlot: {
+    color: "#8ca099",
+    fontSize: 18,
     fontWeight: "900"
+  },
+  workshopCard: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 12,
+    overflow: "hidden",
+    padding: 10
+  },
+  workshopImage: {
+    borderRadius: 8,
+    height: 86,
+    width: 86
+  },
+  workshopText: {
+    flex: 1,
+    minWidth: 0
+  },
+  workshopTitle: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  workshopBody: {
+    color: "#dce9df",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    marginTop: 3
+  },
+  workshopCta: {
+    color: "#d7bd57",
+    fontSize: 12,
+    fontWeight: "900",
+    marginTop: 6
   },
   missionCard: {
     backgroundColor: "#102018",

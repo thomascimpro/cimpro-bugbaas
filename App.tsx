@@ -22,6 +22,7 @@ import { BottomNav } from "./src/components/BottomNav";
 import { WalkingBugsLayer } from "./src/components/WalkingBugsLayer";
 import { BugDexUnlockModal } from "./src/components/BugDexUnlockModal";
 import { RankUpModal } from "./src/components/RankUpModal";
+import { BadgeUnlockModal } from "./src/components/BadgeUnlockModal";
 import { BugSplatBonusOverlay } from "./src/components/BugSplatBonusOverlay";
 import { ForegroundCatchBug } from "./src/components/ForegroundCatchBug";
 import { DisplayNameModal } from "./src/components/DisplayNameModal";
@@ -29,10 +30,10 @@ import { InAppNotificationToast } from "./src/components/InAppNotificationToast"
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
 import { allBugArtIds, BugArtId } from "./src/services/bugArt";
 import { CharacterId } from "./src/services/characterService";
-import { LanguageProvider, useI18n } from "./src/services/i18n";
+import { bugDexEntryName, LanguageProvider, rarityLabel, useI18n } from "./src/services/i18n";
 import { listBugs } from "./src/services/bugService";
 import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, grantBugDexReward, rollBugDexDrop, rollSpecificBugDexDrop } from "./src/services/bugDexService";
-import { getTierForPoints, type UserTier } from "./src/services/pointsService";
+import { badgeDefinitions, getTierForPoints, type BadgeDefinition, type UserTier } from "./src/services/pointsService";
 import { claimMovementRadarBonuses } from "./src/services/movementRadarService";
 import { checkLatestVersion, VersionNotice } from "./src/services/versionService";
 import {
@@ -44,6 +45,7 @@ import {
   notifyComment,
   notifyNewBug,
   saveNotificationSettings,
+  showBugDexUnlockNotification,
   showMovementRewardNotification,
   showPhoneNotification,
   subscribeUserNotifications
@@ -54,6 +56,10 @@ export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "pr
 const helpTourVersion = "full-help-v2";
 const helpTourVersionKey = (uid: string) => `bugbaas:helpTour:${helpTourVersion}:${uid}`;
 const changelogSeenKey = (uid: string, version: string) => `bugbaas:changelog:${version}:${uid}`;
+const badgeUnlockSeenKey = (uid: string, badgeId: string) => `bugbaas:badgeUnlock:${uid}:${badgeId}`;
+const commentForegroundSpawnChance = 0.16;
+const upvoteForegroundSpawnChance = 0.1;
+const maxQueuedForegroundBugs = 3;
 
 type ChangelogFeature = {
   key: string;
@@ -62,8 +68,30 @@ type ChangelogFeature = {
 };
 
 const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
+  "2.0.3": [
+    { key: "changelog.2.0.3.bugdex", image: require("./assets/bugdex/atlaskever.png"), tone: "purple" },
+    { key: "changelog.2.0.3.squad", image: require("./assets/generated/active-bug-squad-selection-hd.jpg"), tone: "green" },
+    { key: "changelog.2.0.3.radar", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "gold" }
+  ],
+  "2.0.2": [
+    { key: "changelog.2.0.1.movement", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "green" },
+    { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
+    { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
+    { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
+    { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" },
+    { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "purple" }
+  ],
+  "2.0.1": [
+    { key: "changelog.2.0.1.movement", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "green" },
+    { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
+    { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
+    { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
+    { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" },
+    { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "purple" }
+  ],
   "2.0.0": [
     { key: "changelog.2.0.0.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
+    { key: "changelog.2.0.0.squad", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" },
     { key: "changelog.2.0.0.rank", image: require("./assets/bugdex/atlaskever.png"), tone: "purple" }
   ],
   "1.5.9": [
@@ -93,13 +121,16 @@ export default function App() {
 }
 
 function AppContent() {
+  const { t } = useI18n();
   const [route, setRoute] = useState<RouteName>("home");
   const [user, setUser] = useState<User | null>(null);
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [bugDexDrop, setBugDexDrop] = useState<BugDexDropResult | null>(null);
   const [rankUpTier, setRankUpTier] = useState<UserTier | null>(null);
+  const [badgeUnlock, setBadgeUnlock] = useState<BadgeDefinition | null>(null);
   const [bugDexDropQueue, setBugDexDropQueue] = useState<BugDexDropResult[]>([]);
+  const [badgeUnlockQueue, setBadgeUnlockQueue] = useState<BadgeDefinition[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings);
   const [notification, setNotification] = useState<AppNotification | null>(null);
   const [openBugDexTradeRequest, setOpenBugDexTradeRequest] = useState(0);
@@ -116,6 +147,9 @@ function AppContent() {
   const versionCheckInProgress = useRef(false);
   const userRef = useRef<User | null>(null);
   const previousRankRef = useRef<{ uid: string; minPoints: number } | null>(null);
+  const previousBadgesRef = useRef<{ badges: string[]; uid: string } | null>(null);
+  const queuedBadgeIdsRef = useRef(new Set<string>());
+  const engagementSyncInProgress = useRef(new Set<string>());
   const notificationSettingsRef = useRef<NotificationSettings>(defaultNotificationSettings);
   const handledNotificationResponses = useRef(new Set<string>());
   const dailyLoginClaimedForUsers = useRef(new Set<string>());
@@ -123,6 +157,7 @@ function AppContent() {
     user
     && user.nameSet === true
     && ["home", "bugs", "new", "bugdex", "leaderboard"].includes(route)
+    && !badgeUnlock
     && !bugDexDrop
     && !rankUpTier
     && !notification
@@ -150,6 +185,77 @@ function AppContent() {
     previousRankRef.current = { uid: user.uid, minPoints: currentTier.minPoints };
   }, [user?.totalPoints, user?.uid]);
 
+  const badgeNamesKey = (user?.badges ?? []).join("|");
+
+  function badgeDefinitionsForNames(badgeNames: string[]): BadgeDefinition[] {
+    return badgeNames
+      .map((badgeName) => badgeDefinitions.find((definition) => definition.name === badgeName))
+      .filter((definition): definition is BadgeDefinition => Boolean(definition));
+  }
+
+  function queueBadgeUnlocks(badges: BadgeDefinition[]) {
+    if (!badges.length) return;
+    setBadgeUnlockQueue((queue) => {
+      const knownIds = new Set(queuedBadgeIdsRef.current);
+      if (badgeUnlock) knownIds.add(badgeUnlock.id);
+      const additions = badges.filter((badge) => !knownIds.has(badge.id));
+      additions.forEach((badge) => queuedBadgeIdsRef.current.add(badge.id));
+      return additions.length ? [...queue, ...additions] : queue;
+    });
+  }
+
+  async function queueUnseenBadgeUnlocks(badges: BadgeDefinition[]) {
+    if (!userRef.current || !badges.length) return;
+    const uid = userRef.current.uid;
+    const pairs = await AsyncStorage.multiGet(badges.map((badge) => badgeUnlockSeenKey(uid, badge.id)));
+    const seenKeys = new Set(pairs.filter(([, value]) => Boolean(value)).map(([key]) => key));
+    queueBadgeUnlocks(badges.filter((badge) => !seenKeys.has(badgeUnlockSeenKey(uid, badge.id))));
+  }
+
+  useEffect(() => {
+    if (!user) {
+      previousBadgesRef.current = null;
+      queuedBadgeIdsRef.current.clear();
+      setBadgeUnlock(null);
+      setBadgeUnlockQueue([]);
+      return;
+    }
+
+    const currentBadges = user.badges ?? [];
+    const previous = previousBadgesRef.current;
+    if (previous?.uid === user.uid) {
+      const previousBadges = new Set(previous.badges);
+      const newBadges = badgeDefinitionsForNames(currentBadges.filter((badgeName) => !previousBadges.has(badgeName)));
+      void queueUnseenBadgeUnlocks(newBadges).catch(() => undefined);
+    } else {
+      queuedBadgeIdsRef.current.clear();
+      setBadgeUnlock(null);
+      setBadgeUnlockQueue([]);
+    }
+    previousBadgesRef.current = { badges: currentBadges, uid: user.uid };
+  }, [badgeNamesKey, badgeUnlock, user?.uid]);
+
+  useEffect(() => {
+    if (!user || user.nameSet !== true || !helpGateChecked) return;
+    const currentBadges = user.badges ?? [];
+    if (!currentBadges.length) return;
+    let active = true;
+    void queueUnseenBadgeUnlocks(badgeDefinitionsForNames(currentBadges)).then(() => {
+      if (!active) return;
+    }).catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [badgeNamesKey, helpGateChecked, user?.nameSet, user?.uid]);
+
+  useEffect(() => {
+    if (badgeUnlock || rankUpTier || bugDexDrop || notification || helpVisible || changelogVersion || splatBonusVisible || versionNotice) return;
+    const [nextBadge, ...remaining] = badgeUnlockQueue;
+    if (!nextBadge) return;
+    setBadgeUnlock(nextBadge);
+    setBadgeUnlockQueue(remaining);
+  }, [badgeUnlock, badgeUnlockQueue, bugDexDrop, changelogVersion, helpVisible, notification, rankUpTier, splatBonusVisible, versionNotice]);
+
   useEffect(() => {
     notificationSettingsRef.current = notificationSettings;
   }, [notificationSettings]);
@@ -160,6 +266,7 @@ function AppContent() {
         if (nextUser) {
           const appUser = await ensureUserDocument(nextUser);
           setUser(appUser);
+          scheduleEngagementSync(appUser);
         } else {
           setUser(null);
         }
@@ -233,32 +340,34 @@ function AppContent() {
   }, [user?.helpSeen, user?.nameSet, user?.uid]);
 
   useEffect(() => {
-    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
+    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || badgeUnlock || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
     const currentVersion = currentAppVersion();
     const changelogItems = usefulChangelogByVersion[currentVersion];
     if (!currentVersion || !changelogItems?.length) return;
     let active = true;
     void AsyncStorage.getItem(changelogSeenKey(user.uid, currentVersion)).then((seen) => {
-      if (active && !seen) setChangelogVersion(currentVersion);
+      if (!active || seen) return;
+      setChangelogVersion(currentVersion);
+      void AsyncStorage.setItem(changelogSeenKey(user.uid, currentVersion), "true").catch(() => undefined);
     }).catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [bugDexDrop, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
+  }, [badgeUnlock, bugDexDrop, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
 
   useEffect(() => {
-    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || changelogVersion || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
+    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || changelogVersion || badgeUnlock || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
     if (dailyLoginClaimedForUsers.current.has(user.uid)) return;
     dailyLoginClaimedForUsers.current.add(user.uid);
     void maybeShowBugDexDrop(claimDailyLoginBug(user));
-  }, [bugDexDrop, changelogVersion, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
+  }, [badgeUnlock, bugDexDrop, changelogVersion, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
 
   useEffect(() => {
     if (!user) return () => undefined;
     return subscribeUserNotifications(user, notificationSettings, (nextNotification) => {
       if (appState.current === "active") {
         setNotification(nextNotification);
-        if (nextNotification.type === "trade") void showPhoneNotification(nextNotification).catch(() => undefined);
+        if (nextNotification.type === "trade" || nextNotification.type === "comment") void showPhoneNotification(nextNotification).catch(() => undefined);
         return;
       }
       void showPhoneNotification(nextNotification).catch(() => undefined);
@@ -287,6 +396,7 @@ function AppContent() {
     try {
       const appUser = createAccount ? await register(email, password, displayName) : await login(email, password);
       setUser(appUser);
+      scheduleEngagementSync(appUser);
       setRoute("home");
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Inloggen mislukt.");
@@ -298,6 +408,7 @@ function AppContent() {
     try {
       const appUser = await loginWithGoogle(idToken, accessToken);
       setUser(appUser);
+      scheduleEngagementSync(appUser);
       setRoute("home");
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : "Google-login mislukt.");
@@ -342,11 +453,31 @@ function AppContent() {
     }
   }
 
+  function closeBadgeUnlock() {
+    const currentBadge = badgeUnlock;
+    setBadgeUnlock(null);
+    if (user && currentBadge) {
+      void AsyncStorage.setItem(badgeUnlockSeenKey(user.uid, currentBadge.id), "true").catch(() => undefined);
+    }
+  }
+
   async function refreshUser() {
     if (!user) return;
     const synced = await syncEngagementPoints(user);
     const updated = await getUserById(synced.uid);
     if (updated) setUser(updated);
+  }
+
+  function scheduleEngagementSync(appUser: User) {
+    if (engagementSyncInProgress.current.has(appUser.uid)) return;
+    engagementSyncInProgress.current.add(appUser.uid);
+    setTimeout(() => {
+      void syncEngagementPoints(appUser).then((updated) => {
+        if (userRef.current?.uid === updated.uid) setUser(updated);
+      }).catch(() => undefined).finally(() => {
+        engagementSyncInProgress.current.delete(appUser.uid);
+      });
+    }, 1000);
   }
 
   async function maybeShowBugDexDrop(dropPromise: Promise<BugDexDropResult | null>) {
@@ -360,6 +491,9 @@ function AppContent() {
   }
 
   function showBugDexDrop(drop: BugDexDropResult) {
+    if (drop.rewardType === "bug" && drop.isNew && notificationSettingsRef.current.bugdex) {
+      void showBugDexUnlockNotification(bugDexEntryName(drop.entry, t), rarityLabel(drop.entry.rarity, t)).catch(() => undefined);
+    }
     setBugDexDrop((current) => {
       if (current) {
         setBugDexDropQueue((queue) => [...queue, drop]);
@@ -378,6 +512,13 @@ function AppContent() {
   function rewardActivity(source: BugDexDropSource) {
     if (!user) return;
     void maybeShowBugDexDrop(rollBugDexDrop(user, source));
+  }
+
+  function queueForegroundBug(chance = 1) {
+    if (Math.random() > chance) return;
+    const bugId = allBugArtIds[Math.floor(Math.random() * allBugArtIds.length)];
+    if (!bugId) return;
+    setPendingRadarBugIds((queue) => queue.length >= maxQueuedForegroundBugs ? queue : [...queue, bugId]);
   }
 
   function rewardBugFixed(bug: BugReport) {
@@ -525,9 +666,24 @@ function AppContent() {
   }
 
   function openUserProfile(nextUser: User) {
-    setSelectedUser(nextUser);
-    setRoute(nextUser.uid === user?.uid ? "profile" : "userProfile");
-    if (nextUser.uid !== user?.uid) rewardActivity("profile_view");
+    const currentUser = userRef.current;
+    const isOwnProfile = nextUser.uid === currentUser?.uid;
+    if (!isOwnProfile) {
+      setSelectedUser(nextUser);
+    }
+    setRoute(isOwnProfile ? "profile" : "userProfile");
+    void getUserById(nextUser.uid).then((freshUser) => {
+      if (!freshUser) return;
+      if (freshUser.uid === userRef.current?.uid) {
+        const current = userRef.current;
+        const mergedUser = current ? { ...current, ...freshUser, email: current.email || freshUser.email } : freshUser;
+        setUser(mergedUser);
+        userRef.current = mergedUser;
+        return;
+      }
+      setSelectedUser(freshUser);
+    }).catch(() => undefined);
+    if (!isOwnProfile) rewardActivity("profile_view");
   }
 
   if (authLoading) {
@@ -556,7 +712,7 @@ function AppContent() {
       <AppBackground />
       <WalkingBugsLayer onSplat={() => void handleBugSplat()} />
       <View style={styles.content}>
-        {route === "home" && <HomeScreen movementBoost={movementBoostForUser()} user={user} onActivateBugLamp={handleActivateBugLamp} onNavigate={setRoute} onMovementRegistered={registerMovementKilometers} />}
+        {route === "home" && <HomeScreen movementBoost={movementBoostForUser()} user={user} onActivateBugLamp={handleActivateBugLamp} onNavigate={setRoute} onOpenBugDexWorkshop={openBugDexTrades} onMovementRegistered={registerMovementKilometers} />}
         {route === "bugs" && (
           <BugListScreen
             onBack={() => setRoute("home")}
@@ -574,6 +730,7 @@ function AppContent() {
             onSaved={(bug) => {
               void notifyNewBug(bug, user).catch(() => undefined);
               void refreshUser();
+              queueForegroundBug();
               if ((bug.reportType ?? "bug") === "bug") {
                 void maybeShowBugDexDrop(grantBugDexReward(user, "bug_reported"));
                 setSplatBonusVisible(true);
@@ -593,6 +750,7 @@ function AppContent() {
             onCommentAdded={(comment: BugComment) => {
               void notifyComment(selectedBug, comment, user).catch(() => undefined);
               rewardActivity("comment");
+              queueForegroundBug(commentForegroundSpawnChance);
               void refreshUser();
             }}
             onBugChanged={(bug) => {
@@ -602,6 +760,7 @@ function AppContent() {
                 else rewardActivity("status_update");
               } else if ((selectedBug?.upvoteCount ?? 0) !== (bug.upvoteCount ?? 0) && user.uid !== bug.reporterId) {
                 rewardActivity("upvote_given");
+                queueForegroundBug(upvoteForegroundSpawnChance);
               }
               setSelectedBug(bug);
               void refreshUser();
@@ -654,6 +813,7 @@ function AppContent() {
         onForcedBugConsumed={() => setPendingRadarBugIds((queue) => queue.slice(1))}
       />
       <RankUpModal tier={rankUpTier} onClose={() => setRankUpTier(null)} />
+      <BadgeUnlockModal badge={badgeUnlock} onClose={closeBadgeUnlock} />
       <BugDexUnlockModal drop={bugDexDrop} onClose={closeBugDexDrop} />
       <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
       <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />

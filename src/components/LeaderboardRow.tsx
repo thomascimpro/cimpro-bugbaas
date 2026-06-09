@@ -59,7 +59,7 @@ export function LeaderboardRow({ index, lastCatch, user, onPress }: { index: num
               </View>
               <View style={styles.lastCatchTextBlock}>
                 <Text style={styles.lastCatchTitle} numberOfLines={1}>{bugDexEntryName(lastCatchEntry, t)}</Text>
-                <Text style={[styles.lastCatchMeta, { color: lastCatchColor }]} numberOfLines={1}>{rarityLabel(lastCatch.rarity, t)} - {formatLastCaughtAt(lastCatch.lastUnlockedAt, t)}</Text>
+                <Text style={[styles.lastCatchMeta, { color: lastCatchColor }]} numberOfLines={2}>{rarityLabel(lastCatch.rarity, t)} - {formatLastCaughtAt(lastCatch.lastUnlockedAt, t)}</Text>
               </View>
             </>
           ) : (
@@ -69,7 +69,7 @@ export function LeaderboardRow({ index, lastCatch, user, onPress }: { index: num
       </View>
       <View style={[styles.scorePill, medal && { backgroundColor: medal.pill }]}>
         <Text style={[styles.points, medal && { color: medal.pillText }]}>{user.totalPoints}</Text>
-        <Text style={[styles.pointsLabel, medal && { color: medal.pillText }]}>{t("common.pointsShort")}</Text>
+        <Text style={[styles.pointsLabel, medal && { color: medal.pillText }]}>{t("leader.score")}</Text>
       </View>
     </Pressable>
   );
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     flexDirection: "row",
     gap: 10,
-    minHeight: 116,
+    minHeight: 128,
     marginBottom: 10,
     overflow: "hidden",
     padding: 12,
@@ -183,10 +183,11 @@ const styles = StyleSheet.create({
     marginTop: 1
   },
   lastCatchRow: {
-    alignItems: "center",
+    alignItems: "flex-start",
     flexDirection: "row",
     gap: 7,
-    marginTop: 6
+    marginTop: 6,
+    minHeight: 42
   },
   lastCatchBug: {
     alignItems: "center",
@@ -199,16 +200,19 @@ const styles = StyleSheet.create({
   },
   lastCatchTextBlock: {
     flex: 1,
+    justifyContent: "center",
     minWidth: 0
   },
   lastCatchTitle: {
     color: "#17211c",
     fontSize: 11,
-    fontWeight: "900"
+    fontWeight: "900",
+    lineHeight: 14
   },
   lastCatchMeta: {
     fontSize: 10,
     fontWeight: "900",
+    lineHeight: 13,
     marginTop: 1
   },
   noCatchText: {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
@@ -31,7 +31,13 @@ const rarityColors: Record<BugDexRarity, string> = {
   Legendarisch: "#b83227",
   Mythisch: "#7c3aed"
 };
-
+const raritySortOrder: Record<BugDexRarity, number> = {
+  Mythisch: 0,
+  Legendarisch: 1,
+  Episch: 2,
+  Zeldzaam: 3,
+  Gewoon: 4
+};
 const upgradeRarities: UpgradeRarity[] = ["Gewoon", "Zeldzaam", "Episch", "Legendarisch"];
 const emptyUpgradeSelections: Record<UpgradeRarity, string[]> = {
   Gewoon: [],
@@ -51,6 +57,7 @@ const emptyDailyUpgradeUsage: DailyUpgradeUsage = {
   "Episch-Legendarisch": false,
   "Legendarisch-Mythisch": false
 };
+const activeBugSquadHeroImage = require("../../assets/generated/active-bug-squad-selection-hd.jpg");
 
 const completedTradeStorageKey = (uid: string) => `bugbaas:seenCompletedTrades:${uid}`;
 
@@ -71,9 +78,21 @@ async function saveClosedCompletedTradeId(uid: string, tradeId: string): Promise
   await AsyncStorage.setItem(completedTradeStorageKey(uid), JSON.stringify([...current, tradeId]));
 }
 
+function VisibilityIcon({ active, slashed }: { active: boolean; slashed: boolean }) {
+  return (
+    <View style={styles.visibilityIcon}>
+      <View style={[styles.visibilityEye, active && styles.visibilityEyeActive]}>
+        <View style={[styles.visibilityPupil, active && styles.visibilityPupilActive]} />
+      </View>
+      {slashed && <View style={styles.visibilitySlash} />}
+    </View>
+  );
+}
+
 export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack }: Props) {
   const { t, tr } = useI18n();
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
+  const [inventoriesByUserId, setInventoriesByUserId] = useState<Record<string, BugDexInventoryItem[]>>({});
   const [users, setUsers] = useState<User[]>([]);
   const [trades, setTrades] = useState<TradeRequest[]>([]);
   const [recipientInventory, setRecipientInventory] = useState<BugDexInventoryItem[]>([]);
@@ -104,13 +123,20 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   const totalCount = bugDexEntries.length;
   const progress = Math.round((unlockedCount / totalCount) * 100);
   const unlockedEntries = inventory.map((item) => entryByBugId(item.bugId)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-  const featuredEntries = unlockedEntries.slice(0, 3);
+  const activeSquadEntries = activeSquadIds.map((bugId) => entryByBugId(bugId)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const headerEntry = unlockedEntries[unlockedEntries.length - 1];
   const dexCards = bugDexEntries
     .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }))
     .filter(({ inventoryItem }) => showLocked || Boolean(inventoryItem));
   const duplicateCount = inventory.reduce((total, item) => total + Math.max(0, item.count - 1), 0);
   const tradeInventory = inventory.filter((item) => item.count > 0);
+  const squadChoiceInventory = [...tradeInventory].sort((a, b) => {
+    const firstEntry = entryByBugId(a.bugId);
+    const secondEntry = entryByBugId(b.bugId);
+    const rarityDiff = (firstEntry ? raritySortOrder[firstEntry.rarity] : 99) - (secondEntry ? raritySortOrder[secondEntry.rarity] : 99);
+    if (rarityDiff !== 0) return rarityDiff;
+    return bugName(a.bugId).localeCompare(bugName(b.bugId));
+  });
   const activeSquadBonuses = activeBugSquadBonusList(activeSquadIds);
   const recipientTradeInventory = recipientInventory.filter((item) => item.count > 0);
   const upgradeOptions = upgradeRarities.map((rarity) => {
@@ -176,7 +202,16 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   }, [inventory]);
 
   async function refreshAll() {
-    await Promise.all([refreshInventory(), refreshTrades(), refreshDailyUpgradeUsage(), listUsers().then((items) => setUsers(items.filter((item) => item.uid !== user.uid)))]);
+    await Promise.all([refreshInventory(), refreshTrades(), refreshDailyUpgradeUsage(), refreshTradeUsers()]);
+  }
+
+  async function refreshTradeUsers() {
+    const tradeUsers = (await listUsers()).filter((item) => item.uid !== user.uid);
+    setUsers(tradeUsers);
+    const inventories = await Promise.all(
+      tradeUsers.map(async (item) => [item.uid, await listBugDexInventory(item)] as const)
+    );
+    setInventoriesByUserId(Object.fromEntries(inventories));
   }
 
   async function refreshInventory() {
@@ -279,6 +314,10 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     return t(`bugdex.squadBonus.${category}`);
   }
 
+  function squadBonusDescription(category: BugSquadBonusCategory): string {
+    return t(`bugdex.squadBonusDescription.${category}`);
+  }
+
   function squadBonusValue(category: BugSquadBonusCategory, value: number): string {
     if (category === "streak_protection") return value > 0 ? "1x" : "0x";
     return `+${Math.round(value * 100)}%`;
@@ -298,7 +337,12 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     const recipient = users.find((item) => item.uid === uid);
     setTradeRecipientId(uid);
     setTradeRequestId("");
-    setRecipientInventory(recipient ? await listBugDexInventory(recipient) : []);
+    const cachedInventory = inventoriesByUserId[uid];
+    setRecipientInventory(cachedInventory ?? []);
+    if (!recipient) return;
+    const freshInventory = await listBugDexInventory(recipient);
+    setRecipientInventory(freshInventory);
+    setInventoriesByUserId((current) => ({ ...current, [uid]: freshInventory }));
   }
 
   async function sendTradeRequest() {
@@ -313,7 +357,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
       setTradeRequestId("");
       setRecipientInventory([]);
       setTradeExpanded(false);
-      await refreshTrades();
+      await Promise.all([refreshTrades(), refreshTradeUsers()]);
     } catch (error) {
       setTradeError(error instanceof Error ? error.message : t("bugdex.tradeFailed"));
     } finally {
@@ -344,7 +388,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     setTradeError("");
     try {
       await cancelTradeRequest(user, trade);
-      await refreshTrades();
+      await Promise.all([refreshTrades(), refreshTradeUsers()]);
     } catch (error) {
       setTradeError(error instanceof Error ? error.message : t("bugdex.tradeProcessFailed"));
     } finally {
@@ -371,8 +415,14 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
           <Text style={styles.dexToolbarTitle}>{t("bugdex.discovered")}</Text>
           <Text style={styles.dexToolbarMeta}>{showLocked ? t("bugdex.allVisible") : t("bugdex.focusUnlocked")}</Text>
         </View>
-        <Pressable style={[styles.lockedToggle, showLocked && styles.lockedToggleActive]} onPress={() => setShowLocked((current) => !current)}>
-          <Text style={[styles.lockedToggleText, showLocked && styles.lockedToggleTextActive]}>{showLocked ? t("bugdex.hideUnknown") : t("bugdex.showUnknown")}</Text>
+        <Pressable
+          accessibilityLabel={showLocked ? t("bugdex.hideUnknown") : t("bugdex.showUnknown")}
+          accessibilityRole="button"
+          hitSlop={8}
+          style={[styles.lockedToggle, showLocked && styles.lockedToggleActive]}
+          onPress={() => setShowLocked((current) => !current)}
+        >
+          <VisibilityIcon active={showLocked} slashed={showLocked} />
         </Pressable>
       </View>
 
@@ -439,17 +489,99 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
         )}
       </View>
 
-      <View style={styles.preview}>
-        {featuredEntries.length ? (
-          featuredEntries.map((entry) => (
-            <View key={entry.id} style={styles.previewTile}>
-              <BugArtImage bugId={entry.id} size={54} />
+      <Pressable style={[styles.squadFeatureCard, squadExpanded && styles.squadFeatureCardActive]} onPress={() => setSquadExpanded((current) => !current)}>
+        <Image source={activeBugSquadHeroImage} style={styles.squadFeatureImage} />
+        <View style={styles.squadFeatureOverlay}>
+          <View style={styles.squadFeatureCopy}>
+            <Text style={styles.squadFeatureTitle}>{t("bugdex.activeSquad")}</Text>
+            <Text style={styles.squadFeatureMeta}>{t("bugdex.activeSquadMeta", { count: activeSquadIds.length, max: maxActiveBugSquadSize })}</Text>
+          </View>
+          <View style={styles.squadFeatureAction}>
+            <Text style={styles.squadFeatureActionText}>{squadExpanded ? t("common.close") : t("bugdex.chooseSquad")}</Text>
+          </View>
+        </View>
+        <View style={styles.activeJarPreview}>
+        {Array.from({ length: maxActiveBugSquadSize }).map((_, index) => {
+          const entry = activeSquadEntries[index];
+          return (
+            <View key={entry?.id ?? index} style={styles.activeJarMini}>
+              <View style={[styles.activeJarMiniLid, entry && { backgroundColor: rarityColors[entry.rarity] }]} />
+              <View style={[styles.activeJarSlot, entry && { borderColor: rarityColors[entry.rarity] }]}>
+                <View style={styles.activeJarShine} />
+                {entry ? <BugArtImage bugId={entry.id} size={44} /> : <Text style={styles.activeJarEmpty}>+</Text>}
+                <View style={styles.activeJarBase} />
+              </View>
             </View>
-          ))
-        ) : (
-          <Text style={styles.emptyDexText}>{t("bugdex.emptyHint")}</Text>
-        )}
+          );
+        })}
+        </View>
+      </Pressable>
+
+      {squadExpanded && (
+        <View style={styles.squadPanel}>
+          <View style={styles.squadJarBugs}>
+            {Array.from({ length: maxActiveBugSquadSize }).map((_, index) => {
+              const bugId = activeSquadIds[index];
+              const entry = bugId ? entryByBugId(bugId) : null;
+              const bonus = activeSquadBonuses.find((item) => item.bugId === bugId);
+              return (
+                <View key={index} style={styles.squadBugJarWrap}>
+                  <View style={[styles.squadBugJarLid, entry && { backgroundColor: rarityColors[entry.rarity], borderColor: rarityColors[entry.rarity] }]} />
+                  <View style={[styles.squadJarSlot, entry && { borderColor: rarityColors[entry.rarity] }]}>
+                    <View style={styles.squadJarShine} />
+                    {entry ? (
+                      <>
+                        <BugArtImage bugId={entry.id} size={54} />
+                        <Text style={styles.squadSlotName} numberOfLines={1}>{bugDexEntryName(entry, t)}</Text>
+                        {bonus && <Text style={styles.squadSlotBonus}>{squadBonusLabel(bonus.category)}</Text>}
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.squadEmptyMark}>+</Text>
+                        <Text style={styles.squadSlotBonus}>{t("bugdex.squadEmptySlot")}</Text>
+                      </>
+                    )}
+                    <View style={styles.squadJarBase} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+          <Text style={styles.tradeHint}>{t("bugdex.activeSquadHint")}</Text>
+          {activeSquadBonuses.length > 0 && (
+            <View style={styles.squadBonusList}>
+              {activeSquadBonuses.map((bonus) => (
+                <View key={bonus.bugId} style={styles.squadBonusItem}>
+                  <Text style={styles.squadBonusText}>{`${bugName(bonus.bugId)}: ${squadBonusLabel(bonus.category)} ${squadBonusValue(bonus.category, bonus.value)}`}</Text>
+                  <Text style={styles.squadBonusDescription}>{squadBonusDescription(bonus.category)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+          <View style={styles.chipRow}>
+            {squadChoiceInventory.map((item) => {
+              const entry = entryByBugId(item.bugId);
+              if (!entry) return null;
+              const selected = activeSquadIds.includes(item.bugId);
+              const disabled = !selected && activeSquadIds.length >= maxActiveBugSquadSize;
+              const bonus = activeBugSquadBonusList([item.bugId])[0];
+              return (
+                <Pressable
+                  key={item.bugId}
+                  disabled={disabled || squadBusyId === item.bugId}
+                  style={[styles.squadBugChip, selected && styles.squadBugChipActive, disabled && styles.squadBugChipDisabled]}
+                  onPress={() => toggleActiveSquadBug(item.bugId)}
+                >
+                  <BugArtImage bugId={item.bugId} size={34} />
+                  <Text style={[styles.squadBugChipText, selected && styles.squadBugChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
+                  <Text style={[styles.tradeRarityPill, { backgroundColor: rarityColors[entry.rarity] }]}>{rarityLabel(entry.rarity, t)}</Text>
+                  {bonus && <Text style={[styles.squadBugChipMeta, selected && styles.squadBugChipTextActive]}>{`${squadBonusLabel(bonus.category)} ${squadBonusValue(bonus.category, bonus.value)}`}</Text>}
+                </Pressable>
+              );
+            })}
+          </View>
       </View>
+      )}
 
       <View style={styles.tierPanel}>
         <View style={styles.tierHeader}>
@@ -502,80 +634,6 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
           <Text style={styles.summaryLabel}>{t("bugdex.toGo")}</Text>
         </View>
       </View>
-
-      <Pressable style={[styles.squadDropdown, squadExpanded && styles.squadDropdownActive]} onPress={() => setSquadExpanded((current) => !current)}>
-        <View>
-          <Text style={[styles.squadDropdownTitle, squadExpanded && styles.squadDropdownTitleActive]}>{t("bugdex.activeSquad")}</Text>
-          <Text style={[styles.squadDropdownMeta, squadExpanded && styles.squadDropdownMetaActive]}>{t("bugdex.activeSquadMeta", { count: activeSquadIds.length, max: maxActiveBugSquadSize })}</Text>
-        </View>
-      </Pressable>
-
-      {squadExpanded && (
-        <View style={styles.squadPanel}>
-          <View style={styles.squadJarWrap}>
-            <View style={styles.squadJarLid} />
-            <View style={styles.squadJar}>
-              <View style={styles.squadJarShine} />
-              <View style={styles.squadJarBugs}>
-            {Array.from({ length: maxActiveBugSquadSize }).map((_, index) => {
-              const bugId = activeSquadIds[index];
-              const entry = bugId ? entryByBugId(bugId) : null;
-              const bonus = activeSquadBonuses.find((item) => item.bugId === bugId);
-              return (
-                <View key={index} style={[styles.squadJarSlot, entry && { borderColor: rarityColors[entry.rarity] }]}>
-                  {entry ? (
-                    <>
-                      <BugArtImage bugId={entry.id} size={54} />
-                      <Text style={styles.squadSlotName} numberOfLines={1}>{bugDexEntryName(entry, t)}</Text>
-                      {bonus && <Text style={styles.squadSlotBonus}>{squadBonusLabel(bonus.category)}</Text>}
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.squadEmptyMark}>+</Text>
-                      <Text style={styles.squadSlotBonus}>{t("bugdex.squadEmptySlot")}</Text>
-                    </>
-                  )}
-                </View>
-              );
-            })}
-              </View>
-              <View style={styles.squadJarBase} />
-            </View>
-          </View>
-          <Text style={styles.tradeHint}>{t("bugdex.activeSquadHint")}</Text>
-          {activeSquadBonuses.length > 0 && (
-            <View style={styles.squadBonusList}>
-              {activeSquadBonuses.map((bonus) => (
-                <Text key={bonus.bugId} style={styles.squadBonusText}>
-                  {`${bugName(bonus.bugId)}: ${squadBonusLabel(bonus.category)} ${squadBonusValue(bonus.category, bonus.value)}`}
-                </Text>
-              ))}
-            </View>
-          )}
-          <View style={styles.chipRow}>
-            {tradeInventory.map((item) => {
-              const entry = entryByBugId(item.bugId);
-              if (!entry) return null;
-              const selected = activeSquadIds.includes(item.bugId);
-              const disabled = !selected && activeSquadIds.length >= maxActiveBugSquadSize;
-              const bonus = activeBugSquadBonusList([item.bugId])[0];
-              return (
-                <Pressable
-                  key={item.bugId}
-                  disabled={disabled || squadBusyId === item.bugId}
-                  style={[styles.squadBugChip, selected && styles.squadBugChipActive, disabled && styles.squadBugChipDisabled]}
-                  onPress={() => toggleActiveSquadBug(item.bugId)}
-                >
-                  <BugArtImage bugId={item.bugId} size={34} />
-                  <Text style={[styles.squadBugChipText, selected && styles.squadBugChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
-                  <Text style={[styles.tradeRarityPill, { backgroundColor: rarityColors[entry.rarity] }]}>{rarityLabel(entry.rarity, t)}</Text>
-                  {bonus && <Text style={[styles.squadBugChipMeta, selected && styles.squadBugChipTextActive]}>{`${squadBonusLabel(bonus.category)} ${squadBonusValue(bonus.category, bonus.value)}`}</Text>}
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      )}
 
       {dexList}
 
@@ -758,6 +816,121 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 12,
     padding: 14
+  },
+  squadFeatureCard: {
+    backgroundColor: "#102018",
+    borderColor: "#294338",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: "hidden"
+  },
+  squadFeatureCardActive: {
+    borderColor: "#69c88d"
+  },
+  squadFeatureImage: {
+    backgroundColor: "#102018",
+    height: 152,
+    width: "100%"
+  },
+  squadFeatureOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(16,32,24,0.78)",
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    left: 0,
+    padding: 12,
+    position: "absolute",
+    right: 0,
+    top: 0
+  },
+  squadFeatureCopy: {
+    flex: 1
+  },
+  squadFeatureTitle: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  squadFeatureMeta: {
+    color: "#dce9df",
+    fontSize: 12,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  squadFeatureAction: {
+    backgroundColor: "#69c88d",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8
+  },
+  squadFeatureActionText: {
+    color: "#102018",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  activeJarPreview: {
+    alignItems: "center",
+    backgroundColor: "#edf7f5",
+    borderTopColor: "#a7d2ca",
+    borderTopWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "center",
+    minHeight: 92,
+    padding: 12
+  },
+  activeJarMini: {
+    alignItems: "center",
+    width: 74
+  },
+  activeJarMiniLid: {
+    backgroundColor: "#6d5441",
+    borderColor: "#3e2e24",
+    borderRadius: 6,
+    borderWidth: 1,
+    height: 9,
+    marginBottom: -2,
+    width: 42,
+    zIndex: 2
+  },
+  activeJarSlot: {
+    alignItems: "center",
+    backgroundColor: "rgba(220,244,250,0.62)",
+    borderColor: "rgba(16,32,24,0.18)",
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+    borderRadius: 14,
+    borderWidth: 2,
+    height: 70,
+    justifyContent: "center",
+    overflow: "hidden",
+    width: 62
+  },
+  activeJarShine: {
+    backgroundColor: "rgba(255,255,255,0.52)",
+    borderRadius: 999,
+    height: 42,
+    left: 9,
+    position: "absolute",
+    top: 9,
+    transform: [{ rotate: "9deg" }],
+    width: 7
+  },
+  activeJarBase: {
+    backgroundColor: "rgba(41,67,56,0.18)",
+    borderRadius: 999,
+    bottom: 5,
+    height: 6,
+    left: 10,
+    position: "absolute",
+    right: 10
+  },
+  activeJarEmpty: {
+    color: "#8ca099",
+    fontSize: 24,
+    fontWeight: "900"
   },
   preview: {
     alignItems: "center",
@@ -1017,68 +1190,58 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12
   },
-  squadJarWrap: {
-    alignItems: "center",
-    marginBottom: 10
-  },
-  squadJarLid: {
-    backgroundColor: "#6d5441",
-    borderColor: "#3e2e24",
-    borderRadius: 8,
-    borderWidth: 1,
-    height: 18,
-    marginBottom: -4,
-    width: 138,
-    zIndex: 2
-  },
-  squadJar: {
-    backgroundColor: "rgba(220,244,250,0.58)",
-    borderColor: "#95c8d3",
-    borderRadius: 28,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    borderWidth: 2,
-    minHeight: 148,
-    overflow: "hidden",
-    paddingBottom: 14,
-    paddingHorizontal: 12,
-    paddingTop: 16,
-    width: "100%"
-  },
-  squadJarShine: {
-    backgroundColor: "rgba(255,255,255,0.46)",
-    borderRadius: 999,
-    height: 112,
-    left: 18,
-    position: "absolute",
-    top: 14,
-    transform: [{ rotate: "10deg" }],
-    width: 18
-  },
   squadJarBugs: {
     flexDirection: "row",
     gap: 8,
     justifyContent: "center",
+    marginBottom: 10
+  },
+  squadBugJarWrap: {
+    alignItems: "center",
+    flex: 1
+  },
+  squadBugJarLid: {
+    backgroundColor: "#6d5441",
+    borderColor: "#3e2e24",
+    borderRadius: 8,
+    borderWidth: 1,
+    height: 13,
+    marginBottom: -4,
+    width: 58,
     zIndex: 2
+  },
+  squadJarShine: {
+    backgroundColor: "rgba(255,255,255,0.46)",
+    borderRadius: 999,
+    height: 76,
+    left: 10,
+    position: "absolute",
+    top: 12,
+    transform: [{ rotate: "10deg" }],
+    width: 10
   },
   squadJarSlot: {
     alignItems: "center",
-    backgroundColor: "rgba(253,254,251,0.72)",
+    backgroundColor: "rgba(220,244,250,0.62)",
     borderColor: "rgba(16,32,24,0.18)",
-    borderRadius: 999,
+    borderBottomLeftRadius: 22,
+    borderBottomRightRadius: 22,
+    borderRadius: 16,
     borderWidth: 2,
-    flex: 1,
-    minHeight: 110,
-    padding: 8
+    minHeight: 128,
+    overflow: "hidden",
+    padding: 8,
+    paddingTop: 12,
+    width: "100%"
   },
   squadJarBase: {
     backgroundColor: "rgba(41,67,56,0.22)",
     borderRadius: 999,
     bottom: 7,
-    height: 12,
-    left: 22,
+    height: 8,
+    left: 12,
     position: "absolute",
-    right: 22
+    right: 12
   },
   squadSlotName: {
     color: "#102018",
@@ -1103,14 +1266,23 @@ const styles = StyleSheet.create({
   squadBonusList: {
     backgroundColor: "#eef4ed",
     borderRadius: 8,
-    gap: 3,
+    gap: 7,
     marginBottom: 10,
     padding: 8
+  },
+  squadBonusItem: {
+    gap: 2
   },
   squadBonusText: {
     color: "#102018",
     fontSize: 11,
     fontWeight: "800"
+  },
+  squadBonusDescription: {
+    color: "#53645d",
+    fontSize: 11,
+    fontWeight: "700",
+    lineHeight: 15
   },
   tradeDropdown: {
     alignItems: "center",
@@ -1507,12 +1679,49 @@ const styles = StyleSheet.create({
     borderColor: "#c6d3cc",
     borderRadius: 8,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 9
+    height: 42,
+    justifyContent: "center",
+    width: 46
   },
   lockedToggleActive: {
     backgroundColor: "#102018",
     borderColor: "#d7bd57"
+  },
+  visibilityIcon: {
+    alignItems: "center",
+    height: 22,
+    justifyContent: "center",
+    width: 28
+  },
+  visibilityEye: {
+    alignItems: "center",
+    borderColor: "#102018",
+    borderRadius: 999,
+    borderWidth: 2,
+    height: 15,
+    justifyContent: "center",
+    transform: [{ scaleX: 1.35 }],
+    width: 18
+  },
+  visibilityEyeActive: {
+    borderColor: "#ffffff"
+  },
+  visibilityPupil: {
+    backgroundColor: "#102018",
+    borderRadius: 999,
+    height: 6,
+    width: 6
+  },
+  visibilityPupilActive: {
+    backgroundColor: "#ffffff"
+  },
+  visibilitySlash: {
+    backgroundColor: "#d7bd57",
+    borderRadius: 999,
+    height: 3,
+    position: "absolute",
+    transform: [{ rotate: "-38deg" }],
+    width: 30
   },
   lockedToggleText: {
     color: "#102018",

@@ -25,6 +25,7 @@ export type User = {
   tradedBugDexCount?: number;
   upgradedBugDexCount?: number;
   upvoteGivenPointCount?: number;
+  upvoteReceivedPointCount?: number;
   totalPoints: number;
   bugCount: number;
   title: string;

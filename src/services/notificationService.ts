@@ -172,12 +172,19 @@ export async function notifyComment(bug: BugReport, comment: BugComment, actor: 
   if (bug.reporterId === actor.uid) return;
   await createNotification(bug.reporterId, {
     type: "comment",
-    title: "Nieuwe reactie",
+    title: `Reactie op je ${reportTypeLabel(bug.reportType ?? "bug")}`,
     body: `${comment.authorName}: ${bug.title}`,
     actorId: actor.uid,
     actorName: actor.displayName,
     bugId: bug.id
   });
+}
+
+function reportTypeLabel(reportType: BugReport["reportType"]): string {
+  if (reportType === "tip") return "tip";
+  if (reportType === "workaround") return "trick";
+  if (reportType === "idea") return "idee";
+  return "bug";
 }
 
 export async function notifyBugUpdate(previousBug: BugReport, nextBug: BugReport, actor: User): Promise<void> {
@@ -224,5 +231,18 @@ export async function showMovementRewardNotification(count: number): Promise<voi
     read: false,
     title: "Beweegdoel behaald",
     type: "movement"
+  });
+}
+
+export async function showBugDexUnlockNotification(bugName: string, rarity: string): Promise<void> {
+  await showPhoneNotification({
+    actorId: "bugdex",
+    actorName: "BugBaas",
+    body: `${bugName} (${rarity}) staat nu in je BugDex.`,
+    createdAt: nowIso(),
+    id: `bugdex-${Date.now()}`,
+    read: false,
+    title: "Nieuwe BugDex unlock",
+    type: "bugdex"
   });
 }

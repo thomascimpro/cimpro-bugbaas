@@ -39,8 +39,6 @@ type Props = {
   onForcedBugConsumed?: (bugId: BugArtId) => void;
 };
 
-const spawnCheckMs = 10 * 60 * 1000;
-const spawnChance = 1;
 const catchDurationMs = 30000;
 const tapDebounceMs = 140;
 const bugSwatterImage = require("../../assets/generated/bug-swatter-hd.png");
@@ -110,18 +108,8 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
   }, [activeBug]);
 
   useEffect(() => {
-    if (!enabled) {
-      clearActiveBug();
-      return;
-    }
-
-    const interval = setInterval(() => {
-      if (activeRef.current || forcedBugIds.length > 0 || Math.random() > spawnChance) return;
-      spawnBug();
-    }, spawnCheckMs);
-
-    return () => clearInterval(interval);
-  }, [enabled, forcedBugIds.length]);
+    if (!enabled) clearActiveBug();
+  }, [enabled]);
 
   useEffect(() => {
     return () => {

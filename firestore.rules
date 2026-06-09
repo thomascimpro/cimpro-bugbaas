@@ -108,6 +108,44 @@ service cloud.firestore {
         && request.resource.data.upvoteCount == 0;
     }
 
+    function validUserUpdate(userId) {
+      return signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.totalPoints is int
+        && request.resource.data.totalPoints >= 0
+        && request.resource.data.bugCount is int
+        && request.resource.data.bugCount >= 0
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'active',
+          'activeBugSquad',
+          'badges',
+          'bugCount',
+          'bugDexCount',
+          'bugLampActiveUntil',
+          'bugLampCount',
+          'characterId',
+          'commentPointCount',
+          'displayName',
+          'helpSeen',
+          'legendaryBugDexCount',
+          'movementKmTotal',
+          'movementRegisteredDay',
+          'movementRegisteredDayKm',
+          'mythicBugDexCount',
+          'nameSet',
+          'splatCount',
+          'title',
+          'totalPoints',
+          'tradedBugDexCount',
+          'upgradedBugDexCount',
+          'upvoteGivenPointCount',
+          'upvoteReceivedPointCount'
+        ])
+        && (!request.resource.data.keys().hasAny(['active']) || request.resource.data.active == true);
+    }
+
     function reporterBugUpdate() {
       return resource.data.reporterId == request.auth.uid
         && request.resource.data.reporterId == resource.data.reporterId
@@ -130,10 +168,7 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email
         && (!request.resource.data.keys().hasAny(['active']) || request.resource.data.active == true);
       allow update: if signedIn()
-        && request.auth.uid == userId
-        && request.resource.data.uid == resource.data.uid
-        && request.resource.data.email == resource.data.email
-        && (!request.resource.data.keys().hasAny(['active']) || request.resource.data.active == true);
+        && validUserUpdate(userId);
       allow delete: if signedIn() && resource.data.reporterId == request.auth.uid;
 
       match /bugdex/{bugId} {

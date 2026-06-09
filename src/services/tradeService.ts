@@ -55,6 +55,9 @@ export async function createTradeRequest(fromUser: User, toUser: User, offerBugI
   const inventory = await listBugDexInventory(fromUser);
   const offer = inventory.find((item) => item.bugId === offerBugId);
   if (!offer || offer.count < 1) throw new Error("Je hebt deze bug niet.");
+  const recipientInventory = await listBugDexInventory(toUser);
+  const requested = recipientInventory.find((item) => item.bugId === requestBugId);
+  if (!requested || requested.count < 1) throw new Error("Deze collega heeft deze bug niet meer.");
 
   const now = nowIso();
   const baseTrade: TradeRequest = {

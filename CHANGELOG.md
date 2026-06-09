@@ -1,9 +1,29 @@
 # Changelog
 
+## 2.0.3
+
+- Badge unlock-popups worden nu per badge onthouden en verschijnen niet opnieuw als die badge al eerder als unlock is getoond.
+- Changelog-popup wordt direct als gezien opgeslagen zodra hij opent, zodat dezelfde versie niet opnieuw blijft verschijnen.
+- Collega-profielen tonen nu een read-only BugDex-overzicht met nummers, afbeeldingen, aantallen, rarity en buffs.
+- Actieve bugs, snelle Home-acties en BugDex zichtbaarheid hebben compactere visuele knoppen.
+- Radar-widget animatie is vloeiender met extra, kleinere frames.
+
+## 2.0.2
+
+- Zelfde visuele 2.x changelog als 2.0.1, zodat gebruikers na deze update nog steeds de grote update-uitleg zien.
+
+## 2.0.1
+
+- Grote samenvatting in de changelog-popup voor alles wat sinds de 1.x-reeks nieuw is, met korte uitleg en visuals per onderdeel.
+- Beweeg radar, Health Connect, widget rewards en handmatig claimen staan duidelijker in de release-uitleg.
+- BugDex-uitbreidingen, Mythische bugs, HD badges, characters, Bug Squad en rank-progressie worden samen uitgelegd.
+- Release APK kleiner gemaakt door oversized afbeeldingen en Android-resources te optimaliseren zonder functies te verwijderen.
+
 ## 2.0.0
 
 - Alle badge-afbeeldingen vervangen door HD game-badges in consistente BugBaas-stijl.
 - Badge-overview vernieuwd voor profiel/changelog visuals.
+- Bug Squad uitleg is herschreven in normale taal en toont actieve bugs met een HD potje-visual.
 - Rank-progressie aangescherpt: hogere tiers vragen nu duidelijk meer XP.
 - BugDex unlocks uit bestaande rank/point-regels worden server-side aangevuld in de gebruiker-inventory.
 

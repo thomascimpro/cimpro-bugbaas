@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugArtImage } from "../components/BugArtImage";
 import { DisplayNameModal } from "../components/DisplayNameModal";
@@ -8,11 +8,13 @@ import { StatusBadge } from "../components/StatusBadge";
 import { TierBadge } from "../components/TierBadge";
 import { getBadgeArtSource } from "../services/badgeArt";
 import { listBugs } from "../services/bugService";
-import { useI18n } from "../services/i18n";
-import { BadgeDefinition, badgeDefinitions, bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
+import { entryByBugId, listBugDexInventory } from "../services/bugDexService";
+import { bugSquadBonusForEntry, BugSquadBonusCategory } from "../services/bugSquadService";
+import { bugDexEntryName, rarityLabel, useI18n } from "../services/i18n";
+import { BadgeDefinition, badgeDefinitions, BugDexEntry, BugDexRarity, bugDexEntries, getTierForPoints, userTiers } from "../services/pointsService";
 import { bestUnlockedCharacterId, CharacterId, characterOptions, isCharacterUnlocked, safeCharacterId } from "../services/characterService";
 import { upvotePointValue } from "../services/userService";
-import { BugReport, User } from "../types";
+import { BugDexInventoryItem, BugReport, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
 type Props = {
@@ -32,17 +34,64 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   const [editNameVisible, setEditNameVisible] = useState(false);
   const [characterBusy, setCharacterBusy] = useState("");
   const [characterPickerOpen, setCharacterPickerOpen] = useState(false);
+  const [badgeInfoVisible, setBadgeInfoVisible] = useState(false);
+  const [bugDexVisible, setBugDexVisible] = useState(false);
   const [loadingBugs, setLoadingBugs] = useState(true);
+  const [loadingBugDex, setLoadingBugDex] = useState(true);
+  const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
   const storedCharacterId = safeCharacterId(user.characterId);
   const selectedCharacterId = isCharacterUnlocked(storedCharacterId, user.totalPoints) ? storedCharacterId : bestUnlockedCharacterId(user.totalPoints);
   const selectedCharacter = characterOptions.find((item) => item.id === selectedCharacterId) ?? characterOptions[0];
+  const unlockedBadges = badgeDefinitions.filter((badge) => badgeUnlocked(user, badge));
+  const bugDexItems = inventory
+    .map((item) => {
+      const entry = entryByBugId(item.bugId);
+      const index = bugDexEntries.findIndex((bug) => bug.id === item.bugId);
+      return entry ? { entry, index, item } : null;
+    })
+    .filter((item): item is { entry: BugDexEntry; index: number; item: BugDexInventoryItem } => Boolean(item))
+    .sort((a, b) => a.index - b.index);
 
   useEffect(() => {
     setLoadingBugs(true);
     listBugs()
       .then((items) => setBugs(items.filter((bug) => (bug.reportType ?? "bug") === "bug" && bug.reporterId === user.uid)))
       .finally(() => setLoadingBugs(false));
+    setLoadingBugDex(true);
+    listBugDexInventory(user)
+      .then(setInventory)
+      .finally(() => setLoadingBugDex(false));
   }, [user.uid]);
+
+  function squadBonusLabel(category: BugSquadBonusCategory): string {
+    return t(`bugdex.squadBonus.${category}`);
+  }
+
+  function squadBonusValue(category: BugSquadBonusCategory, value: number): string {
+    if (category === "streak_protection") return value > 0 ? "1x" : "0x";
+    return `+${Math.round(value * 100)}%`;
+  }
+
+  const renderBadge = (badge: BadgeDefinition) => {
+    const unlocked = badgeUnlocked(user, badge);
+    const badgeArt = getBadgeArtSource(badge.id);
+    return (
+      <View key={badge.id} style={[styles.badge, !unlocked && styles.badgeLocked]}>
+        {badgeArt ? (
+          <Image source={badgeArt} style={[styles.badgeImage, !unlocked && styles.badgeImageLocked]} />
+        ) : (
+          <BugArtImage bugId="lieveheersbeestje" size={42} />
+        )}
+        <View style={styles.badgeTextBlock}>
+          <Text style={[styles.badgeText, !unlocked && styles.badgeTextLocked]} numberOfLines={1}>{tr(badge.name)}</Text>
+          <Text style={styles.badgeRequirement} numberOfLines={2}>
+            {unlocked ? t("profile.badgeUnlocked") : t("profile.badgeLocked")} - {badgeRequirementText(badge, t)}
+          </Text>
+          <Text style={styles.badgeRequirement} numberOfLines={2}>{t(badge.descriptionKey)}</Text>
+        </View>
+      </View>
+    );
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
@@ -76,6 +125,29 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       </View>
 
       <TierBadge points={user.totalPoints} />
+
+      <View style={styles.card}>
+        <View style={styles.bugDexHeader}>
+          <View style={styles.bugDexHeaderText}>
+            <Text style={styles.cardTitle}>{t("profile.bugdexCollection")}</Text>
+            <Text style={styles.bugDexIntro}>{t("profile.bugdexReadOnly")}</Text>
+          </View>
+          <Pressable style={styles.bugDexOpenButton} onPress={() => setBugDexVisible(true)}>
+            <Text style={styles.bugDexOpenButtonText}>{t("profile.viewBugDex")}</Text>
+          </Pressable>
+        </View>
+        {loadingBugDex ? <ActivityIndicator /> : (
+          <View style={styles.bugDexPreview}>
+            {bugDexItems.length ? bugDexItems.slice(0, 5).map(({ entry, index, item }) => (
+              <View key={entry.id} style={styles.bugDexPreviewItem}>
+                <Text style={styles.bugDexNumber}>{String(index + 1).padStart(2, "0")}</Text>
+                <BugArtImage bugId={entry.id} size={42} />
+                {item.count > 1 && <Text style={styles.bugDexCount}>x{item.count}</Text>}
+              </View>
+            )) : <Text style={styles.emptyText}>{t("profile.noBugDex")}</Text>}
+          </View>
+        )}
+      </View>
 
       <View style={styles.card}>
         <View style={styles.characterHeader}>
@@ -158,26 +230,17 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t("profile.badges")}</Text>
-        <Text style={styles.badgeIntro}>{t("profile.badgesIntro")}</Text>
+        <View style={styles.badgeHeader}>
+          <View style={styles.badgeHeaderText}>
+            <Text style={styles.cardTitle}>{t("profile.badges")}</Text>
+            <Text style={styles.badgeIntro}>{t("profile.badgesIntro")}</Text>
+          </View>
+          <Pressable style={styles.badgeInfoButton} onPress={() => setBadgeInfoVisible(true)}>
+            <Text style={styles.badgeInfoButtonText}>{t("profile.showAllBadges")}</Text>
+          </Pressable>
+        </View>
         <View style={styles.badges}>
-          {badgeDefinitions.map((badge) => {
-            const unlocked = badgeUnlocked(user, badge);
-            const badgeArt = getBadgeArtSource(badge.id);
-            return (
-            <View key={badge.id} style={[styles.badge, !unlocked && styles.badgeLocked]}>
-              {badgeArt ? (
-                <Image source={badgeArt} style={[styles.badgeImage, !unlocked && styles.badgeImageLocked]} />
-              ) : (
-                <BugArtImage bugId="lieveheersbeestje" size={42} />
-              )}
-              <View style={styles.badgeTextBlock}>
-                <Text style={[styles.badgeText, !unlocked && styles.badgeTextLocked]}>{tr(badge.name)}</Text>
-                <Text style={styles.badgeRequirement}>{badgeRequirementText(badge, t)} - {t(badge.descriptionKey)}</Text>
-              </View>
-            </View>
-            );
-          })}
+          {unlockedBadges.length ? unlockedBadges.map(renderBadge) : <Text style={styles.emptyText}>{t("profile.noBadges")}</Text>}
         </View>
       </View>
 
@@ -221,8 +284,70 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
           }}
         />
       )}
+      <Modal transparent animationType="fade" visible={badgeInfoVisible} onRequestClose={() => setBadgeInfoVisible(false)}>
+        <View style={styles.badgeModalBackdrop}>
+          <View style={styles.badgeModalCard}>
+            <Text style={styles.badgeModalTitle}>{t("profile.badgeOverview")}</Text>
+            <Text style={styles.badgeModalIntro}>{t("profile.badgesIntro")}</Text>
+            <ScrollView style={styles.badgeModalList} showsVerticalScrollIndicator={false}>
+              <View style={styles.badges}>{badgeDefinitions.map(renderBadge)}</View>
+            </ScrollView>
+            <Pressable style={styles.badgeModalButton} onPress={() => setBadgeInfoVisible(false)}>
+              <Text style={styles.badgeModalButtonText}>{t("common.close")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+      <Modal transparent animationType="fade" visible={bugDexVisible} onRequestClose={() => setBugDexVisible(false)}>
+        <View style={styles.bugDexModalBackdrop}>
+          <View style={styles.bugDexModalCard}>
+            <Text style={styles.bugDexModalTitle}>{t("profile.bugdexOf", { name: user.displayName })}</Text>
+            <Text style={styles.bugDexModalIntro}>{t("profile.bugdexReadOnly")}</Text>
+            <ScrollView style={styles.bugDexModalList} showsVerticalScrollIndicator={false}>
+              {loadingBugDex ? <ActivityIndicator /> : (
+                <View style={styles.bugDexGrid}>
+                  {bugDexItems.length ? bugDexItems.map(({ entry, index, item }) => {
+                    const bonus = bugSquadBonusForEntry(entry);
+                    const color = rarityColor(entry.rarity);
+                    return (
+                      <View key={entry.id} style={[styles.bugDexCard, { borderColor: color }]}>
+                        <View style={styles.bugDexCardTop}>
+                          <Text style={[styles.bugDexCardNumber, { backgroundColor: color }]}>{String(index + 1).padStart(2, "0")}</Text>
+                          <Text style={[styles.bugDexCardRarity, { color }]} numberOfLines={1}>{rarityLabel(entry.rarity, t)}</Text>
+                        </View>
+                        <View style={styles.bugDexImageWrap}>
+                          <BugArtImage bugId={entry.id} size={68} />
+                        </View>
+                        <Text style={styles.bugDexName} numberOfLines={1}>{bugDexEntryName(entry, t)}</Text>
+                        <Text style={styles.bugDexOwned}>{t("profile.bugdexOwned", { count: item.count })}</Text>
+                        <Text style={styles.bugDexBuff} numberOfLines={2}>
+                          {squadBonusLabel(bonus.category)} {squadBonusValue(bonus.category, bonus.value)}
+                        </Text>
+                      </View>
+                    );
+                  }) : <Text style={styles.emptyText}>{t("profile.noBugDex")}</Text>}
+                </View>
+              )}
+            </ScrollView>
+            <Pressable style={styles.bugDexModalButton} onPress={() => setBugDexVisible(false)}>
+              <Text style={styles.bugDexModalButtonText}>{t("common.close")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
+}
+
+function rarityColor(rarity: BugDexRarity): string {
+  const colors: Record<BugDexRarity, string> = {
+    Gewoon: "#6f7f5f",
+    Zeldzaam: "#15724f",
+    Episch: "#356d7c",
+    Legendarisch: "#b83227",
+    Mythisch: "#7c3aed"
+  };
+  return colors[rarity];
 }
 
 function badgeUnlocked(user: User, badge: BadgeDefinition): boolean {
@@ -402,6 +527,65 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginBottom: 10
   },
+  bugDexHeader: {
+    alignItems: "flex-start",
+    gap: 10
+  },
+  bugDexHeaderText: {
+    minWidth: 0
+  },
+  bugDexIntro: {
+    color: "#53645d",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    marginBottom: 2
+  },
+  bugDexOpenButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  bugDexOpenButtonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  bugDexPreview: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12
+  },
+  bugDexPreviewItem: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 82,
+    padding: 7,
+    width: 64
+  },
+  bugDexNumber: {
+    alignSelf: "flex-start",
+    backgroundColor: "#102018",
+    borderRadius: 6,
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "900",
+    paddingHorizontal: 5,
+    paddingVertical: 2
+  },
+  bugDexCount: {
+    color: "#53645d",
+    fontSize: 10,
+    fontWeight: "900"
+  },
   characterHeader: {
     alignItems: "center",
     flexDirection: "row",
@@ -510,6 +694,27 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginBottom: 10
   },
+  badgeHeader: {
+    gap: 4,
+    marginBottom: 10
+  },
+  badgeHeaderText: {
+    minWidth: 0
+  },
+  badgeInfoButton: {
+    alignSelf: "flex-start",
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  badgeInfoButtonText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900"
+  },
   badge: {
     alignItems: "center",
     backgroundColor: "#eef4ed",
@@ -548,6 +753,153 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 15,
     marginTop: 2
+  },
+  badgeModalBackdrop: {
+    backgroundColor: "rgba(16, 32, 24, 0.62)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 18
+  },
+  badgeModalCard: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 2,
+    maxHeight: "86%",
+    padding: 14
+  },
+  badgeModalTitle: {
+    color: "#102018",
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 6
+  },
+  badgeModalIntro: {
+    color: "#53645d",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    marginBottom: 10
+  },
+  badgeModalList: {
+    marginBottom: 12
+  },
+  badgeModalButton: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    paddingVertical: 11
+  },
+  badgeModalButtonText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  bugDexModalBackdrop: {
+    backgroundColor: "rgba(16, 32, 24, 0.62)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 14
+  },
+  bugDexModalCard: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 2,
+    maxHeight: "88%",
+    padding: 12
+  },
+  bugDexModalTitle: {
+    color: "#102018",
+    fontSize: 18,
+    fontWeight: "900",
+    marginBottom: 5
+  },
+  bugDexModalIntro: {
+    color: "#53645d",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    marginBottom: 10
+  },
+  bugDexModalList: {
+    marginBottom: 12
+  },
+  bugDexGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8
+  },
+  bugDexCard: {
+    backgroundColor: "#f7faf6",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 2,
+    minHeight: 172,
+    padding: 8,
+    width: "48%"
+  },
+  bugDexCardTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 6
+  },
+  bugDexCardNumber: {
+    borderRadius: 6,
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "900",
+    paddingHorizontal: 6,
+    paddingVertical: 3
+  },
+  bugDexCardRarity: {
+    flexShrink: 1,
+    fontSize: 10,
+    fontWeight: "900",
+    marginLeft: 5
+  },
+  bugDexImageWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 66
+  },
+  bugDexName: {
+    color: "#102018",
+    fontSize: 12,
+    fontWeight: "900",
+    marginTop: 4,
+    textAlign: "center"
+  },
+  bugDexOwned: {
+    color: "#53645d",
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 3,
+    textAlign: "center"
+  },
+  bugDexBuff: {
+    backgroundColor: "#eef4ed",
+    borderRadius: 8,
+    color: "#102018",
+    fontSize: 10,
+    fontWeight: "900",
+    lineHeight: 13,
+    marginTop: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+    textAlign: "center"
+  },
+  bugDexModalButton: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    paddingVertical: 11
+  },
+  bugDexModalButtonText: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900"
   },
   bugList: {
     gap: 8
