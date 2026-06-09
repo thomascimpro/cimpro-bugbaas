@@ -7,6 +7,7 @@ import { activeBugSquadBonusList, BugSquadBonusCategory, maxActiveBugSquadSize, 
 import { bugSmashDuelBalanceForUser, BugSmashDuelBalance } from "../services/bugSquadGameBalance";
 import {
   bugSmashDuelDurationMs,
+  bugSmashDuelStartDelayMs,
   cancelBugSmashDuel,
   claimBugSmashDuelReward,
   createBugSmashDuel,
@@ -90,6 +91,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const [score, setScore] = useState(0);
   const [hitCounts, setHitCounts] = useState<Record<string, number>>({});
   const [caughtBugIds, setCaughtBugIds] = useState<string[]>([]);
+  const [requesterStartAtByDuelId, setRequesterStartAtByDuelId] = useState<Record<string, string>>({});
   const submittedRef = useRef(false);
   const scoreRef = useRef(0);
   const caughtBugIdsRef = useRef<string[]>([]);
@@ -169,12 +171,19 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     hitCountsRef.current = hitCounts;
   }, [hitCounts]);
 
+  const activeRequesterStartAt = activeDuel ? requesterStartAtByDuelId[activeDuel.id] : "";
+  const requesterNeedsManualStart = Boolean(activeDuel?.status === "accepted" && activeDuel.fromUserId === user.uid && !activeRequesterStartAt);
+  const playableDuel = activeDuel?.status === "accepted" && activeRequesterStartAt
+    ? { ...activeDuel, startAt: activeRequesterStartAt }
+    : activeDuel;
+
   useEffect(() => {
-    if (!activeDuel || activeDuel.status !== "accepted") return () => undefined;
+    if (!activeDuel || activeDuel.status !== "accepted" || requesterNeedsManualStart) return () => undefined;
     const interval = setInterval(() => {
       const timestamp = Date.now();
       setNow(timestamp);
-      const startAt = activeDuel.startAt ? Date.parse(activeDuel.startAt) : timestamp;
+      const effectiveStartAt = activeRequesterStartAt || activeDuel.startAt;
+      const startAt = effectiveStartAt ? Date.parse(effectiveStartAt) : timestamp;
       const endAt = startAt + activeDuel.durationMs;
       if (timestamp >= endAt && !submittedRef.current) {
         submittedRef.current = true;
@@ -185,7 +194,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       }
     }, duelGameTickMs);
     return () => clearInterval(interval);
-  }, [activeDuel?.id, activeDuel?.status, activeDuel?.startAt, activeDuel?.durationMs, assist, t, user]);
+  }, [activeDuel?.id, activeDuel?.status, activeDuel?.startAt, activeDuel?.durationMs, activeRequesterStartAt, requesterNeedsManualStart, assist, t, user]);
 
   async function refreshDuels() {
     setDuels(await listBugSmashDuels(user));
@@ -328,6 +337,24 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     setScore(scoreRef.current);
   }
 
+  function startAcceptedDuel() {
+    if (!activeDuel) return;
+    submittedRef.current = false;
+    scoreRef.current = 0;
+    caughtBugIdsRef.current = [];
+    comboRef.current = 0;
+    hitCountsRef.current = {};
+    hitFeedbackValues.clear();
+    setScore(0);
+    setCaughtBugIds([]);
+    setHitCounts({});
+    setNow(Date.now());
+    setRequesterStartAtByDuelId((current) => ({
+      ...current,
+      [activeDuel.id]: new Date(Date.now() + bugSmashDuelStartDelayMs).toISOString()
+    }));
+  }
+
   function hitFeedbackFor(bugId: string) {
     const current = hitFeedbackValues.get(bugId);
     if (current) return current;
@@ -339,18 +366,18 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const activeScore = activeDuel?.scores?.[user.uid];
   const opponentId = activeDuel ? activeDuel.fromUserId === user.uid ? activeDuel.toUserId : activeDuel.fromUserId : "";
   const opponentScore = opponentId ? activeDuel?.scores?.[opponentId] : undefined;
-  const countdown = activeDuel?.status === "accepted" && activeDuel.startAt ? Math.max(0, Math.ceil((Date.parse(activeDuel.startAt) - now) / 1000)) : 0;
-  const remainingSeconds = activeDuel?.status === "accepted" && activeDuel.startAt ? Math.max(0, Math.ceil((Date.parse(activeDuel.startAt) + activeDuel.durationMs - now) / 1000)) : 0;
+  const countdown = playableDuel?.status === "accepted" && playableDuel.startAt ? Math.max(0, Math.ceil((Date.parse(playableDuel.startAt) - now) / 1000)) : 0;
+  const remainingSeconds = playableDuel?.status === "accepted" && playableDuel.startAt ? Math.max(0, Math.ceil((Date.parse(playableDuel.startAt) + playableDuel.durationMs - now) / 1000)) : 0;
   const activeDuelScore = activeScore?.score ?? (submittedRef.current ? score + duelBonusScore(score, assist) : score);
   const incomingPendingDuel = activeDuel?.status === "pending" && activeDuel.toUserId === user.uid;
-  const fullscreenGame = activeDuel?.status === "accepted";
+  const fullscreenGame = playableDuel?.status === "accepted" && !requesterNeedsManualStart;
 
-  if (fullscreenGame) {
+  if (fullscreenGame && playableDuel) {
     return (
       <View style={styles.fullscreenGame}>
         <View style={styles.gameHud}>
           <View style={styles.gameHudPlayer}>
-            <Text style={styles.gameOpponent} numberOfLines={1}>{opponentLabel(activeDuel, user)}</Text>
+            <Text style={styles.gameOpponent} numberOfLines={1}>{opponentLabel(playableDuel, user)}</Text>
             <Text style={styles.gameScore}>{t("duel.yourScore", { score: activeDuelScore })}</Text>
           </View>
           <Text style={styles.gameTimer}>{remainingSeconds}s</Text>
@@ -364,8 +391,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
         <View style={styles.fullscreenArena}>
           {countdown > 0 ? (
             <Text style={styles.countdown}>{countdown}</Text>
-          ) : isRunning(activeDuel, now) ? (
-            renderTargets(activeDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)
+          ) : isRunning(playableDuel, now) ? (
+            renderTargets(playableDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)
           ) : (
             <ActivityIndicator color="#d7bd57" size="large" />
           )}
@@ -444,7 +471,17 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
             </View>
           )}
 
-          {activeDuel.status === "accepted" && (
+          {activeDuel.status === "accepted" && requesterNeedsManualStart && (
+            <View style={styles.startPanel}>
+              <Text style={styles.startTitle}>{t("duel.readyTitle")}</Text>
+              <Text style={styles.startBody}>{t("duel.readyBody", { name: opponentLabel(activeDuel, user) })}</Text>
+              <Pressable style={sharedStyles.button} onPress={startAcceptedDuel}>
+                <Text style={sharedStyles.buttonText}>{t("duel.startNow")}</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {activeDuel.status === "accepted" && !requesterNeedsManualStart && playableDuel && (
             <>
               <View style={styles.scoreRow}>
                 <Text style={styles.scoreText}>{t("duel.yourScore", { score: activeDuelScore })}</Text>
@@ -453,8 +490,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
               <View style={styles.arena}>
                 {countdown > 0 ? (
                   <Text style={styles.countdown}>{countdown}</Text>
-                ) : isRunning(activeDuel, now) ? (
-                  renderTargets(activeDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)
+                ) : isRunning(playableDuel, now) ? (
+                  renderTargets(playableDuel, now, caughtBugIds, hitCounts, assist, hitFeedbackValues, hitBug)
                 ) : (
                   <ActivityIndicator color="#d7bd57" size="large" />
                 )}
@@ -546,6 +583,19 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
           </View>
         </View>
       </Modal>
+      {activeDuel?.status === "accepted" && requesterNeedsManualStart && (
+        <Modal animationType="fade" transparent visible onRequestClose={startAcceptedDuel}>
+          <View style={styles.startModalBackdrop}>
+            <View style={styles.startModalCard}>
+              <Text style={styles.startTitle}>{t("duel.readyTitle")}</Text>
+              <Text style={styles.startBody}>{t("duel.readyBody", { name: opponentLabel(activeDuel, user) })}</Text>
+              <Pressable style={sharedStyles.button} onPress={startAcceptedDuel}>
+                <Text style={sharedStyles.buttonText}>{t("duel.startNow")}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       {duels.length > 0 && (
         <View style={styles.card}>
@@ -1086,6 +1136,44 @@ const styles = StyleSheet.create({
     color: "#102018",
     fontSize: 13,
     fontWeight: "900"
+  },
+  startBody: {
+    color: "#53645d",
+    fontSize: 13,
+    fontWeight: "800",
+    lineHeight: 18,
+    textAlign: "center"
+  },
+  startModalBackdrop: {
+    alignItems: "center",
+    backgroundColor: "rgba(16,32,24,0.72)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 18
+  },
+  startModalCard: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 18,
+    width: "100%"
+  },
+  startPanel: {
+    alignItems: "stretch",
+    backgroundColor: "#fff8e8",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
+    marginTop: 10,
+    padding: 12
+  },
+  startTitle: {
+    color: "#102018",
+    fontSize: 18,
+    fontWeight: "900",
+    textAlign: "center"
   },
   rarityPill: {
     borderRadius: 999,

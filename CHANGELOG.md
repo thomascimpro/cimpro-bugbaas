@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.10
+
+- Bug Smash Duel toont de uitdager nu eerst een start-popup zodra de tegenstander accepteert.
+- De accepterende speler gaat nog steeds direct door naar de countdown/game.
+
 ## 2.1.9
 
 - Home gebruikt bovenin nu een compactere header en toont direct BugDex-voortgang als `x/125`.
