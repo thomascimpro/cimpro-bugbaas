@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.4
+
+- Simpele collega-install release: één ARM64 APK, zonder AAB in GitHub release.
+- APK is weer met de oude werkende install-key gesigned, zodat updates over 1.x/2.0.x installs blijven werken.
+- Duel blijft behouden en Android permissies blijven opgeschoond.
+
 ## 2.1.3
 
 - Install/Play Protect cleanup: overbodige launcher-badge en legacy storage permissies zijn uit de release-APK gehaald.

@@ -71,6 +71,11 @@ type ChangelogFeature = {
 };
 
 const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
+  "2.1.4": [
+    { key: "changelog.2.1.4.install", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "green" },
+    { key: "changelog.2.1.4.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
+    { key: "changelog.2.1.4.clean", image: require("./assets/generated/bug-swatter-hd.png"), tone: "gold" }
+  ],
   "2.1.3": [
     { key: "changelog.2.1.3.clean", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "green" },
     { key: "changelog.2.1.3.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
