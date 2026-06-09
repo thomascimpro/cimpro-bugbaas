@@ -551,6 +551,24 @@ function AppContent() {
     void maybeShowBugDexDrop(rollBugDexDrop(user, source));
   }
 
+  async function showClaimedRadarBugs(bugIds: BugArtId[]) {
+    const currentUser = userRef.current;
+    if (!currentUser || bugIds.length === 0) return;
+    let nextUser = currentUser;
+    for (const bugId of bugIds) {
+      try {
+        const drop = await rollSpecificBugDexDrop(nextUser, bugId, "bug_splat", 1);
+        if (drop?.updatedUser) {
+          nextUser = drop.updatedUser;
+          setUser(drop.updatedUser);
+        }
+        if (drop) showBugDexDrop(drop);
+      } catch {
+        setPendingRadarBugIds((queue) => [...queue, bugId]);
+      }
+    }
+  }
+
   function queueForegroundBug(chance = 1) {
     if (Math.random() > chance) return;
     const bugId = allBugArtIds[Math.floor(Math.random() * allBugArtIds.length)];
@@ -771,7 +789,7 @@ function AppContent() {
             movementBoost={movementBoostForUser()}
             user={user}
             onActivateBugLamp={handleActivateBugLamp}
-            onMovementRadarClaimed={(bugIds) => setPendingRadarBugIds((queue) => [...queue, ...bugIds])}
+            onMovementRadarClaimed={(bugIds) => void showClaimedRadarBugs(bugIds)}
             onNavigate={setRoute}
             onOpenBugSmashDuel={() => openBugSmashDuel()}
             onOpenBugDexWorkshop={openBugDexTrades}

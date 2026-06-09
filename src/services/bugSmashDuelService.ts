@@ -134,21 +134,22 @@ export async function respondBugSmashDuel(user: User, duelId: string, accepted: 
   });
 }
 
-export async function cancelBugSmashDuel(user: User, duelId: string): Promise<void> {
+export async function cancelBugSmashDuel(user: User, duelId: string): Promise<boolean> {
   if (!isFirebaseConfigured) {
     const duel = demoDuels.get(duelId);
-    if (!duel || duel.fromUserId !== user.uid || duel.status !== "pending") return;
+    if (!duel || duel.fromUserId !== user.uid || duel.status !== "pending") return false;
     demoDuels.set(duelId, { ...duel, status: "cancelled", updatedAt: nowIso() });
-    return;
+    return true;
   }
 
-  await runTransaction(db, async (transaction) => {
+  return runTransaction(db, async (transaction) => {
     const ref = duelRef(duelId);
     const snapshot = await transaction.get(ref);
-    if (!snapshot.exists()) return;
+    if (!snapshot.exists()) return false;
     const duel = snapshot.data() as BugSmashDuel;
-    if (duel.fromUserId !== user.uid || duel.status !== "pending") return;
+    if (duel.fromUserId !== user.uid || duel.status !== "pending") return false;
     transaction.update(ref, { status: "cancelled", updatedAt: nowIso() });
+    return true;
   });
 }
 

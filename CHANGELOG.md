@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.9
+
+- Home gebruikt bovenin nu een compactere header en toont direct BugDex-voortgang als `x/125`.
+- Firestore duel-regels accepteren nu de nieuwe 36 bugs per duel, zodat uitdagingen niet meer op permissies falen.
+- Radar/queue bug rewards tonen direct een BugDex-popup, zodat duidelijk is welke bug je kreeg.
+- Duel annuleren verwerkt sneller in de UI en meldt het als de server-cancel niet lukt.
+- De release-APK wordt legacy-compatible gesigned voor gebruikers die vanaf 1.x updaten.
+
 ## 2.1.8
 
 - Bug Smash Duel beweegt vloeiender: targets updaten vaker met kleinere stappen in plaats van grote zichtbare sprongen.

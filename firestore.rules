@@ -166,6 +166,10 @@ service cloud.firestore {
       return data.fromUserId == request.auth.uid || data.toUserId == request.auth.uid;
     }
 
+    function duelBugCount() {
+      return 36;
+    }
+
     function validDuelCreate(duelId) {
       return signedIn()
         && request.resource.data.keys().hasOnly([
@@ -192,7 +196,7 @@ service cloud.firestore {
         && request.resource.data.status == 'pending'
         && request.resource.data.seed is int
         && request.resource.data.bugIds is list
-        && request.resource.data.bugIds.size() == 24
+        && request.resource.data.bugIds.size() == duelBugCount()
         && request.resource.data.createdAt is string
         && request.resource.data.updatedAt is string
         && request.resource.data.durationMs is int
@@ -240,9 +244,9 @@ service cloud.firestore {
         && (!resource.data.scores.keys().hasAny([otherUserId]) || request.resource.data.scores[otherUserId] == resource.data.scores[otherUserId])
         && ownScore.score is int
         && ownScore.score >= 0
-        && ownScore.score <= 500
+        && ownScore.score <= 1200
         && ownScore.caughtBugIds is list
-        && ownScore.caughtBugIds.size() <= 24
+        && ownScore.caughtBugIds.size() <= duelBugCount()
         && ownScore.bonusScore is int
         && ownScore.bonusScore >= 0
         && ownScore.bonusScore <= 100

@@ -263,12 +263,20 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
 
   async function cancel() {
     if (!activeDuel || busy) return;
+    const duelToCancel = activeDuel;
     setBusy(true);
+    setError("");
+    setActiveDuel({ ...duelToCancel, status: "cancelled", updatedAt: new Date().toISOString() });
+    setActiveDuelId("");
     try {
-      await cancelBugSmashDuel(user, activeDuel.id);
+      const cancelled = await cancelBugSmashDuel(user, duelToCancel.id);
+      if (!cancelled) throw new Error(t("duel.cancelFailed"));
       setActiveDuel(null);
-      setActiveDuelId("");
       await refreshDuels();
+    } catch (event) {
+      setActiveDuel(duelToCancel);
+      setActiveDuelId(duelToCancel.id);
+      setError(event instanceof Error ? event.message : t("duel.cancelFailed"));
     } finally {
       setBusy(false);
     }

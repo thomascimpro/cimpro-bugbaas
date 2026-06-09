@@ -123,10 +123,13 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   return (
     <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
       <View style={styles.hero}>
-        <View style={styles.heroText}>
-          <View style={styles.heroNameRow}>
-            <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.72} numberOfLines={2} style={[sharedStyles.title, styles.heroTitle]}>{user.displayName}</Text>
-            <View style={styles.heroActions}>
+        <View style={styles.heroNameRow}>
+          <View style={styles.heroText}>
+            <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.62} numberOfLines={1} style={[sharedStyles.title, styles.heroTitle]}>{user.displayName}</Text>
+            <Text style={styles.scoreText}>{tr(user.title)}</Text>
+          </View>
+          <View style={styles.heroActions}>
+            <View style={styles.languageWrap}>
               <Pressable style={styles.languagePill} onPress={() => setLanguageOpen((current) => !current)}>
                 <Text style={styles.languageFlag}>{selectedLanguage.flag}</Text>
               </Pressable>
@@ -147,28 +150,27 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
                   ))}
                 </View>
               )}
-              <Pressable accessibilityLabel={t("home.profile")} accessibilityRole="button" hitSlop={8} style={styles.profilePill} onPress={() => onNavigate("profile")}>
-                <CharacterAvatarImage characterId={user.characterId} size={40} />
-              </Pressable>
-              <Pressable accessibilityLabel={t("home.settings")} accessibilityRole="button" hitSlop={8} style={styles.settingsPill} onPress={() => onNavigate("settings")}>
-                <Image accessibilityIgnoresInvertColors resizeMode="contain" source={settingsGearImage} style={styles.settingsImage} />
-              </Pressable>
             </View>
+            <Pressable accessibilityLabel={t("home.profile")} accessibilityRole="button" hitSlop={8} style={styles.profilePill} onPress={() => onNavigate("profile")}>
+              <CharacterAvatarImage characterId={user.characterId} size={36} />
+            </Pressable>
+            <Pressable accessibilityLabel={t("home.settings")} accessibilityRole="button" hitSlop={8} style={styles.settingsPill} onPress={() => onNavigate("settings")}>
+              <Image accessibilityIgnoresInvertColors resizeMode="contain" source={settingsGearImage} style={styles.settingsImage} />
+            </Pressable>
           </View>
-          <Text style={styles.scoreText}>{tr(user.title)}</Text>
         </View>
       </View>
       <View style={styles.statsGrid}>
         <View style={styles.statTile}>
-          <Text style={styles.statValue}>{user.bugCount}</Text>
-          <Text style={styles.statLabel}>{t("home.bugs")}</Text>
+          <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.statValue}>{dexCount}/{bugDexEntries.length}</Text>
+          <Text style={styles.statLabel}>BugDex</Text>
         </View>
         <View style={styles.statTile}>
           <Text style={styles.statValue}>#{userRank}</Text>
           <Text style={styles.statLabel}>{t("home.rank")}</Text>
         </View>
         <View style={styles.statTile}>
-          <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={Math.max(38, tier.bugSize * 0.58)} />
+          <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={Math.max(34, tier.bugSize * 0.5)} />
           <Text style={styles.statLabel}>{tr(tier.title)}</Text>
         </View>
       </View>
@@ -418,22 +420,26 @@ const styles = StyleSheet.create({
     borderColor: "#294338",
     borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 12,
-    padding: 16
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10
   },
   heroText: {
-    flex: 1
+    flex: 1,
+    justifyContent: "center",
+    minWidth: 0
   },
   heroNameRow: {
-    alignItems: "flex-start",
+    alignItems: "center",
     flexDirection: "row",
-    gap: 8
+    gap: 10
   },
   heroTitle: {
     color: "#ffffff",
     flex: 1,
     flexShrink: 1,
-    lineHeight: 31,
+    lineHeight: 30,
+    marginBottom: 1,
     minWidth: 0
   },
   profilePill: {
@@ -442,14 +448,20 @@ const styles = StyleSheet.create({
     borderColor: "#d7bd57",
     borderRadius: 8,
     borderWidth: 2,
-    height: 46,
+    height: 42,
     justifyContent: "center",
     overflow: "hidden",
-    width: 46
+    width: 42
   },
   heroActions: {
-    alignItems: "stretch",
-    gap: 6
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 0,
+    gap: 5
+  },
+  languageWrap: {
+    position: "relative",
+    zIndex: 5
   },
   languagePill: {
     alignItems: "center",
@@ -457,11 +469,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(253,254,251,0.6)",
     borderRadius: 8,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: 4,
+    height: 42,
     justifyContent: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 5
+    width: 48
   },
   languageMenu: {
     alignItems: "center",
@@ -472,7 +482,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 4,
     justifyContent: "center",
-    padding: 4
+    padding: 4,
+    position: "absolute",
+    right: 0,
+    top: 46
   },
   languageOption: {
     alignItems: "center",
@@ -517,24 +530,25 @@ const styles = StyleSheet.create({
     borderColor: "rgba(253,254,251,0.62)",
     borderRadius: 8,
     borderWidth: 1,
-    height: 46,
+    height: 42,
     justifyContent: "center",
     overflow: "hidden",
-    width: 46
+    width: 42
   },
   settingsImage: {
-    height: 44,
-    width: 44
+    height: 40,
+    width: 40
   },
   scoreText: {
     color: "#dbe8de",
-    fontSize: 16,
-    fontWeight: "800"
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 18
   },
   statsGrid: {
     flexDirection: "row",
-    gap: 10,
-    marginBottom: 12
+    gap: 8,
+    marginBottom: 8
   },
   statTile: {
     alignItems: "center",
@@ -543,20 +557,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
-    minHeight: 82,
+    minHeight: 68,
     justifyContent: "center",
-    padding: 10
+    padding: 8
   },
   statValue: {
     color: "#102018",
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "900"
   },
   statLabel: {
     color: "#52665d",
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "900",
-    marginTop: 3
+    marginTop: 2,
+    textAlign: "center"
   },
   movementCard: {
     backgroundColor: "#fdfefb",
