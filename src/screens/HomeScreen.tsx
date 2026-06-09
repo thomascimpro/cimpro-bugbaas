@@ -135,7 +135,6 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementReg
           </View>
           <Text style={styles.scoreText}>{tr(user.title)}</Text>
         </View>
-        <BugArtImage bugId={tier.bugArtId} fallbackLevel={tier.evolutionLevel} fallbackVariant={tier.insect} size={tier.bugSize + 20} />
       </View>
       <View style={styles.statsGrid}>
         <View style={styles.statTile}>
@@ -416,13 +415,11 @@ const styles = StyleSheet.create({
     paddingBottom: 160
   },
   hero: {
-    alignItems: "center",
+    alignItems: "stretch",
     backgroundColor: "#102018",
     borderColor: "#294338",
     borderRadius: 8,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: 14,
     marginBottom: 12,
     padding: 16
   },

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.4
+
+- Home-header is rustiger gemaakt: de grote bug bovenaan is weggehaald zodat lange namen beter passen.
+- Ruilen en upgrades staan nu bovenaan in BugDex als duidelijke werkplaatskaart met afbeelding.
+- Ruil- en upgrade-keuzes tonen nu ook de passieve Bug Squad-buff van elke bug.
+
 ## 2.0.3
 
 - Badge unlock-popups worden nu per badge onthouden en verschijnen niet opnieuw als die badge al eerder als unlock is getoond.

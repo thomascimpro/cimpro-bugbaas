@@ -58,6 +58,7 @@ const emptyDailyUpgradeUsage: DailyUpgradeUsage = {
   "Legendarisch-Mythisch": false
 };
 const activeBugSquadHeroImage = require("../../assets/generated/active-bug-squad-selection-hd.jpg");
+const bugDexWorkshopImage = require("../../assets/generated/bugdex-workshop-shortcut.png");
 
 const completedTradeStorageKey = (uid: string) => `bugbaas:seenCompletedTrades:${uid}`;
 
@@ -283,6 +284,18 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
 
   function bugTradeLabel(bugId: string) {
     return `${bugName(bugId)} (${rarityLabel(bugRarity(bugId), t)})`;
+  }
+
+  function bugBuffText(bugId: string) {
+    const bonus = activeBugSquadBonusList([bugId])[0];
+    return bonus ? `${squadBonusLabel(bonus.category)} ${squadBonusValue(bonus.category, bonus.value)}` : "";
+  }
+
+  function openTradeWorkshop() {
+    setTradeExpanded(true);
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, tradeSectionY.current - 16) });
+    }, 80);
   }
 
   function upgradeRouteUsedToday(sourceRarity: UpgradeRarity) {
@@ -583,6 +596,17 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
       </View>
       )}
 
+      <Pressable style={styles.workshopFeatureCard} onPress={openTradeWorkshop}>
+        <Image resizeMode="cover" source={bugDexWorkshopImage} style={styles.workshopFeatureImage} />
+        <View style={styles.workshopFeatureBody}>
+          <Text style={styles.workshopFeatureTitle}>{t("bugdex.tradeAndUpgrades")}</Text>
+          <Text style={styles.workshopFeatureMeta}>{t("bugdex.tradeMeta", { incoming: incomingTrades.length, open: outgoingTrades.length, duplicate: duplicateCount })}</Text>
+        </View>
+        <View style={styles.workshopFeatureAction}>
+          <Text style={styles.workshopFeatureActionText}>{t("common.open")}</Text>
+        </View>
+      </Pressable>
+
       <View style={styles.tierPanel}>
         <View style={styles.tierHeader}>
           <Text style={styles.tierPanelTitle}>{t("bugdex.tiers")}</Text>
@@ -667,6 +691,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                   <BugArtImage bugId={item.bugId} size={34} />
                   <Text style={[styles.tradeChipText, tradeOfferId === item.bugId && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
                   <Text style={[styles.tradeRarityPill, { backgroundColor: rarityColors[bugRarity(item.bugId)] }]}>{rarityLabel(bugRarity(item.bugId), t)}</Text>
+                  <Text style={[styles.bugBuffMeta, tradeOfferId === item.bugId && styles.tradeChipTextActive]} numberOfLines={2}>{bugBuffText(item.bugId)}</Text>
                   {item.count > 1 && <Text style={[styles.tradeChipMeta, tradeOfferId === item.bugId && styles.tradeChipTextActive]}>x{item.count}</Text>}
                 </Pressable>
               ))}
@@ -698,6 +723,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                     <BugArtImage bugId={item.bugId} size={34} />
                     <Text style={[styles.tradeChipText, tradeRequestId === item.bugId && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
                     <Text style={[styles.tradeRarityPill, { backgroundColor: rarityColors[bugRarity(item.bugId)] }]}>{rarityLabel(bugRarity(item.bugId), t)}</Text>
+                    <Text style={[styles.bugBuffMeta, tradeRequestId === item.bugId && styles.tradeChipTextActive]} numberOfLines={2}>{bugBuffText(item.bugId)}</Text>
                     {item.count > 1 && <Text style={[styles.tradeChipMeta, tradeRequestId === item.bugId && styles.tradeChipTextActive]}>x{item.count}</Text>}
                   </Pressable>
                 ))}
@@ -771,6 +797,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                         >
                           <BugArtImage bugId={item.bugId} size={32} />
                           <Text style={[styles.upgradeChoiceText, selected && styles.upgradeChoiceTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
+                          <Text style={[styles.bugBuffMeta, selected && styles.upgradeChoiceTextActive]} numberOfLines={2}>{bugBuffText(item.bugId)}</Text>
                           {item.count > 1 && <Text style={[styles.upgradeChoiceCount, selected && styles.upgradeChoiceTextActive]}>x{item.count}</Text>}
                         </Pressable>
                       );
@@ -868,6 +895,53 @@ const styles = StyleSheet.create({
   squadFeatureActionText: {
     color: "#102018",
     fontSize: 12,
+    fontWeight: "900"
+  },
+  workshopFeatureCard: {
+    alignItems: "center",
+    backgroundColor: "#fff8e8",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+    overflow: "hidden",
+    padding: 10
+  },
+  workshopFeatureImage: {
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    height: 76,
+    width: 92
+  },
+  workshopFeatureBody: {
+    flex: 1,
+    minWidth: 0
+  },
+  workshopFeatureTitle: {
+    color: "#102018",
+    fontSize: 16,
+    fontWeight: "900"
+  },
+  workshopFeatureMeta: {
+    color: "#6d5a24",
+    fontSize: 11,
+    fontWeight: "900",
+    lineHeight: 15,
+    marginTop: 3
+  },
+  workshopFeatureAction: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderRadius: 8,
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 8
+  },
+  workshopFeatureActionText: {
+    color: "#ffffff",
+    fontSize: 11,
     fontWeight: "900"
   },
   activeJarPreview: {
@@ -1372,7 +1446,7 @@ const styles = StyleSheet.create({
     borderColor: "#c6d3cc",
     borderRadius: 8,
     borderWidth: 1,
-    minHeight: 92,
+    minHeight: 112,
     paddingHorizontal: 8,
     paddingVertical: 8,
     width: 96
@@ -1429,6 +1503,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     marginTop: 2
+  },
+  bugBuffMeta: {
+    color: "#52665d",
+    fontSize: 9,
+    fontWeight: "900",
+    lineHeight: 11,
+    marginTop: 3,
+    textAlign: "center",
+    width: "100%"
   },
   tradeRarityPill: {
     borderRadius: 999,
@@ -1609,7 +1692,7 @@ const styles = StyleSheet.create({
     borderColor: "#c6d3cc",
     borderRadius: 8,
     borderWidth: 1,
-    minHeight: 84,
+    minHeight: 104,
     paddingHorizontal: 7,
     paddingVertical: 7,
     width: 86
