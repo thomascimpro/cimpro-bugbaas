@@ -17,6 +17,7 @@ import { LeaderboardScreen } from "./src/screens/LeaderboardScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { BugDexScreen } from "./src/screens/BugDexScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
+import { BugSmashDuelScreen } from "./src/screens/BugSmashDuelScreen";
 import { AppBackground } from "./src/components/AppBackground";
 import { BottomNav } from "./src/components/BottomNav";
 import { WalkingBugsLayer } from "./src/components/WalkingBugsLayer";
@@ -42,6 +43,8 @@ import {
   initializePhoneNotifications,
   markNotificationRead,
   notifyBugUpdate,
+  notifyBugSmashDuelAccepted,
+  notifyBugSmashDuelRequest,
   notifyComment,
   notifyNewBug,
   saveNotificationSettings,
@@ -51,7 +54,7 @@ import {
   subscribeUserNotifications
 } from "./src/services/notificationService";
 
-export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "profile" | "userProfile" | "bugdex" | "settings";
+export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "profile" | "userProfile" | "bugdex" | "settings" | "duel";
 
 const helpTourVersion = "full-help-v2";
 const helpTourVersionKey = (uid: string) => `bugbaas:helpTour:${helpTourVersion}:${uid}`;
@@ -68,6 +71,11 @@ type ChangelogFeature = {
 };
 
 const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
+  "2.1.0": [
+    { key: "changelog.2.1.0.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
+    { key: "changelog.2.1.0.swatter", image: require("./assets/generated/bug-swatter-hd.png"), tone: "gold" },
+    { key: "changelog.2.1.0.bonus", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" }
+  ],
   "2.0.6": [
     { key: "changelog.2.0.6.movement", image: require("./assets/generated/release-2.0.6-hero.jpg"), tone: "green" },
     { key: "changelog.2.0.6.trade", image: require("./assets/generated/bugdex-workshop-shortcut.png"), tone: "gold" },
@@ -137,6 +145,8 @@ function AppContent() {
   const [user, setUser] = useState<User | null>(null);
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [duelOpponent, setDuelOpponent] = useState<User | null>(null);
+  const [openDuelId, setOpenDuelId] = useState("");
   const [bugDexDrop, setBugDexDrop] = useState<BugDexDropResult | null>(null);
   const [rankUpTier, setRankUpTier] = useState<UserTier | null>(null);
   const [badgeUnlock, setBadgeUnlock] = useState<BadgeDefinition | null>(null);
@@ -365,7 +375,7 @@ function AppContent() {
     return subscribeUserNotifications(user, notificationSettings, (nextNotification) => {
       if (appState.current === "active") {
         setNotification(nextNotification);
-        if (nextNotification.type === "trade" || nextNotification.type === "comment") void showPhoneNotification(nextNotification).catch(() => undefined);
+        if (nextNotification.type === "trade" || nextNotification.type === "comment" || nextNotification.type === "duel") void showPhoneNotification(nextNotification).catch(() => undefined);
         return;
       }
       void showPhoneNotification(nextNotification).catch(() => undefined);
@@ -375,11 +385,11 @@ function AppContent() {
   useEffect(() => {
     function handleResponse(response: Notifications.NotificationResponse) {
       const request = response.notification.request;
-      const contentData = request.content.data as { bugId?: string; notificationId?: string; type?: string };
+      const contentData = request.content.data as { bugId?: string; duelId?: string; notificationId?: string; type?: string };
       const responseKey = `${request.identifier}:${response.actionIdentifier}`;
       if (handledNotificationResponses.current.has(responseKey)) return;
       handledNotificationResponses.current.add(responseKey);
-      void openNotificationTarget(contentData.type, contentData.bugId, contentData.notificationId);
+      void openNotificationTarget(contentData.type, contentData.bugId, contentData.notificationId, contentData.duelId);
     }
 
     const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
@@ -418,6 +428,8 @@ function AppContent() {
     setUser(null);
     setSelectedBug(null);
     setSelectedUser(null);
+    setDuelOpponent(null);
+    setOpenDuelId("");
     setRoute("home");
   }
 
@@ -621,16 +633,20 @@ function AppContent() {
 
   async function openNotification(current: AppNotification) {
     await closeNotification();
-    await openNotificationTarget(current.type, current.bugId, current.id);
+    await openNotificationTarget(current.type, current.bugId, current.id, current.duelId);
   }
 
-  async function openNotificationTarget(type?: string, bugId?: string, notificationId?: string) {
+  async function openNotificationTarget(type?: string, bugId?: string, notificationId?: string, duelId?: string) {
     const currentUser = userRef.current;
     if (currentUser && notificationId) {
       await markNotificationRead(currentUser, notificationId).catch(() => undefined);
     }
     if (type === "trade") {
       openBugDexTrades();
+      return;
+    }
+    if (type === "duel") {
+      openBugSmashDuel(undefined, duelId);
       return;
     }
     if (!bugId) return;
@@ -643,13 +659,25 @@ function AppContent() {
   function openBugDexTrades() {
     setSelectedBug(null);
     setSelectedUser(null);
+    setDuelOpponent(null);
+    setOpenDuelId("");
     setRoute("bugdex");
     setOpenBugDexTradeRequest((current) => current + 1);
+  }
+
+  function openBugSmashDuel(opponent?: User, duelId = "") {
+    setSelectedBug(null);
+    setSelectedUser(null);
+    setDuelOpponent(opponent ?? null);
+    setOpenDuelId(duelId);
+    setRoute("duel");
   }
 
   function navigateMain(nextRoute: "home" | "bugs" | "new" | "bugdex" | "leaderboard") {
     setSelectedBug(null);
     setSelectedUser(null);
+    setDuelOpponent(null);
+    setOpenDuelId("");
     setRoute(nextRoute);
   }
 
@@ -716,6 +744,7 @@ function AppContent() {
             onActivateBugLamp={handleActivateBugLamp}
             onMovementRadarClaimed={(bugIds) => setPendingRadarBugIds((queue) => [...queue, ...bugIds])}
             onNavigate={setRoute}
+            onOpenBugSmashDuel={() => openBugSmashDuel()}
             onOpenBugDexWorkshop={openBugDexTrades}
             onMovementRegistered={registerMovementKilometers}
           />
@@ -802,9 +831,24 @@ function AppContent() {
               setSelectedBug(bug);
               setRoute("detail");
             }}
+            onChallengeDuel={(opponent) => openBugSmashDuel(opponent)}
           />
         )}
         {route === "bugdex" && <BugDexScreen openTradeRequest={openBugDexTradeRequest} user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
+        {route === "duel" && (
+          <BugSmashDuelScreen
+            initialDuelId={openDuelId}
+            initialOpponent={duelOpponent}
+            user={user}
+            onBack={() => setRoute("home")}
+            onDuelAccepted={(requesterId, duelId) => notifyBugSmashDuelAccepted(requesterId, user, duelId)}
+            onDuelRequest={(recipientId, duelId) => notifyBugSmashDuelRequest(recipientId, user, duelId)}
+            onRewardDrop={(drop) => {
+              if (drop.updatedUser) setUser(drop.updatedUser);
+              showBugDexDrop(drop);
+            }}
+          />
+        )}
         {route === "settings" && (
           <SettingsScreen settings={notificationSettings} onBack={() => setRoute("home")} onChange={updateNotificationSettings} onShowHelp={showHelpTour} />
         )}

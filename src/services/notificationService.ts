@@ -11,7 +11,8 @@ export const defaultNotificationSettings: NotificationSettings = {
   comment: true,
   bug_update: true,
   bugdex: true,
-  movement: true
+  movement: true,
+  duel: true
 };
 
 const demoNotifications = new Map<string, AppNotification[]>();
@@ -76,6 +77,7 @@ export async function showPhoneNotification(notification: AppNotification): Prom
       color: "#15724f",
       data: {
         bugId: notification.bugId ?? "",
+        duelId: notification.duelId ?? "",
         notificationId: notification.id,
         type: notification.type
       },
@@ -216,6 +218,28 @@ export async function notifyTradeAccepted(requesterId: string, actor: User, rece
     body: `${actor.displayName} accepteerde je ruil. Je ontving ${receivedBugName}.`,
     actorId: actor.uid,
     actorName: actor.displayName
+  });
+}
+
+export async function notifyBugSmashDuelRequest(recipientId: string, actor: User, duelId: string): Promise<void> {
+  await createNotification(recipientId, {
+    type: "duel",
+    title: "Bug Smash Duel",
+    body: `${actor.displayName} daagt je uit. Open de duel-arena om te accepteren.`,
+    actorId: actor.uid,
+    actorName: actor.displayName,
+    duelId
+  });
+}
+
+export async function notifyBugSmashDuelAccepted(requesterId: string, actor: User, duelId: string): Promise<void> {
+  await createNotification(requesterId, {
+    type: "duel",
+    title: "Duel geaccepteerd",
+    body: `${actor.displayName} accepteerde je Bug Smash Duel. De ronde start zo.`,
+    actorId: actor.uid,
+    actorName: actor.displayName,
+    duelId
   });
 }
 

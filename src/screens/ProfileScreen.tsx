@@ -27,9 +27,12 @@ type Props = {
   onUpdateCharacter?: (characterId: CharacterId) => Promise<void>;
   onUpdateDisplayName?: (displayName: string) => Promise<void>;
   onSelectBug?: (bug: BugReport) => void;
+  onChallengeDuel?: (opponent: User) => void;
 };
 
-export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onUpdateCharacter, onUpdateDisplayName, onSelectBug }: Props) {
+const bugSmashDuelImage = require("../../assets/generated/bug-smash-duel-concept.jpg");
+
+export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onUpdateCharacter, onUpdateDisplayName, onSelectBug, onChallengeDuel }: Props) {
   const { t, tr } = useI18n();
   const tier = getTierForPoints(user.totalPoints);
   const [bugs, setBugs] = useState<BugReport[]>([]);
@@ -127,6 +130,23 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       </View>
 
       <TierBadge points={user.totalPoints} />
+
+      {!isOwnProfile && onChallengeDuel && (
+        <View style={styles.card}>
+          <Pressable style={styles.duelFeatureButton} onPress={() => onChallengeDuel(user)}>
+            <Image accessibilityIgnoresInvertColors resizeMode="cover" source={bugSmashDuelImage} style={styles.duelFeatureImage} />
+            <View style={styles.duelFeatureOverlay}>
+              <View style={styles.bugDexHeaderText}>
+                <Text style={styles.bugDexFeatureTitle}>{t("profile.challengeDuel")}</Text>
+                <Text style={styles.bugDexFeatureIntro}>{t("profile.challengeDuelBody")}</Text>
+              </View>
+              <View style={styles.bugDexOpenButton}>
+                <Text style={styles.bugDexOpenButtonText}>{t("profile.challengeDuelAction")}</Text>
+              </View>
+            </View>
+          </Pressable>
+        </View>
+      )}
 
       <View style={styles.card}>
         <Pressable style={styles.bugDexFeatureButton} onPress={() => setBugDexVisible(true)}>
@@ -584,6 +604,30 @@ const styles = StyleSheet.create({
     color: "#102018",
     fontSize: 12,
     fontWeight: "900"
+  },
+  duelFeatureButton: {
+    backgroundColor: "#102018",
+    borderColor: "#b83227",
+    borderRadius: 8,
+    borderWidth: 1,
+    minHeight: 154,
+    overflow: "hidden"
+  },
+  duelFeatureImage: {
+    height: 154,
+    width: "100%"
+  },
+  duelFeatureOverlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(16,32,24,0.78)",
+    bottom: 0,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    left: 0,
+    padding: 12,
+    position: "absolute",
+    right: 0
   },
   bugDexPreview: {
     flexDirection: "row",

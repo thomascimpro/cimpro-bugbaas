@@ -22,6 +22,7 @@ type Props = {
   onActivateBugLamp?: () => Promise<void>;
   onMovementRadarClaimed?: (bugIds: BugArtId[]) => void;
   onMovementRegistered?: (estimatedKm: number) => Promise<void>;
+  onOpenBugSmashDuel?: () => void;
   onOpenBugDexWorkshop?: () => void;
   user: User;
   onNavigate: (route: RouteName) => void;
@@ -36,8 +37,9 @@ const rarityColors: Record<BugDexRarity, string> = {
 };
 
 const settingsBadgeImage = require("../../assets/generated/bugbaas-splash-badge-hd.png");
+const bugSmashDuelImage = require("../../assets/generated/bug-smash-duel-concept.jpg");
 
-export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRadarClaimed, onMovementRegistered, onOpenBugDexWorkshop, user, onNavigate }: Props) {
+export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRadarClaimed, onMovementRegistered, onOpenBugSmashDuel, onOpenBugDexWorkshop, user, onNavigate }: Props) {
   const { language, setLanguage, t, tr } = useI18n();
   const tier = getTierForPoints(user.totalPoints);
   const [users, setUsers] = useState<User[]>([]);
@@ -331,6 +333,14 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
           <Text style={styles.workshopTitle}>{t("home.workshopTitle")}</Text>
           <Text style={styles.workshopBody} numberOfLines={2}>{t("home.workshopBody")}</Text>
           <Text style={styles.workshopCta}>{t("home.workshopCta")}</Text>
+        </View>
+      </Pressable>
+      <Pressable style={[styles.workshopCard, styles.duelCard]} onPress={onOpenBugSmashDuel ?? (() => onNavigate("duel"))}>
+        <Image source={bugSmashDuelImage} style={styles.workshopImage} />
+        <View style={styles.workshopText}>
+          <Text style={styles.workshopTitle}>{t("home.duelTitle")}</Text>
+          <Text style={styles.workshopBody} numberOfLines={2}>{t("home.duelBody")}</Text>
+          <Text style={styles.workshopCta}>{t("home.duelCta")}</Text>
         </View>
       </Pressable>
       <View style={styles.missionCard}>
@@ -966,6 +976,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     overflow: "hidden",
     padding: 10
+  },
+  duelCard: {
+    borderColor: "#b83227"
   },
   workshopImage: {
     borderRadius: 8,

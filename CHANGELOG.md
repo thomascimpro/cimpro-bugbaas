@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0
+
+- Nieuw spelletje: Bug Smash Duel, waarin je een collega uitdaagt, na 3-2-1 tegelijk bugs smashed en de winnaar een BugDex reward kan claimen.
+- Duel-uitdagingen werken via Home, collega-profiel en Android/in-app meldingen die direct naar de arena openen.
+- Foreground bugs en Duel gebruiken nu dezelfde herbruikbare HD vliegenmepper-hit animatie met hit/catch feedback.
+- Actieve Bug Squad-bonussen helpen nu ook in duels: kennisdelen, helpen, catch assist en catch time geven kleine gebalanceerde tap-voordelen.
+- Changelog-popup voor 2.1.0 toont de nieuwe duel-visual, vliegenmepper en Bug Squad bonus-uitleg.
+
 ## 2.0.6
 
 - Beweegrewards zijn actiever: lopen geeft nu per 1,5 km een radar reward, hardlopen per 3 km en fietsen per 5 km.

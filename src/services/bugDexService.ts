@@ -15,6 +15,7 @@ export type BugDexDropSource =
   | "profile_view"
   | "bug_splat"
   | "weekly_mission"
+  | "duel_win"
   | "combine";
 
 export type BugDexDropResult = {
@@ -56,6 +57,7 @@ const dropChances: Record<BugDexDropSource, number> = {
   profile_view: 0.08,
   bug_splat: 0.35,
   weekly_mission: 1,
+  duel_win: 1,
   combine: 1
 };
 
@@ -69,6 +71,7 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   profile_view: [["Gewoon", 88], ["Zeldzaam", 12]],
   bug_splat: [["Gewoon", 65], ["Zeldzaam", 25], ["Episch", 7.5], ["Legendarisch", 2], ["Mythisch", 0.5]],
   weekly_mission: [["Episch", 72], ["Legendarisch", 25], ["Mythisch", 3]],
+  duel_win: [["Gewoon", 58], ["Zeldzaam", 28], ["Episch", 10], ["Legendarisch", 3], ["Mythisch", 1]],
   combine: [["Zeldzaam", 100]]
 };
 

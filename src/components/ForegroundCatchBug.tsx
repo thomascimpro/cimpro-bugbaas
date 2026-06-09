@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import type { ImageSourcePropType } from "react-native";
 import { allBugArtIds, BugArtId } from "../services/bugArt";
 import { bugDexEntries } from "../services/pointsService";
 import { playBugSound } from "../services/soundService";
 import { BugArtImage } from "./BugArtImage";
+import { BugSwatterHit, playBugSwatterFeedback } from "./BugSwatterHit";
 
 type SpawnRarity = "common" | "rare" | "epic" | "legendary" | "mythic";
 
@@ -41,7 +41,6 @@ type Props = {
 
 const catchDurationMs = 30000;
 const tapDebounceMs = 140;
-const bugSwatterImage = require("../../assets/generated/bug-swatter-hd.png");
 const movementInput = [0, 0.055, 0.1, 0.16, 0.22, 0.3, 0.37, 0.45, 0.53, 0.61, 0.69, 0.76, 0.83, 0.9, 0.96, 1];
 const timerSegments = Array.from({ length: 24 }, (_, index) => index);
 
@@ -224,42 +223,6 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
     return [{ scaleX: activeBug.facingScale }, { scaleY: bodySquash }];
   }, [activeBug, progress]);
 
-  const swatterStyle = useMemo(() => {
-    if (!activeBug) return null;
-    const size = activeBug.size * 2.4;
-    const opacity = hitFeedback.interpolate({
-      inputRange: [0, 0.06, 0.72, 1],
-      outputRange: [0, 1, 0.88, 0],
-      extrapolate: "clamp"
-    });
-    const translateX = hitFeedback.interpolate({
-      inputRange: [0, 0.16, 0.34, 0.58, 1],
-      outputRange: [activeBug.size * 0.65, activeBug.size * 0.24, -activeBug.size * 0.06, activeBug.size * 0.02, activeBug.size * 0.72],
-      extrapolate: "clamp"
-    });
-    const translateY = hitFeedback.interpolate({
-      inputRange: [0, 0.16, 0.34, 0.58, 1],
-      outputRange: [-activeBug.size * 1.3, -activeBug.size * 0.72, -activeBug.size * 0.2, -activeBug.size * 0.34, -activeBug.size * 1.36],
-      extrapolate: "clamp"
-    });
-    const rotate = hitFeedback.interpolate({
-      inputRange: [0, 0.16, 0.34, 0.58, 1],
-      outputRange: ["-48deg", "-24deg", "7deg", "-8deg", "-52deg"],
-      extrapolate: "clamp"
-    });
-    const scale = hitFeedback.interpolate({
-      inputRange: [0, 0.3, 0.52, 1],
-      outputRange: [0.8, 1.08, 0.98, 0.84],
-      extrapolate: "clamp"
-    });
-    return {
-      height: size,
-      opacity,
-      transform: [{ translateX }, { translateY }, { rotate }, { scale }],
-      width: size
-    };
-  }, [activeBug, hitFeedback]);
-
   function spawnBug(forcedId?: BugArtId) {
     const rarity = forcedId ? rarityByBugId[forcedId] ?? "common" : pickRarity();
     const bugId = forcedId ?? pickBugId(rarity);
@@ -337,14 +300,7 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
   }
 
   function playHitFeedback() {
-    hitFeedback.stopAnimation();
-    hitFeedback.setValue(0);
-    Animated.timing(hitFeedback, {
-      duration: 240,
-      easing: Easing.out(Easing.quad),
-      toValue: 1,
-      useNativeDriver: true
-    }).start();
+    playBugSwatterFeedback(hitFeedback);
   }
 
   if (!enabled || !activeBug) return null;
@@ -362,13 +318,7 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
         ]}
       >
         <Pressable hitSlop={42} onPress={tapBug} style={[styles.hitbox, { minHeight: activeBug.size + 90, minWidth: activeBug.size + 130 }]}>
-          {swatterStyle && (
-            <Animated.Image
-              resizeMode="contain"
-              source={bugSwatterImage as ImageSourcePropType}
-              style={[styles.swatter, swatterStyle]}
-            />
-          )}
+          <BugSwatterHit bugSize={activeBug.size} feedback={hitFeedback} />
           {!caught && (
             <View pointerEvents="none" style={[styles.timerBadge, { height: timerSize, width: timerSize }]}>
               {timerSegments.map((segment) => {
@@ -506,10 +456,6 @@ const styles = StyleSheet.create({
   hitbox: {
     alignItems: "center",
     justifyContent: "center"
-  },
-  swatter: {
-    position: "absolute",
-    zIndex: 5
   },
   hpBar: {
     bottom: 20,

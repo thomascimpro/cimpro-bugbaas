@@ -72,7 +72,7 @@ export type BugDexInventoryItem = {
   lastTradeId?: string;
 };
 
-export type NotificationType = "trade" | "new_bug" | "comment" | "bug_update" | "bugdex" | "movement";
+export type NotificationType = "trade" | "new_bug" | "comment" | "bug_update" | "bugdex" | "movement" | "duel";
 
 export type NotificationSettings = Record<NotificationType, boolean>;
 
@@ -85,7 +85,35 @@ export type AppNotification = {
   actorId: string;
   actorName: string;
   bugId?: string;
+  duelId?: string;
   read: boolean;
+};
+
+export type BugSmashDuelStatus = "pending" | "accepted" | "declined" | "completed" | "cancelled" | "expired";
+
+export type BugSmashDuelScore = {
+  score: number;
+  caughtBugIds: string[];
+  bonusScore: number;
+  submittedAt: string;
+};
+
+export type BugSmashDuel = {
+  id: string;
+  fromUserId: string;
+  fromUserName: string;
+  toUserId: string;
+  toUserName: string;
+  status: BugSmashDuelStatus;
+  seed: number;
+  bugIds: string[];
+  createdAt: string;
+  updatedAt: string;
+  startAt?: string;
+  durationMs: number;
+  scores?: Record<string, BugSmashDuelScore>;
+  winnerId?: string;
+  rewardClaimedBy?: string[];
 };
 
 export type TradeStatus = "Open" | "Geaccepteerd" | "Afgewezen" | "Geannuleerd";

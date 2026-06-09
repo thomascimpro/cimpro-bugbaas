@@ -10,7 +10,8 @@ const options: { type: NotificationType; titleKey: string; bodyKey: string }[] =
   { type: "comment", titleKey: "settings.commentTitle", bodyKey: "settings.commentBody" },
   { type: "bug_update", titleKey: "settings.bugUpdateTitle", bodyKey: "settings.bugUpdateBody" },
   { type: "bugdex", titleKey: "settings.bugdexTitle", bodyKey: "settings.bugdexBody" },
-  { type: "movement", titleKey: "settings.movementTitle", bodyKey: "settings.movementBody" }
+  { type: "movement", titleKey: "settings.movementTitle", bodyKey: "settings.movementBody" },
+  { type: "duel", titleKey: "settings.duelTitle", bodyKey: "settings.duelBody" }
 ];
 
 type Props = {
