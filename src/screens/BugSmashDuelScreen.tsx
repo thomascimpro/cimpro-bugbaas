@@ -1053,7 +1053,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const opponentId = activeDuel ? activeDuel.fromUserId === user.uid ? activeDuel.toUserId : activeDuel.fromUserId : "";
   const opponentScore = opponentId ? activeDuel?.scores?.[opponentId] : undefined;
   const ownRetryScore = ownSubmittedScore?.score ?? (activeDuel && runSubmitted && !opponentScore ? score + duelBonusScore(score, assist) : undefined);
-  const canRetryOwnDuelScore = Boolean(activeDuel && ownRetryScore !== undefined && !opponentScore && ownRetryScore < duelRetryScoreThreshold && (activeDuel.status === "pending" || activeDuel.status === "accepted"));
+  const ownRetryCaughtCount = ownSubmittedScore?.caughtBugIds.length ?? 0;
+  const canRetryOwnDuelScore = Boolean(activeDuel && ownRetryScore !== undefined && !opponentScore && (ownRetryCaughtCount === 0 || ownRetryScore < duelRetryScoreThreshold) && (activeDuel.status === "pending" || activeDuel.status === "accepted"));
   const awaitingOpponentResult = Boolean((activeDuel?.status === "pending" || activeDuel?.status === "accepted") && ownSubmittedScore && !opponentScore && !retryingActiveDuel);
   const showWaitingResultModal = Boolean(activeDuel && awaitingOpponentResult && !acknowledgedWaitingDuelIds.has(activeDuel.id));
   const resultRewardPending = Boolean(activeDuel?.winnerId && isDuelParticipant(activeDuel, user) && !(activeDuel.rewardClaimedBy ?? []).includes(user.uid));
@@ -1251,7 +1252,18 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                 const blocked = Boolean(activePairDuel);
                 const ownCaughtCount = activePairDuel?.scores?.[user.uid]?.caughtBugIds.length ?? 0;
                 return (
-                  <Pressable key={opponent.uid} disabled={blocked} style={[styles.opponentButton, selected && styles.opponentButtonSelected, blocked && styles.opponentButtonBlocked]} onPress={() => setSelectedOpponentId(opponent.uid)}>
+                  <Pressable
+                    key={opponent.uid}
+                    style={[styles.opponentButton, selected && styles.opponentButtonSelected, blocked && styles.opponentButtonBlocked]}
+                    onPress={() => {
+                      if (activePairDuel) {
+                        setActiveDuelId(activePairDuel.id);
+                        setActiveDuel(activePairDuel);
+                        return;
+                      }
+                      setSelectedOpponentId(opponent.uid);
+                    }}
+                  >
                     <Text style={[styles.opponentName, selected && styles.opponentNameSelected]} numberOfLines={1}>{opponent.displayName}</Text>
                     <Text style={styles.opponentMeta}>{blocked ? t("duel.ownCaughtCount", { count: ownCaughtCount }) : `${opponent.totalPoints} ${t("common.pointsShort")}`}</Text>
                     <Text style={[styles.opponentPresence, selected && styles.opponentPresenceSelected]} numberOfLines={1}>{blocked ? t("duel.activeBetween") : presenceLabel(opponent, t)}</Text>

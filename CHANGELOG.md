@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.17
+
+- Duel retry is nu expliciet beschikbaar als jouw opgeslagen run 0 gevangen bugs heeft en de tegenstander nog niet gespeeld heeft.
+- Een tegenstanderkaart met `actief duel loopt al` opent nu het bestaande duel, zodat je die 0-bugs retry ook na OK op het wacht-scherm kunt bereiken.
+
 ## 2.2.16
 
 - Helper wisselen toont nu expliciet het attack type: Zap, Sticky, AOE, Shield of Burst.
