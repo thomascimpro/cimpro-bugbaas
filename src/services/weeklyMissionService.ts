@@ -1,9 +1,9 @@
 import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 import { BugDexInventoryItem, BugReport, BugSmashDuel, User } from "../types";
-import { BugDexDropResult, pickBugDexRewardEntry, grantBugDexReward } from "./bugDexService";
+import { BugDexDropResult, BugDexDropSource, pickBugDexRewardEntry, grantBugDexReward } from "./bugDexService";
 import { badgesForUser, titleForPoints } from "./pointsService";
-import { weeklyMissionBonusXp, weeklyMissionXp } from "./rewardBalanceService";
+import { weeklyMissionBonusXp } from "./rewardBalanceService";
 
 export type WeeklyMission = {
   id: string;
@@ -11,6 +11,9 @@ export type WeeklyMission = {
   target: number;
   progress: number;
   reward: string;
+  rewardSource?: BugDexDropSource;
+  rewardType: "bug" | "xp";
+  rewardXp: number;
 };
 
 type MissionTemplate = {
@@ -18,6 +21,9 @@ type MissionTemplate = {
   title: string;
   target: number;
   reward: string;
+  rewardSource?: BugDexDropSource;
+  rewardType: "bug" | "xp";
+  rewardXp: number;
   progressFor: (user: User, context: WeeklyMissionContext, weekStart: Date) => number;
 };
 
@@ -32,39 +38,51 @@ const demoWeeklyClaims = new Set<string>();
 const bugMissionPool: MissionTemplate[] = [
   {
     id: "fresh-finds",
-    title: "Meld 2 bugs",
-    target: 2,
-    reward: "+20 missiepunten",
+    title: "mission.reportFive",
+    target: 5,
+    reward: "mission.rewardXp25",
+    rewardType: "xp",
+    rewardXp: 25,
     progressFor: (user, { bugs }, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart)).length
   },
   {
     id: "screenshot-proof",
-    title: "Meld bug met screenshot",
-    target: 1,
-    reward: "Screenshot badge",
+    title: "mission.screenshotThree",
+    target: 3,
+    reward: "mission.rewardCommonBug",
+    rewardSource: "weekly_mission_common",
+    rewardType: "bug",
+    rewardXp: 0,
     progressFor: (user, { bugs }, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart) && !!bug.screenshotDataUrl).length
   },
   {
     id: "team-votes",
-    title: "Krijg 2 upvotes",
-    target: 2,
-    reward: "+10 bonuspunten",
+    title: "mission.upvotesFive",
+    target: 5,
+    reward: "mission.rewardXp20",
+    rewardType: "xp",
+    rewardXp: 20,
     progressFor: (user, { bugs }, weekStart) => bugs
       .filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.updatedAt, weekStart))
       .reduce((total, bug) => total + (bug.upvoteCount ?? 0), 0)
   },
   {
     id: "fix-hunter",
-    title: "Laat 1 bug fixen",
-    target: 1,
-    reward: "Fix streak",
+    title: "mission.fixedTwo",
+    target: 2,
+    reward: "mission.rewardRareBug",
+    rewardSource: "weekly_mission_rare",
+    rewardType: "bug",
+    rewardXp: 0,
     progressFor: (user, { bugs }, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && bug.status === "Gefixt" && isThisWeek(bug.updatedAt, weekStart)).length
   },
   {
     id: "critical-eye",
-    title: "Vind hoge urgentie",
-    target: 1,
-    reward: "Scherp oog",
+    title: "mission.highTwo",
+    target: 2,
+    reward: "mission.rewardXp25",
+    rewardType: "xp",
+    rewardXp: 25,
     progressFor: (user, { bugs }, weekStart) => bugs.filter((bug) => isBugReport(bug) && bug.reporterId === user.uid && isThisWeek(bug.createdAt, weekStart) && (bug.severity === "Hoog" || bug.severity === "Kritiek")).length
   }
 ];
@@ -72,33 +90,54 @@ const bugMissionPool: MissionTemplate[] = [
 const featureMissionPool: MissionTemplate[] = [
   {
     id: "duel-player",
-    title: "Speel 1 duel",
-    target: 1,
-    reward: "+15 duelpunten",
+    title: "mission.duelPlayThree",
+    target: 3,
+    reward: "mission.rewardXp20",
+    rewardType: "xp",
+    rewardXp: 20,
     progressFor: (user, { duels }, weekStart) => duels.filter((duel) => isUserDuel(duel, user) && isThisWeek(duel.scores?.[user.uid]?.submittedAt ?? "", weekStart)).length
   },
   {
     id: "duel-winner",
-    title: "Win 1 duel",
-    target: 1,
-    reward: "Winnaarsbonus",
+    title: "mission.duelWinTwo",
+    target: 2,
+    reward: "mission.rewardRareBug",
+    rewardSource: "weekly_mission_rare",
+    rewardType: "bug",
+    rewardXp: 0,
     progressFor: (user, { duels }, weekStart) => duels.filter((duel) => duel.winnerId === user.uid && isThisWeek(duel.updatedAt, weekStart)).length
   },
   {
     id: "bugdex-week",
-    title: "Vind 2 BugDex bugs",
-    target: 2,
-    reward: "BugDex boost",
+    title: "mission.bugdexWeekFive",
+    target: 5,
+    reward: "mission.rewardRareBug",
+    rewardSource: "weekly_mission_rare",
+    rewardType: "bug",
+    rewardXp: 0,
     progressFor: (_user, { inventory }, weekStart) => inventory.filter((item) => isThisWeek(item.lastUnlockedAt, weekStart)).length
   },
   {
     id: "squad-ready",
-    title: "Zet 3 helpers actief",
+    title: "mission.squadReady",
     target: 3,
-    reward: "Helper bonus",
+    reward: "mission.rewardCommonBug",
+    rewardSource: "weekly_mission_common",
+    rewardType: "bug",
+    rewardXp: 0,
     progressFor: (user) => new Set(user.activeBugSquad ?? []).size
   }
 ];
+
+const movementMission: MissionTemplate = {
+  id: "walk-week",
+  title: "mission.walkWeek",
+  target: 5,
+  reward: "mission.rewardXp20",
+  rewardType: "xp",
+  rewardXp: 20,
+  progressFor: (user, _context, weekStart) => user.movementRegisteredWeek === isoWeekId(weekStart) ? Math.floor(user.movementRegisteredWeekKm ?? 0) : 0
+};
 
 export function weeklyMissionSet(user: User, bugs: BugReport[], options: { duels?: BugSmashDuel[]; inventory?: BugDexInventoryItem[]; now?: Date } = {}): WeeklyMission[] {
   const now = options.now ?? new Date();
@@ -112,16 +151,20 @@ export function weeklyMissionSet(user: User, bugs: BugReport[], options: { duels
   const templates = [
     bugMissionPool[seed % bugMissionPool.length],
     featureMissionPool[seed % featureMissionPool.length],
+    movementMission,
     bugMissionPool[(seed + 2) % bugMissionPool.length]
   ];
   return templates.map((template) => {
     const progress = Math.min(template.target, template.progressFor(user, context, weekStart));
     return {
-      id: `${template.id}-${seed}`,
+      id: `weekly-v2-${template.id}-${seed}`,
       title: template.title,
       target: template.target,
       progress,
-      reward: `+${weeklyMissionXp} XP`
+      reward: template.reward,
+      rewardSource: template.rewardSource,
+      rewardType: template.rewardType,
+      rewardXp: template.rewardXp
     };
   });
 }
@@ -274,7 +317,7 @@ export async function claimWeeklyMissionBonusWithReward(user: User, missions: We
   });
 }
 
-export async function claimWeeklyMissionXp(user: User, mission: WeeklyMission): Promise<User | null> {
+export async function claimWeeklyMissionReward(user: User, mission: WeeklyMission): Promise<{ drop?: BugDexDropResult; user: User } | null> {
   if (mission.progress < mission.target) return null;
   const claimKey = `${user.uid}:${mission.id}`;
   const now = new Date().toISOString();
@@ -282,35 +325,80 @@ export async function claimWeeklyMissionXp(user: User, mission: WeeklyMission): 
   if (!isFirebaseConfigured) {
     if (demoWeeklyClaims.has(claimKey)) return null;
     demoWeeklyClaims.add(claimKey);
-    const totalPoints = Math.max(0, user.totalPoints + weeklyMissionXp);
+    if (mission.rewardType === "bug" && mission.rewardSource) {
+      const drop = await grantBugDexReward(user, mission.rewardSource);
+      return { drop, user };
+    }
+    const totalPoints = Math.max(0, user.totalPoints + mission.rewardXp);
     const updated = { ...user, totalPoints, title: titleForPoints(totalPoints) };
     updated.badges = badgesForUser(updated);
-    return updated;
+    return { user: updated };
   }
 
   const userRef = doc(db, "users", user.uid);
   const claimRef = doc(db, "users", user.uid, "weeklyMissionClaims", mission.id);
+  const rewardEntry = mission.rewardType === "bug" && mission.rewardSource ? pickBugDexRewardEntry(user, mission.rewardSource) : null;
+  const rewardRef = rewardEntry ? doc(db, "users", user.uid, "bugdex", rewardEntry.id) : null;
   return runTransaction(db, async (transaction) => {
     const userSnapshot = await transaction.get(userRef);
     const claimSnapshot = await transaction.get(claimRef);
+    const rewardSnapshot = rewardRef ? await transaction.get(rewardRef) : null;
     if (!userSnapshot.exists() || claimSnapshot.exists()) return null;
     const current = userSnapshot.data() as User;
-    const totalPoints = Math.max(0, current.totalPoints + weeklyMissionXp);
+    const totalPoints = Math.max(0, current.totalPoints + (mission.rewardType === "xp" ? mission.rewardXp : 0));
     const updated = { ...current, totalPoints, title: titleForPoints(totalPoints) };
     updated.badges = badgesForUser(updated);
-    transaction.set(claimRef, {
+
+    let drop: BugDexDropResult | undefined;
+    if (rewardEntry && rewardRef && mission.rewardSource) {
+      const existingReward = rewardSnapshot?.exists() ? rewardSnapshot.data() as BugDexInventoryItem : null;
+      const item: BugDexInventoryItem = existingReward
+        ? {
+            ...existingReward,
+            count: existingReward.count + 1,
+            lastUnlockedAt: now,
+            sources: Array.from(new Set([...existingReward.sources, mission.rewardSource]))
+          }
+        : {
+            bugId: rewardEntry.id,
+            count: 1,
+            firstUnlockedAt: now,
+            lastUnlockedAt: now,
+            rarity: rewardEntry.rarity,
+            sources: [mission.rewardSource]
+          };
+      transaction.set(rewardRef, item);
+      drop = { rewardType: "bug", entry: rewardEntry, item, isNew: !existingReward, source: mission.rewardSource };
+    }
+
+    const claimData: Record<string, string | number> = {
       id: mission.id,
       missionTitle: mission.title,
-      rewardXp: weeklyMissionXp,
+      rewardType: mission.rewardType,
+      rewardXp: mission.rewardType === "xp" ? mission.rewardXp : 0,
       claimedAt: now
-    });
-    transaction.update(userRef, {
-      badges: updated.badges,
-      title: updated.title,
-      totalPoints: updated.totalPoints
-    });
-    return updated;
+    };
+    if (rewardEntry && mission.rewardSource) {
+      claimData.rewardBugId = rewardEntry.id;
+      claimData.rewardGrantedAt = now;
+      claimData.rewardRarity = rewardEntry.rarity;
+      claimData.rewardSource = mission.rewardSource;
+    }
+    transaction.set(claimRef, claimData);
+    if (mission.rewardType === "xp") {
+      transaction.update(userRef, {
+        badges: updated.badges,
+        title: updated.title,
+        totalPoints: updated.totalPoints
+      });
+    }
+    return { drop, user: updated };
   });
+}
+
+export async function claimWeeklyMissionXp(user: User, mission: WeeklyMission): Promise<User | null> {
+  const result = await claimWeeklyMissionReward(user, mission);
+  return result?.user ?? null;
 }
 
 function startOfIsoWeek(date: Date): Date {
@@ -327,6 +415,15 @@ function weekNumber(date: Date): number {
   next.setUTCDate(next.getUTCDate() + 4 - day);
   const yearStart = new Date(Date.UTC(next.getUTCFullYear(), 0, 1));
   return Math.ceil((((next.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+}
+
+function isoWeekId(date = new Date()): string {
+  const next = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = next.getUTCDay() || 7;
+  next.setUTCDate(next.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(next.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((next.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${next.getUTCFullYear()}-${String(week).padStart(2, "0")}`;
 }
 
 function isBugReport(bug: BugReport): boolean {

@@ -44,6 +44,7 @@ function normalizeUser(user: User): User {
     legendaryBugDexCount: user.legendaryBugDexCount ?? 0,
     movementKmTotal: user.movementKmTotal ?? 0,
     movementRegisteredDayKm: user.movementRegisteredDayKm ?? 0,
+    movementRegisteredWeekKm: user.movementRegisteredWeekKm ?? 0,
     mythicBugDexCount: user.mythicBugDexCount ?? 0,
     splatCount: user.splatCount ?? 0,
     tradedBugDexCount: user.tradedBugDexCount ?? 0,
@@ -121,6 +122,7 @@ function makeUser(uid: string, email: string, displayName?: string | null, nameS
     legendaryBugDexCount: 0,
     movementKmTotal: 0,
     movementRegisteredDayKm: 0,
+    movementRegisteredWeekKm: 0,
     mythicBugDexCount: 0,
     tradedBugDexCount: 0,
     upgradedBugDexCount: 0,
@@ -270,18 +272,22 @@ export async function syncEngagementPoints(user: User): Promise<User> {
 export async function syncMovementKilometers(user: User, todayKm: number): Promise<User> {
   if (!Number.isFinite(todayKm) || todayKm <= 0) return normalizeUser(user);
   const day = new Date().toISOString().slice(0, 10);
+  const week = isoWeekId();
   const roundedTodayKm = Math.round(todayKm * 100) / 100;
 
   if (!isFirebaseConfigured) {
     const current = Array.from(demoUsers.values()).find((item) => item.uid === user.uid) ?? user;
     const previousDayKm = current.movementRegisteredDay === day ? current.movementRegisteredDayKm ?? 0 : 0;
+    const previousWeekKm = current.movementRegisteredWeek === week ? current.movementRegisteredWeekKm ?? 0 : 0;
     const nextDayKm = Math.max(previousDayKm, roundedTodayKm);
     const deltaKm = Math.max(0, nextDayKm - previousDayKm);
     const updated = normalizeUser({
       ...current,
       movementKmTotal: Math.round(((current.movementKmTotal ?? 0) + deltaKm) * 100) / 100,
       movementRegisteredDay: day,
-      movementRegisteredDayKm: nextDayKm
+      movementRegisteredDayKm: nextDayKm,
+      movementRegisteredWeek: week,
+      movementRegisteredWeekKm: Math.round((previousWeekKm + deltaKm) * 100) / 100
     });
     demoUsers.set(updated.email, updated);
     if (demoUser?.uid === user.uid) demoUser = updated;
@@ -294,24 +300,39 @@ export async function syncMovementKilometers(user: User, todayKm: number): Promi
     if (!snapshot.exists()) throw new Error("Gebruiker niet gevonden.");
     const current = snapshot.data() as User;
     const previousDayKm = current.movementRegisteredDay === day ? current.movementRegisteredDayKm ?? 0 : 0;
+    const previousWeekKm = current.movementRegisteredWeek === week ? current.movementRegisteredWeekKm ?? 0 : 0;
     const nextDayKm = Math.max(previousDayKm, roundedTodayKm);
     const deltaKm = Math.max(0, nextDayKm - previousDayKm);
     const movementKmTotal = Math.round(((current.movementKmTotal ?? 0) + deltaKm) * 100) / 100;
+    const movementRegisteredWeekKm = Math.round((previousWeekKm + deltaKm) * 100) / 100;
     const updated = normalizeUser({
       ...current,
       movementKmTotal,
       movementRegisteredDay: day,
-      movementRegisteredDayKm: nextDayKm
+      movementRegisteredDayKm: nextDayKm,
+      movementRegisteredWeek: week,
+      movementRegisteredWeekKm
     });
     transaction.update(ref, {
       badges: updated.badges,
       characterId: updated.characterId,
       movementKmTotal,
       movementRegisteredDay: day,
-      movementRegisteredDayKm: nextDayKm
+      movementRegisteredDayKm: nextDayKm,
+      movementRegisteredWeek: week,
+      movementRegisteredWeekKm
     });
     return updated;
   });
+}
+
+function isoWeekId(date = new Date()): string {
+  const next = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = next.getUTCDay() || 7;
+  next.setUTCDate(next.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(next.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((next.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${next.getUTCFullYear()}-${String(week).padStart(2, "0")}`;
 }
 
 export async function updateUserDisplayName(user: User, displayName: string): Promise<User> {

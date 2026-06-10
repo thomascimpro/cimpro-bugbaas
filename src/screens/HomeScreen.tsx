@@ -14,7 +14,7 @@ import { claimMovementRadarBonusesForApp, claimQueuedRadarBugs, getMovementRadar
 import { bugDexEntries, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
 import { languages, useI18n } from "../services/i18n";
 import { listUsers } from "../services/userService";
-import { claimedWeeklyMissionIds, claimWeeklyMissionBonusWithReward, claimWeeklyMissionXp, isWeeklyMissionBonusClaimed, weeklyMissionLabel, weeklyMissionSet, weeklyMissionSetComplete } from "../services/weeklyMissionService";
+import { claimedWeeklyMissionIds, claimWeeklyMissionBonusWithReward, claimWeeklyMissionReward, isWeeklyMissionBonusClaimed, weeklyMissionLabel, weeklyMissionSet, weeklyMissionSetComplete } from "../services/weeklyMissionService";
 import { BugDexInventoryItem, BugReport, BugSmashDuel, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
@@ -134,10 +134,21 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   async function handleWeeklyMissionClaim(mission: typeof missions[number]) {
     if (claimingMissionId || mission.progress < mission.target || claimedMissionIds.has(mission.id)) return;
     setClaimingMissionId(mission.id);
+    setWeeklyBonusError("");
     try {
-      const updated = await claimWeeklyMissionXp(user, mission);
-      if (updated) onUserUpdated?.(updated);
-      setClaimedMissionIds((current) => new Set([...current, mission.id]));
+      const result = await claimWeeklyMissionReward(user, mission);
+      if (result?.user) onUserUpdated?.(result.user);
+      if (result?.drop) {
+        onRewardDrop?.(result.drop);
+        listBugDexInventory(user).then(setInventory).catch(() => undefined);
+      }
+      const refreshed = await claimedWeeklyMissionIds(user, missions.map((item) => item.id));
+      setClaimedMissionIds(refreshed);
+      if (!refreshed.has(mission.id)) setWeeklyBonusError(t("home.weeklyBonusFailed"));
+    } catch {
+      const refreshed = await claimedWeeklyMissionIds(user, missions.map((item) => item.id)).catch(() => claimedMissionIds);
+      setClaimedMissionIds(refreshed);
+      if (!refreshed.has(mission.id)) setWeeklyBonusError(t("home.weeklyBonusFailed"));
     } finally {
       setClaimingMissionId("");
     }
@@ -389,10 +400,12 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
                 </View>
                 {done && !claimed ? (
                   <Pressable style={styles.missionClaimButton} disabled={claimingMissionId === mission.id} onPress={() => handleWeeklyMissionClaim(mission)}>
-                    <Text style={styles.missionClaimText}>{claimingMissionId === mission.id ? "..." : t("home.claimWeeklyXp")}</Text>
+                    <Text style={styles.missionClaimText}>{claimingMissionId === mission.id ? "..." : t("home.claimWeeklyReward")}</Text>
                   </Pressable>
                 ) : (
-                  <Text style={styles.missionReward}>{done ? t("home.claimedWeeklyXp") : tr(mission.reward)}</Text>
+                  <Text style={styles.missionReward}>
+                    {done && claimed ? t("home.claimedWeeklyReward", { reward: tr(mission.reward) }) : t("home.weeklyReward", { reward: tr(mission.reward) })}
+                  </Text>
                 )}
               </View>
             );

@@ -16,6 +16,8 @@ export type BugDexDropSource =
   | "profile_view"
   | "bug_splat"
   | "weekly_mission"
+  | "weekly_mission_common"
+  | "weekly_mission_rare"
   | "solo_campaign_clear"
   | "duel_win"
   | "combine";
@@ -59,6 +61,8 @@ const dropChances: Record<BugDexDropSource, number> = {
   profile_view: 0.08,
   bug_splat: 0.35,
   weekly_mission: 1,
+  weekly_mission_common: 1,
+  weekly_mission_rare: 1,
   solo_campaign_clear: 1,
   duel_win: 1,
   combine: 1
@@ -74,6 +78,8 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   profile_view: [["Gewoon", 88], ["Zeldzaam", 12]],
   bug_splat: [["Gewoon", 65.1], ["Zeldzaam", 25], ["Episch", 7.5], ["Legendarisch", 2], ["Mythisch", 0.4]],
   weekly_mission: [["Zeldzaam", 54], ["Episch", 36], ["Legendarisch", 9.6], ["Mythisch", 0.4]],
+  weekly_mission_common: [["Gewoon", 100]],
+  weekly_mission_rare: [["Zeldzaam", 100]],
   solo_campaign_clear: [["Zeldzaam", 100]],
   duel_win: [["Gewoon", 68], ["Zeldzaam", 24], ["Episch", 6.5], ["Legendarisch", 1.1], ["Mythisch", 0.4]],
   combine: [["Zeldzaam", 100]]
@@ -672,7 +678,7 @@ function sourceChanceBoost(source: BugDexDropSource, bonuses: ReturnType<typeof 
       ? base + bonuses.support_boost
       : source === "status_update" || source === "bug_fixed"
         ? base + bonuses.focus_boost
-        : source === "weekly_mission"
+        : source === "weekly_mission" || source === "weekly_mission_common" || source === "weekly_mission_rare"
           ? base + bonuses.quest_boost
           : base;
   return Math.min(0.15, boost);

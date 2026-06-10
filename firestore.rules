@@ -134,6 +134,8 @@ service cloud.firestore {
           'movementKmTotal',
           'movementRegisteredDay',
           'movementRegisteredDayKm',
+          'movementRegisteredWeek',
+          'movementRegisteredWeekKm',
           'mythicBugDexCount',
           'nameSet',
           'notificationPushToken',
@@ -337,6 +339,27 @@ service cloud.firestore {
           && request.resource.data.source is string
           && request.resource.data.createdAt is string;
         allow update, delete: if false;
+      }
+
+      match /weeklyMissionClaims/{claimId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update: if signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.id == claimId
+          && request.resource.data.claimedAt is string
+          && request.resource.data.keys().hasOnly([
+            'claimedAt',
+            'id',
+            'missionIds',
+            'missionTitle',
+            'rewardBugId',
+            'rewardGrantedAt',
+            'rewardRarity',
+            'rewardSource',
+            'rewardType',
+            'rewardXp'
+          ]);
+        allow delete: if false;
       }
 
       match /settings/{settingId} {

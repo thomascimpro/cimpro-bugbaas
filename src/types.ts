@@ -23,6 +23,8 @@ export type User = {
   movementKmTotal?: number;
   movementRegisteredDay?: string;
   movementRegisteredDayKm?: number;
+  movementRegisteredWeek?: string;
+  movementRegisteredWeekKm?: number;
   mythicBugDexCount?: number;
   tradedBugDexCount?: number;
   upgradedBugDexCount?: number;

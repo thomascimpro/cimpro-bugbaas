@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.7
+
+- Weekly mission claims zijn server-side toegestaan en worden na claim opnieuw gelezen, zodat claimknoppen niet blijven hangen.
+- Weekly missions zijn zwaarder gebalanceerd en tonen nu vooraf hun reward: XP, normale BugDex of zeldzame BugDex.
+- Nieuwe weekly movement mission: loop deze week 5 km.
+- Arena-knoppen voor Duel, Training en Solo Campaign zijn duidelijker met HD image cards.
+- Solo Campaign toont geen dubbele onderste squad meer, verbergt bonusitems tijdens waves en springt bij targetscore direct door naar de volgende wave.
+
 ## 2.2.6
 
 - Duel resultaat-popups worden server-side als gezien opgeslagen, zodat Claim/OK niet opnieuw blijft verschijnen.
