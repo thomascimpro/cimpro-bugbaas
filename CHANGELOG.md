@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.20
+
+- Compatibility APK voor bestaande GitHub installs: release is weer met dezelfde legacy/debug signing als 2.1.18 gebouwd, zodat Android geen update-conflict geeft.
+- Package blijft `nl.cimpro.bugbaas`; alleen `versionCode` is verhoogd naar 91.
+
 ## 2.1.19
 
 - Feature train 2.1 blijft in release notes zichtbaar: Bug Smash Duel, training, helper bugs, Mythic specials, XP/reward-balans en Android install/signing horen samen uitgelegd te worden.

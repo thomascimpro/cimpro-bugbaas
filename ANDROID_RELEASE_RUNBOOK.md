@@ -28,19 +28,35 @@ npm.cmd run typecheck
 .\android\gradlew.bat -p android :app:assembleRelease --no-daemon --console=plain
 ```
 
-5. Controleer dat release signing niet de debug-key gebruikt:
+5. Controleer release signing tegen de bestaande install-base:
 
 ```powershell
 & "$env:ANDROID_HOME\build-tools\36.0.0\apksigner.bat" verify --print-certs 'android\app\build\outputs\apk\release\app-release.apk'
 ```
 
-De DN mag niet `CN=Android Debug` zijn.
+Voor BugBaas is legacy/debug signing bewust de standaard, omdat de bestaande 1.x/2.x GitHub install-base die signing gebruikt. De DN mag dus `CN=Android Debug` zijn zolang de SHA-256 digest gelijk is aan de bestaande latest-compatible APK.
 
-6. Kopieer de APK naar `dist`, controleer `aapt2 dump badging` en noteer de SHA256.
+6. Vergelijk signing met de laatste GitHub APK voordat je publiceert:
 
-7. Stage alleen release-relevante runtime bestanden. Laat `tmp`, `screenshots`, losse bronafbeeldingen en previews buiten git.
+```powershell
+gh release download v1.2.7 --repo thomascimpro/cimpro-bugbaas --pattern "*.apk" --dir dist\compare
+& "$env:ANDROID_HOME\build-tools\36.0.0\apksigner.bat" verify --print-certs dist\compare\Old.apk
+& "$env:ANDROID_HOME\build-tools\36.0.0\apksigner.bat" verify --print-certs dist\AppName-1.2.8.apk
+```
 
-8. Commit, tag, push en maak de GitHub Release met dezelfde changelogtekst.
+BugBaas release builds gebruiken standaard legacy signing. Dit is gelijkwaardig aan expliciet:
+
+```powershell
+.\android\gradlew.bat -p android :app:assembleRelease --no-daemon --console=plain
+```
+
+Gebruik geen upload-key APK voor GitHub releases zolang bestaande gebruikers op legacy/debug signing zitten. Een upload-key APK kan niet over een debug-key install heen zonder uninstall en geeft install-conflicts.
+
+7. Kopieer de APK naar `dist`, controleer `aapt2 dump badging` en noteer de SHA256.
+
+8. Stage alleen release-relevante runtime bestanden. Laat `tmp`, `screenshots`, losse bronafbeeldingen en previews buiten git.
+
+9. Commit, tag, push en maak de GitHub Release met dezelfde changelogtekst.
 
 Snelheidsafspraken:
 
