@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.2
+
+- BugDex toont weer gewone bug-afbeeldingen in plaats van potjes.
+- Duel en Solo Campaign gebruiken onderaan een nieuw rustig HD leeg potje voor de actieve squad.
+- Solo Campaign toont targetpunten per level en gebruikt hogere, duidelijkere scoredoelen.
+- APK blijft geoptimaliseerd rond 40 MB door zware afbeeldingen te vervangen/downscalen.
+
 ## 2.2.1
 
 - GitHub release notes tonen de release-afbeelding nu bovenaan in de changelogtekst in plaats van als losse image attachment.

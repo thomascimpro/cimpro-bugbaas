@@ -3,11 +3,11 @@ const wavesPerLevel = 4;
 const scoreByRank = [1, 2, 4, 6, 9];
 const tapsByRank = [2, 3, 5, 7, 9];
 const targetsByLevel = [
-  [60, 68, 76, 90],
-  [78, 88, 98, 116],
-  [96, 108, 120, 142],
-  [116, 130, 144, 170],
-  [138, 154, 170, 200]
+  [72, 84, 94, 108],
+  [92, 104, 116, 134],
+  [112, 126, 140, 164],
+  [134, 150, 166, 194],
+  [158, 176, 196, 228]
 ];
 
 const profiles = [
@@ -23,7 +23,7 @@ function campaignConfig(wave) {
   const waveInLevel = ((safeWave - 1) % wavesPerLevel) + 1;
   const boss = waveInLevel === wavesPerLevel;
   const targetScore = targetsByLevel[level - 1]?.[waveInLevel - 1] ?? 60;
-  const pcScore = Math.max(45, targetScore - (boss ? 4 : 8));
+  const pcScore = Math.max(60, targetScore - (boss ? 6 : 10));
   return { boss, level, pcScore, targetScore, wave: safeWave, waveInLevel };
 }
 

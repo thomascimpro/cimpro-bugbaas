@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
-import { BugJarArt } from "../components/BugJarArt";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import { MythicRarityFrame } from "../components/MythicRarityFrame";
@@ -463,7 +462,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                   <Text style={[styles.rarity, { color: unlocked ? color : "#87958e" }]}>{unlocked ? rarityLabel(entry.rarity, t) : "???"}</Text>
                 </View>
                 <View style={[styles.bugWrap, !unlocked && styles.lockedBugWrap, isMythic && styles.mythicBugWrap]}>
-                  <BugJarArt bugId={entry.id} rarity={entry.rarity} size={104} unlocked={unlocked} />
+                  {unlocked ? <BugArtImage bugId={entry.id} size={92} /> : <Text style={styles.lockedMark}>?</Text>}
                 </View>
                 <View style={styles.nameRow}>
                   <Text style={[styles.name, !unlocked && styles.lockedName]} numberOfLines={1}>{unlocked ? bugDexEntryName(entry, t) : t("bugdex.unknown")}</Text>
@@ -500,7 +499,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
         </View>
         {headerEntry ? (
           <View style={styles.headerBugWrap}>
-            <BugJarArt bugId={headerEntry.id} rarity={headerEntry.rarity} size={92} />
+            <BugArtImage bugId={headerEntry.id} size={84} />
           </View>
         ) : (
           <View style={styles.headerEmptyIcon}>
@@ -525,7 +524,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
           const entry = activeSquadEntries[index];
           return (
             <View key={entry?.id ?? index} style={styles.activeJarMini}>
-              <BugJarArt bugId={entry?.id} rarity={entry?.rarity} size={68} unlocked={Boolean(entry)} />
+              {entry ? <BugArtImage bugId={entry.id} size={58} /> : <Text style={styles.squadEmptyMark}>+</Text>}
             </View>
           );
         })}
@@ -544,7 +543,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                   <View style={styles.squadJarSlot}>
                     {entry ? (
                       <>
-                        <BugJarArt bugId={entry.id} rarity={entry.rarity} size={90} />
+                        <BugArtImage bugId={entry.id} size={78} />
                         <Text style={styles.squadSlotName} numberOfLines={1}>{bugDexEntryName(entry, t)}</Text>
                         {bonus && <Text style={styles.squadSlotBonus}>{squadBonusLabel(bonus.category)}</Text>}
                       </>

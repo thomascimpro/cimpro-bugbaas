@@ -23,7 +23,7 @@ import { BugDexRarity, bugDexEntries } from "../services/pointsService";
 import { entryByBugId } from "../services/bugDexService";
 import { duelLossXp, duelWinXp } from "../services/rewardBalanceService";
 import { playBugSound } from "../services/soundService";
-import { soloCampaignConfig, soloCampaignBugIds, soloCampaignMaxWave, type SoloCampaignConfig } from "../services/soloCampaignBalance";
+import { soloCampaignConfig, soloCampaignBugIds, soloCampaignMaxLevel, soloCampaignMaxWave, soloCampaignTargetRange, type SoloCampaignConfig } from "../services/soloCampaignBalance";
 import { activateSoloLampFocus, consumeSoloBugBomb, emptySoloPowerupInventory, grantSoloBossReward, loadSoloPowerupInventory, soloLampFocusActive, soloLampFocusRemainingMinutes, type SoloPowerupInventory } from "../services/soloPowerupService";
 import { applyUserPoints, listUsers, updateUserBugSquad } from "../services/userService";
 import { BugDexInventoryItem, BugSmashDuel, User } from "../types";
@@ -41,10 +41,10 @@ type Props = {
 };
 
 const duelHeroImage = require("../../assets/generated/bug-smash-duel-concept.jpg");
-const squadJarImage = require("../../assets/generated/bug-squad-jar-hd.png");
-const soloCampaignImage = require("../../assets/generated/solo-duel-campaign-hd.png");
-const soloPowerupLampImage = require("../../assets/generated/solo-powerup-lamp-hd.png");
-const soloPowerupBombImage = require("../../assets/generated/solo-powerup-bomb-hd.png");
+const squadJarImage = require("../../assets/generated/bug-squad-empty-jar-hd.png");
+const soloCampaignImage = require("../../assets/generated/solo-duel-campaign-hd.jpg");
+const soloPowerupLampImage = require("../../assets/generated/solo-powerup-lamp-hd.jpg");
+const soloPowerupBombImage = require("../../assets/generated/solo-powerup-bomb-hd.jpg");
 const duelEffectSprites = {
   fireball: require("../../assets/generated/duel_effect_fireball_hd.png"),
   freeze: require("../../assets/generated/duel_effect_iceburst_hd.png"),
@@ -891,6 +891,20 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                   <Text style={styles.soloCampaignMeta}>{t("duel.soloWave", { wave: 1, level: 1, maxWave: soloCampaignMaxWave })}</Text>
                   <Text style={styles.soloCampaignMeta}>{t("duel.soloTarget", { score: soloCampaignConfig(1).targetScore })}</Text>
                 </View>
+                <View style={styles.soloTargetBoard}>
+                  <Text style={styles.soloTargetBoardTitle}>{t("duel.soloLevelTargets")}</Text>
+                  <View style={styles.soloTargetGrid}>
+                    {Array.from({ length: soloCampaignMaxLevel }).map((_, index) => {
+                      const range = soloCampaignTargetRange(index + 1);
+                      return (
+                        <View key={index} style={styles.soloTargetChip}>
+                          <Text style={styles.soloTargetLevel}>L{index + 1}</Text>
+                          <Text style={styles.soloTargetValue}>{range.start}-{range.boss}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
                 <View style={styles.soloPowerupPanel}>
                   <View style={styles.soloPowerupItem}>
                     <Image accessibilityIgnoresInvertColors resizeMode="cover" source={soloPowerupLampImage} style={styles.soloPowerupImage} />
@@ -1157,11 +1171,8 @@ function renderSquadJars(activeSquadIds: string[], bonuses: ReturnType<typeof ac
         const bonus = bonuses.find((item) => item.bugId === bugId);
         return (
           <Pressable key={index} style={styles.squadJarWrap} onPress={onOpen}>
-            <View style={[styles.squadJarLid, entry && { backgroundColor: rarityColors[entry.rarity], borderColor: rarityColors[entry.rarity] }]} />
             <View style={[styles.squadJar, entry && { borderColor: rarityColors[entry.rarity] }]}>
-              <Image accessibilityIgnoresInvertColors resizeMode="cover" source={squadJarImage} style={styles.squadJarImage} />
-              <View pointerEvents="none" style={styles.squadJarGlow} />
-              <View pointerEvents="none" style={styles.squadJarShine} />
+              <Image accessibilityIgnoresInvertColors resizeMode="contain" source={squadJarImage} style={styles.squadJarImage} />
               {entry ? (
                 <>
                   <View pointerEvents="none" style={styles.squadJarBugWrap}>
@@ -1176,7 +1187,6 @@ function renderSquadJars(activeSquadIds: string[], bonuses: ReturnType<typeof ac
                   <Text style={styles.squadJarBonus}>{t("bugdex.squadEmptySlot")}</Text>
                 </>
               )}
-              <View style={styles.squadJarBase} />
             </View>
           </Pressable>
         );
@@ -3199,6 +3209,48 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 9
   },
+  soloTargetBoard: {
+    backgroundColor: "rgba(3,14,18,0.34)",
+    borderColor: "rgba(125,211,252,0.28)",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 10,
+    padding: 8
+  },
+  soloTargetBoardTitle: {
+    color: "#bae6fd",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0,
+    marginBottom: 6,
+    textTransform: "uppercase"
+  },
+  soloTargetChip: {
+    alignItems: "center",
+    backgroundColor: "rgba(15,118,110,0.22)",
+    borderColor: "rgba(94,234,212,0.3)",
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    minWidth: 48,
+    paddingHorizontal: 5,
+    paddingVertical: 6
+  },
+  soloTargetGrid: {
+    flexDirection: "row",
+    gap: 6
+  },
+  soloTargetLevel: {
+    color: "#67e8f9",
+    fontSize: 10,
+    fontWeight: "900"
+  },
+  soloTargetValue: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "900",
+    marginTop: 1
+  },
   soloCampaignPanel: {
     backgroundColor: "#0f241d",
     borderColor: "#38bdf8",
@@ -3423,10 +3475,10 @@ const styles = StyleSheet.create({
   },
   squadJar: {
     alignItems: "center",
-    backgroundColor: "rgba(232,246,239,0.72)",
-    borderColor: "#d7e1d9",
+    backgroundColor: "rgba(232,246,239,0.54)",
+    borderColor: "rgba(16,32,24,0.12)",
     borderRadius: 8,
-    borderWidth: 2,
+    borderWidth: 1,
     height: 104,
     justifyContent: "center",
     overflow: "hidden",
@@ -3435,7 +3487,7 @@ const styles = StyleSheet.create({
   squadJarBugWrap: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 2,
+    marginTop: 8,
     shadowColor: "#102018",
     shadowOffset: { height: 3, width: 0 },
     shadowOpacity: 0.22,
@@ -3475,12 +3527,12 @@ const styles = StyleSheet.create({
     zIndex: 1
   },
   squadJarImage: {
-    bottom: -8,
-    left: -7,
-    opacity: 0.72,
+    bottom: -5,
+    left: -8,
+    opacity: 0.95,
     position: "absolute",
-    right: -7,
-    top: -10,
+    right: -8,
+    top: -4,
     zIndex: 0
   },
   squadJarLid: {

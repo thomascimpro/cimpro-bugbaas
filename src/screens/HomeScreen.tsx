@@ -41,7 +41,7 @@ const rarityColors: Record<BugDexRarity, string> = {
 
 const settingsGearImage = require("../../assets/generated/settings-gear-hd.png");
 const bugSmashDuelImage = require("../../assets/generated/bug-smash-duel-concept.jpg");
-const soloDuelImage = require("../../assets/generated/solo-duel-campaign-hd.png");
+const soloDuelImage = require("../../assets/generated/solo-duel-campaign-hd.jpg");
 
 export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRadarClaimed, onMovementRegistered, onOpenBugSmashDuel, onOpenBugDexWorkshop, onRewardDrop, onUserUpdated, user, onNavigate }: Props) {
   const { language, setLanguage, t, tr } = useI18n();

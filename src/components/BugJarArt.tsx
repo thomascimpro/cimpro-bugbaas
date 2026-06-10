@@ -12,7 +12,7 @@ type Props = {
   unlocked?: boolean;
 };
 
-const jarImage = require("../../assets/generated/bug-squad-jar-hd.png");
+const jarImage = require("../../assets/generated/bug-squad-empty-jar-hd.png");
 
 const rarityColors: Record<BugDexRarity, string> = {
   Gewoon: "#6f7f5f",

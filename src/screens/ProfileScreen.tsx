@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugArtImage } from "../components/BugArtImage";
-import { BugJarArt } from "../components/BugJarArt";
 import { DisplayNameModal } from "../components/DisplayNameModal";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { StatusBadge } from "../components/StatusBadge";
@@ -337,7 +336,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
                           <Text style={[styles.bugDexCardRarity, { color }]} numberOfLines={1}>{rarityLabel(entry.rarity, t)}</Text>
                         </View>
                         <View style={styles.bugDexImageWrap}>
-                          <BugJarArt bugId={entry.id} rarity={entry.rarity} size={82} />
+                          <BugArtImage bugId={entry.id} size={72} />
                         </View>
                         <Text style={styles.bugDexName} numberOfLines={1}>{bugDexEntryName(entry, t)}</Text>
                         <Text style={styles.bugDexOwned}>{t("profile.bugdexOwned", { count: item.count })}</Text>

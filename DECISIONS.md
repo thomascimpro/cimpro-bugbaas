@@ -12,3 +12,5 @@
 - Als later externe insect-assets nodig zijn: Kenney CC0-packs of aangeleverde transparante PNG/WebP frame sequences gebruiken, geen GIF als eerste keuze.
 - Tier-systeem gebruikt eigen insectnamen: Larve, Keverscout, Sprinkhaan Specialist, Libelle Leider, Opperbugmeister.
 - Nummer 1 in leaderboard krijgt Opperbugmeister-label, los van normale puntentier.
+- BugDex toont losse bug-art; potjes zijn alleen voor de actieve squad onder Duel/Solo Campaign.
+- Solo Campaign targets zijn vaste level/wave gates; level 1 start hoger en boss-waves vragen duidelijk meer score.

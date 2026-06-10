@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { Animated, ImageBackground, StyleSheet, View } from "react-native";
 
-const heroBackground = require("../../assets/generated/bugbaas-hero-background-hd.png");
+const heroBackground = require("../../assets/generated/bugbaas-hero-background-hd.jpg");
 
 export function AppBackground() {
   const drift = useRef(new Animated.Value(0)).current;

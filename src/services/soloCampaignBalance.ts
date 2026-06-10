@@ -13,13 +13,18 @@ export const soloCampaignMaxLevel = 5;
 export const soloCampaignWavesPerLevel = 4;
 export const soloCampaignMaxWave = soloCampaignMaxLevel * soloCampaignWavesPerLevel;
 
-const soloCampaignTargetsByLevel = [
-  [60, 68, 76, 90],
-  [78, 88, 98, 116],
-  [96, 108, 120, 142],
-  [116, 130, 144, 170],
-  [138, 154, 170, 200]
+export const soloCampaignTargetsByLevel = [
+  [72, 84, 94, 108],
+  [92, 104, 116, 134],
+  [112, 126, 140, 164],
+  [134, 150, 166, 194],
+  [158, 176, 196, 228]
 ];
+
+export function soloCampaignTargetRange(level: number) {
+  const targets = soloCampaignTargetsByLevel[Math.max(1, Math.min(soloCampaignMaxLevel, level)) - 1] ?? soloCampaignTargetsByLevel[0];
+  return { start: targets[0], boss: targets[targets.length - 1] };
+}
 
 export function soloCampaignConfig(wave: number): SoloCampaignConfig {
   const safeWave = Math.max(1, Math.min(soloCampaignMaxWave, Math.floor(wave)));
@@ -27,7 +32,7 @@ export function soloCampaignConfig(wave: number): SoloCampaignConfig {
   const waveInLevel = ((safeWave - 1) % soloCampaignWavesPerLevel) + 1;
   const boss = waveInLevel === soloCampaignWavesPerLevel;
   const targetScore = soloCampaignTargetsByLevel[level - 1]?.[waveInLevel - 1] ?? 60;
-  const pcScore = Math.max(45, targetScore - (boss ? 4 : 8));
+  const pcScore = Math.max(60, targetScore - (boss ? 6 : 10));
   return { boss, level, pcScore, targetScore, wave: safeWave };
 }
 

@@ -1,5 +1,31 @@
 # Test Results
 
+## 2.2.2 release
+
+- `npm.cmd run typecheck`: geslaagd.
+- `.\android\gradlew.bat -p android :app:assembleRelease --no-daemon --console=plain`: geslaagd.
+- APK gekopieerd naar `dist/CimPro-BugBaas-2.2.2.apk`.
+- APK grootte: `40,233,921` bytes.
+- `aapt2 dump badging`: package `nl.cimpro.bugbaas`, versionCode `97`, versionName `2.2.2`.
+- `apksigner verify --print-certs`: geslaagd.
+- Signing cert SHA-256: `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- APK SHA256: `A76817577E7EACDCB3543ABDE545150D539858B7A370DA56A2C5A8E45A24E78A`.
+- Geen ADB-device aangesloten; OnePlus-install niet uitgevoerd.
+
+## 2.2.1 APK optimization test
+
+- `npm.cmd run typecheck`: geslaagd.
+- `.\android\gradlew.bat -p android :app:clean :app:assembleRelease --no-daemon --console=plain`: geslaagd.
+- APK voor optimalisatietest: `dist/CimPro-BugBaas-2.2.1-optimized-test.apk`.
+- Grootte bestaande `2.2.1` APK: `54,923,077` bytes.
+- Grootte geoptimaliseerde test-APK: `40,179,645` bytes.
+- Besparing: `14,743,432` bytes, ongeveer `26.8%`.
+- `aapt2 dump badging`: package `nl.cimpro.bugbaas`, versionCode `96`, versionName `2.2.1`.
+- `apksigner verify --print-certs`: geslaagd.
+- Signing cert SHA-256: `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- APK SHA256: `BE62088700DE015EFAA25271F32DF1B436976F3F1DDD972FDB79B678A65C65AD`.
+- OnePlus-install niet uitgevoerd in deze optimalisatierun.
+
 ## 2.2.1 release
 
 - `npm.cmd run typecheck`: geslaagd.

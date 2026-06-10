@@ -72,19 +72,24 @@ type ChangelogFeature = {
 };
 
 const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
+  "2.2.2": [
+    { key: "changelog.2.2.2.jars", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
+    { key: "changelog.2.2.2.targets", image: require("./assets/generated/solo-duel-campaign-hd.jpg"), tone: "purple" },
+    { key: "changelog.2.2.2.size", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "gold" }
+  ],
   "2.2.1": [
-    { key: "changelog.2.2.1.powerups", image: require("./assets/generated/solo-powerups-hd.png"), tone: "gold" },
+    { key: "changelog.2.2.1.powerups", image: require("./assets/generated/solo-powerups-hd.jpg"), tone: "gold" },
     { key: "changelog.2.2.1.modes", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
-    { key: "changelog.2.2.1.jars", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" }
+    { key: "changelog.2.2.1.jars", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" }
   ],
   "2.2.0": [
-    { key: "changelog.2.2.0.soloCampaign", image: require("./assets/generated/release-2.2.0-solo-campaign-hd.png"), tone: "purple" },
-    { key: "changelog.2.2.0.balance", image: require("./assets/generated/solo-duel-campaign-hd.png"), tone: "green" },
-    { key: "changelog.2.2.0.home", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "gold" }
+    { key: "changelog.2.2.0.soloCampaign", image: require("./assets/generated/release-2.2.0-solo-campaign-hd.jpg"), tone: "purple" },
+    { key: "changelog.2.2.0.balance", image: require("./assets/generated/solo-duel-campaign-hd.jpg"), tone: "green" },
+    { key: "changelog.2.2.0.home", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "gold" }
   ],
   "2.1.6": [
     { key: "changelog.2.1.6.duelNotify", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
-    { key: "changelog.2.1.6.helpers", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" },
+    { key: "changelog.2.1.6.helpers", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.1.6.settings", image: require("./assets/generated/settings-gear-hd.png"), tone: "gold" }
   ],
   "2.1.4": [
@@ -99,7 +104,7 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   ],
   "2.1.2": [
     { key: "changelog.2.1.2.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
-    { key: "changelog.2.1.2.xp", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "gold" },
+    { key: "changelog.2.1.2.xp", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "gold" },
     { key: "changelog.2.1.2.android", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "green" }
   ],
   "2.1.1": [
@@ -110,7 +115,7 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   "2.1.0": [
     { key: "changelog.2.1.0.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
     { key: "changelog.2.1.0.swatter", image: require("./assets/generated/bug-swatter-hd.png"), tone: "gold" },
-    { key: "changelog.2.1.0.bonus", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" }
+    { key: "changelog.2.1.0.bonus", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" }
   ],
   "2.0.6": [
     { key: "changelog.2.0.6.movement", image: require("./assets/generated/release-2.0.6-hero.jpg"), tone: "green" },
@@ -133,7 +138,7 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
     { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
     { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
     { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
-    { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" },
+    { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "purple" }
   ],
   "2.0.1": [
@@ -141,12 +146,12 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
     { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
     { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
     { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
-    { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" },
+    { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "purple" }
   ],
   "2.0.0": [
     { key: "changelog.2.0.0.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
-    { key: "changelog.2.0.0.squad", image: require("./assets/generated/bug-squad-jar-hd.png"), tone: "green" },
+    { key: "changelog.2.0.0.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.0.0.rank", image: require("./assets/bugdex/atlaskever.png"), tone: "purple" }
   ],
   "1.5.9": [
