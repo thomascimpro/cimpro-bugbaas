@@ -545,7 +545,15 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                       <>
                         <BugArtImage bugId={entry.id} size={78} />
                         <Text style={styles.squadSlotName} numberOfLines={1}>{bugDexEntryName(entry, t)}</Text>
-                        {bonus && <Text style={styles.squadSlotBonus}>{squadBonusLabel(bonus.category)}</Text>}
+                        {bonus && (
+                          <>
+                            <View style={styles.squadRoleBadge}>
+                              <Text style={styles.squadRoleLabel}>{squadBonusLabel(bonus.category)}</Text>
+                              <Text style={styles.squadRoleValue}>{squadBonusValue(bonus.category, bonus.value)}</Text>
+                            </View>
+                            <Text style={styles.squadRoleDescription} numberOfLines={2}>{squadBonusDescription(bonus.category)}</Text>
+                          </>
+                        )}
                       </>
                     ) : (
                       <>
@@ -604,60 +612,6 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
           <Text style={styles.workshopFeatureActionText}>{t("common.open")}</Text>
         </View>
       </Pressable>
-
-      <View style={styles.tierPanel}>
-        <View style={styles.tierHeader}>
-          <Text style={styles.tierPanelTitle}>{t("bugdex.tiers")}</Text>
-          <Text style={styles.tierPanelMeta}>{tr(tier.title)}</Text>
-        </View>
-        <View style={styles.tierGrid}>
-          {userTiers.map((item) => {
-            const current = item.title === tier.title;
-            return (
-              <View key={item.title} style={[styles.tierCard, { backgroundColor: item.frameBackground, borderColor: item.frameColor }, current && styles.tierCardCurrent]}>
-                <View style={[styles.tierGlow, { backgroundColor: item.frameAccent }]} />
-                <View style={[styles.tierImageWrap, { backgroundColor: `${item.frameAccent}66`, borderColor: item.frameColor }]}>
-                  <View style={[styles.tierCornerBadge, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
-                    <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={26} />
-                  </View>
-                  <View style={[styles.tierCircuit, styles.tierCircuitTop, { backgroundColor: item.frameColor }]} />
-                  <View style={[styles.tierCircuit, styles.tierCircuitBottom, { backgroundColor: item.frameColor }]} />
-                  <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={Math.max(44, item.bugSize * 0.66)} />
-                  <View style={[styles.tierMedal, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
-                    <Text style={[styles.tierStar, { color: item.frameColor }]}>★</Text>
-                  </View>
-                </View>
-                <Text style={[styles.tierTitle, { color: item.color }]} numberOfLines={1}>{tr(item.title)}</Text>
-                <Text style={styles.tierMeta}>{item.minPoints}+ {t("common.pointsShort")}</Text>
-                <Text style={styles.tierDescription} numberOfLines={2}>{tr(item.description)}</Text>
-                <Text style={[styles.tierReward, { color: item.frameColor }]} numberOfLines={1}>{tr(item.rewardText)}</Text>
-                {current && <Text style={styles.tierCurrentPill}>{t("bugdex.current")}</Text>}
-              </View>
-            );
-          })}
-        </View>
-      </View>
-
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${progress}%` }]} />
-      </View>
-
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>{unlockedCount}</Text>
-          <Text style={styles.summaryLabel}>{t("bugdex.caught")}</Text>
-        </View>
-        <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>{duplicateCount}</Text>
-          <Text style={styles.summaryLabel}>{t("bugdex.duplicateShort")}</Text>
-        </View>
-        <View style={styles.summaryTile}>
-          <Text style={styles.summaryValue}>{totalCount - unlockedCount}</Text>
-          <Text style={styles.summaryLabel}>{t("bugdex.toGo")}</Text>
-        </View>
-      </View>
-
-      {dexList}
 
       <Pressable
         style={[styles.tradeDropdown, tradeExpanded && styles.tradeDropdownActive]}
@@ -823,6 +777,60 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
       </View>
         </>
       )}
+
+      <View style={styles.tierPanel}>
+        <View style={styles.tierHeader}>
+          <Text style={styles.tierPanelTitle}>{t("bugdex.tiers")}</Text>
+          <Text style={styles.tierPanelMeta}>{tr(tier.title)}</Text>
+        </View>
+        <View style={styles.tierGrid}>
+          {userTiers.map((item) => {
+            const current = item.title === tier.title;
+            return (
+              <View key={item.title} style={[styles.tierCard, { backgroundColor: item.frameBackground, borderColor: item.frameColor }, current && styles.tierCardCurrent]}>
+                <View style={[styles.tierGlow, { backgroundColor: item.frameAccent }]} />
+                <View style={[styles.tierImageWrap, { backgroundColor: `${item.frameAccent}66`, borderColor: item.frameColor }]}>
+                  <View style={[styles.tierCornerBadge, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
+                    <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={26} />
+                  </View>
+                  <View style={[styles.tierCircuit, styles.tierCircuitTop, { backgroundColor: item.frameColor }]} />
+                  <View style={[styles.tierCircuit, styles.tierCircuitBottom, { backgroundColor: item.frameColor }]} />
+                  <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={Math.max(44, item.bugSize * 0.66)} />
+                  <View style={[styles.tierMedal, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
+                    <Text style={[styles.tierStar, { color: item.frameColor }]}>★</Text>
+                  </View>
+                </View>
+                <Text style={[styles.tierTitle, { color: item.color }]} numberOfLines={1}>{tr(item.title)}</Text>
+                <Text style={styles.tierMeta}>{item.minPoints}+ {t("common.pointsShort")}</Text>
+                <Text style={styles.tierDescription} numberOfLines={2}>{tr(item.description)}</Text>
+                <Text style={[styles.tierReward, { color: item.frameColor }]} numberOfLines={1}>{tr(item.rewardText)}</Text>
+                {current && <Text style={styles.tierCurrentPill}>{t("bugdex.current")}</Text>}
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progress}%` }]} />
+      </View>
+
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryTile}>
+          <Text style={styles.summaryValue}>{unlockedCount}</Text>
+          <Text style={styles.summaryLabel}>{t("bugdex.caught")}</Text>
+        </View>
+        <View style={styles.summaryTile}>
+          <Text style={styles.summaryValue}>{duplicateCount}</Text>
+          <Text style={styles.summaryLabel}>{t("bugdex.duplicateShort")}</Text>
+        </View>
+        <View style={styles.summaryTile}>
+          <Text style={styles.summaryValue}>{totalCount - unlockedCount}</Text>
+          <Text style={styles.summaryLabel}>{t("bugdex.toGo")}</Text>
+        </View>
+      </View>
+
+      {dexList}
 
       <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
         <Text style={sharedStyles.secondaryButtonText}>{t("common.back")}</Text>
@@ -1354,6 +1362,38 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
     marginTop: 2,
+    textAlign: "center"
+  },
+  squadRoleBadge: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    backgroundColor: "#e2efe7",
+    borderColor: "#9db6a8",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 5,
+    paddingHorizontal: 4,
+    paddingVertical: 3
+  },
+  squadRoleLabel: {
+    color: "#183326",
+    fontSize: 10,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  squadRoleValue: {
+    color: "#2e6b4d",
+    fontSize: 10,
+    fontWeight: "900",
+    marginTop: 1,
+    textAlign: "center"
+  },
+  squadRoleDescription: {
+    color: "#52665d",
+    fontSize: 9,
+    fontWeight: "800",
+    lineHeight: 11,
+    marginTop: 3,
     textAlign: "center"
   },
   squadEmptyMark: {

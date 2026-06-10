@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.6
+
+- Duel resultaat-popups worden server-side als gezien opgeslagen, zodat Claim/OK niet opnieuw blijft verschijnen.
+- Duel XP claim wordt samen met de server-side claim afgehandeld, zodat XP niet verloren gaat bij app sluiten.
+- Arena heeft bovenaan directe knoppen voor Duel, Training en Solo Campaign.
+- Geannuleerde duels verdwijnen uit Recent en actieve BugSquad slots tonen duidelijker hun role.
+
 ## 2.2.4
 
 - Actieve squad-potjes zijn nu ook zichtbaar onderaan de fullscreen arena bij normale 1v1 duels, Training en Solo Campaign.

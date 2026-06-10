@@ -182,6 +182,7 @@ service cloud.firestore {
           'fromUserName',
           'id',
           'rewardClaimedBy',
+          'resultSeenBy',
           'scores',
           'seed',
           'status',
@@ -206,7 +207,9 @@ service cloud.firestore {
         && request.resource.data.scores is map
         && request.resource.data.scores.size() == 0
         && request.resource.data.rewardClaimedBy is list
-        && request.resource.data.rewardClaimedBy.size() == 0;
+        && request.resource.data.rewardClaimedBy.size() == 0
+        && request.resource.data.resultSeenBy is list
+        && request.resource.data.resultSeenBy.size() == 0;
     }
 
     function acceptOrDeclineDuel() {
@@ -257,17 +260,49 @@ service cloud.firestore {
     }
 
     function claimOwnDuelReward() {
+      let previousSeen = resource.data.keys().hasAny(['resultSeenBy']) ? resource.data.resultSeenBy : [];
       return signedIn()
         && resource.data.status == 'completed'
-        && resource.data.winnerId == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rewardClaimedBy', 'updatedAt'])
+        && isDuelParticipant(resource.data)
+        && resource.data.winnerId is string
         && request.resource.data.updatedAt is string
         && resource.data.rewardClaimedBy is list
         && request.resource.data.rewardClaimedBy is list
         && !(request.auth.uid in resource.data.rewardClaimedBy)
         && request.auth.uid in request.resource.data.rewardClaimedBy
         && request.resource.data.rewardClaimedBy.size() == resource.data.rewardClaimedBy.size() + 1
-        && request.resource.data.rewardClaimedBy.hasAll(resource.data.rewardClaimedBy);
+        && request.resource.data.rewardClaimedBy.hasAll(resource.data.rewardClaimedBy)
+        && (
+          (
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rewardClaimedBy', 'resultSeenBy', 'updatedAt'])
+            && previousSeen is list
+            && request.resource.data.resultSeenBy is list
+            && !(request.auth.uid in previousSeen)
+            && request.auth.uid in request.resource.data.resultSeenBy
+            && request.resource.data.resultSeenBy.size() == previousSeen.size() + 1
+            && request.resource.data.resultSeenBy.hasAll(previousSeen)
+          )
+          ||
+          (
+            resource.data.winnerId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rewardClaimedBy', 'updatedAt'])
+          )
+        );
+    }
+
+    function acknowledgeDuelResult() {
+      let previousSeen = resource.data.keys().hasAny(['resultSeenBy']) ? resource.data.resultSeenBy : [];
+      return signedIn()
+        && resource.data.status == 'completed'
+        && isDuelParticipant(resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resultSeenBy', 'updatedAt'])
+        && request.resource.data.updatedAt is string
+        && previousSeen is list
+        && request.resource.data.resultSeenBy is list
+        && !(request.auth.uid in previousSeen)
+        && request.auth.uid in request.resource.data.resultSeenBy
+        && request.resource.data.resultSeenBy.size() == previousSeen.size() + 1
+        && request.resource.data.resultSeenBy.hasAll(previousSeen);
     }
 
     match /users/{userId} {
@@ -392,7 +427,8 @@ service cloud.firestore {
       allow update: if acceptOrDeclineDuel()
         || cancelOwnDuel()
         || submitOwnDuelScore()
-        || claimOwnDuelReward();
+        || claimOwnDuelReward()
+        || acknowledgeDuelResult();
       allow delete: if false;
     }
   }

@@ -9,6 +9,7 @@ import {
   bugSmashDuelBugCount,
   bugSmashDuelDurationMs,
   bugSmashDuelStartDelayMs,
+  acknowledgeBugSmashDuelResult,
   cancelBugSmashDuel,
   claimBugSmashDuelReward,
   createBugSmashDuel,
@@ -21,11 +22,10 @@ import { bugDexEntryName, rarityLabel, useI18n } from "../services/i18n";
 import { presenceLabel } from "../services/presenceService";
 import { BugDexRarity, bugDexEntries } from "../services/pointsService";
 import { entryByBugId } from "../services/bugDexService";
-import { duelLossXp, duelWinXp } from "../services/rewardBalanceService";
 import { playBugSound } from "../services/soundService";
 import { soloCampaignConfig, soloCampaignBugIds, soloCampaignMaxLevel, soloCampaignMaxWave, soloCampaignTargetRange, type SoloCampaignConfig } from "../services/soloCampaignBalance";
 import { activateSoloLampFocus, consumeSoloBugBomb, emptySoloPowerupInventory, grantSoloBossReward, loadSoloPowerupInventory, soloLampFocusActive, soloLampFocusRemainingMinutes, type SoloPowerupInventory } from "../services/soloPowerupService";
-import { applyUserPoints, listUsers, updateUserBugSquad } from "../services/userService";
+import { listUsers, updateUserBugSquad } from "../services/userService";
 import { BugDexInventoryItem, BugSmashDuel, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
@@ -112,6 +112,8 @@ type SoloRun = {
 } | SoloCampaignConfig & {
   mode: "campaign";
 };
+
+type ArenaMode = "duel" | "solo" | "training";
 
 const rarityColors: Record<BugDexRarity, string> = {
   Gewoon: "#6f7f5f",
@@ -216,6 +218,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const [activeDuel, setActiveDuel] = useState<BugSmashDuel | null>(null);
   const [trainingDuel, setTrainingDuel] = useState<BugSmashDuel | null>(null);
   const [soloRun, setSoloRun] = useState<SoloRun | null>(null);
+  const [arenaMode, setArenaMode] = useState<ArenaMode>("duel");
   const [activeSquadIds, setActiveSquadIds] = useState<string[]>(sanitizeActiveBugSquad(user.activeBugSquad));
   const [selectedOpponentId, setSelectedOpponentId] = useState(initialOpponent?.uid ?? "");
   const [busy, setBusy] = useState(false);
@@ -295,7 +298,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       if (!activeDuelId) {
         const actionableDuel = nextDuels.find((duel) => duel.status === "pending" && duel.toUserId === user.uid)
           ?? nextDuels.find((duel) => duel.status === "accepted" && !duel.scores?.[user.uid])
-          ?? nextDuels.find((duel) => duel.status === "completed" && isDuelParticipant(duel, user) && !(duel.rewardClaimedBy ?? []).includes(user.uid));
+          ?? nextDuels.find((duel) => duel.status === "completed" && isDuelParticipant(duel, user) && !duelResultSeenByUser(duel, user));
         if (actionableDuel) setActiveDuelId(actionableDuel.id);
       }
     }).catch(() => undefined);
@@ -488,14 +491,37 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     setBusy(true);
     setError("");
     try {
-      const result = await claimBugSmashDuelReward(user, activeDuel.id);
-      if (!result) return;
-      const updatedUser = await applyUserPoints(user.uid, result === "win" ? duelWinXp : duelLossXp, 0);
-      if (updatedUser) onUserUpdated?.(updatedUser);
-      if (result === "win") {
-        const drop = await grantBugDexReward(updatedUser ?? user, "duel_win");
-        onRewardDrop?.(drop);
+      const claim = await claimBugSmashDuelReward(user, activeDuel.id);
+      setDismissedResultDuelIds((current) => new Set([...current, activeDuel.id]));
+      if (!claim) {
+        await acknowledgeBugSmashDuelResult(user, activeDuel.id).catch(() => undefined);
+        await refreshDuels();
+        return;
       }
+      onUserUpdated?.(claim.user);
+      if (claim.result === "win") {
+        try {
+          const drop = await grantBugDexReward(claim.user, "duel_win");
+          onRewardDrop?.(drop);
+        } catch {
+          setError(t("duel.rewardFailed"));
+        }
+      }
+      await refreshDuels();
+    } catch {
+      setError(t("duel.rewardFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function acknowledgeResult() {
+    if (!activeDuel || busy) return;
+    setBusy(true);
+    setError("");
+    setDismissedResultDuelIds((current) => new Set([...current, activeDuel.id]));
+    try {
+      await acknowledgeBugSmashDuelResult(user, activeDuel.id);
       await refreshDuels();
     } catch {
       setError(t("duel.rewardFailed"));
@@ -731,7 +757,9 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const opponentScore = opponentId ? activeDuel?.scores?.[opponentId] : undefined;
   const awaitingOpponentResult = Boolean(activeDuel?.status === "accepted" && activeScore && !opponentScore);
   const showWaitingResultModal = Boolean(activeDuel && awaitingOpponentResult && !acknowledgedWaitingDuelIds.has(activeDuel.id));
-  const showResultModal = Boolean(activeDuel?.status === "completed" && isDuelParticipant(activeDuel, user) && !dismissedResultDuelIds.has(activeDuel.id));
+  const resultRewardPending = Boolean(activeDuel?.winnerId && isDuelParticipant(activeDuel, user) && !(activeDuel.rewardClaimedBy ?? []).includes(user.uid));
+  const showResultModal = Boolean(activeDuel?.status === "completed" && isDuelParticipant(activeDuel, user) && !duelResultSeenByUser(activeDuel, user) && !dismissedResultDuelIds.has(activeDuel.id));
+  const visibleRecentDuels = duels.filter((duel) => duel.status !== "cancelled");
   const gameDuel = trainingDuel ?? playableDuel;
   const countdown = gameDuel?.status === "accepted" && gameDuel.startAt ? Math.max(0, Math.ceil((Date.parse(gameDuel.startAt) - now) / 1000)) : 0;
   const remainingSeconds = gameDuel?.status === "accepted" && gameDuel.startAt ? Math.max(0, Math.ceil((Date.parse(gameDuel.startAt) + gameDuel.durationMs - now) / 1000)) : 0;
@@ -868,6 +896,18 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
 
       {!activeDuel && (
         <View style={styles.modeStack}>
+          <View style={styles.arenaModeRow}>
+            <Pressable style={[styles.arenaModeButton, arenaMode === "duel" && styles.arenaModeButtonActive]} onPress={() => setArenaMode("duel")}>
+              <Text style={[styles.arenaModeText, arenaMode === "duel" && styles.arenaModeTextActive]}>Duel</Text>
+            </Pressable>
+            <Pressable style={[styles.arenaModeButton, arenaMode === "training" && styles.arenaModeButtonActive]} onPress={() => setArenaMode("training")}>
+              <Text style={[styles.arenaModeText, arenaMode === "training" && styles.arenaModeTextActive]}>{t("duel.trainingTitle")}</Text>
+            </Pressable>
+            <Pressable style={[styles.arenaModeButton, arenaMode === "solo" && styles.arenaModeButtonActive]} onPress={() => setArenaMode("solo")}>
+              <Text style={[styles.arenaModeText, arenaMode === "solo" && styles.arenaModeTextActive]}>{t("duel.soloCampaignTitle")}</Text>
+            </Pressable>
+          </View>
+          {arenaMode === "duel" && (
           <View style={[styles.card, styles.duelModePanel]}>
             <View style={styles.modeHeader}>
               <View style={styles.modeHeaderText}>
@@ -892,6 +932,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
               <Text style={sharedStyles.buttonText}>{busy ? "..." : t("duel.challenge")}</Text>
             </Pressable>
           </View>
+          )}
+          {arenaMode === "training" && (
           <View style={styles.trainingPanel}>
             <Image accessibilityIgnoresInvertColors resizeMode="cover" source={duelHeroImage} style={styles.trainingImage} />
             <View style={styles.trainingContent}>
@@ -907,6 +949,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
               </Pressable>
             </View>
           </View>
+          )}
+          {arenaMode === "solo" && (
           <View style={styles.soloCampaignPanel}>
             <Image accessibilityIgnoresInvertColors resizeMode="cover" source={soloCampaignImage} style={styles.soloCampaignImage} />
             <View style={styles.soloCampaignContent}>
@@ -960,6 +1004,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
               </Pressable>
             </View>
           </View>
+          )}
           {challengeNotice ? <Text style={styles.noticeText}>{challengeNotice}</Text> : null}
         </View>
       )}
@@ -1149,7 +1194,9 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
         </Modal>
       )}
       {activeDuel?.status === "completed" && (
-        <Modal animationType="fade" transparent visible={showResultModal} onRequestClose={() => setDismissedResultDuelIds((current) => new Set([...current, activeDuel.id]))}>
+        <Modal animationType="fade" transparent visible={showResultModal} onRequestClose={() => {
+          if (!resultRewardPending) void acknowledgeResult();
+        }}>
           <View style={styles.startModalBackdrop}>
             <View style={styles.startModalCard}>
               <Text style={styles.startTitle}>{t("duel.resultReadyTitle")}</Text>
@@ -1157,18 +1204,13 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
               <Text style={styles.resultLine}>{activeDuel.fromUserName}: {activeDuel.scores?.[activeDuel.fromUserId]?.score ?? 0}</Text>
               <Text style={styles.resultLine}>{activeDuel.toUserName}: {activeDuel.scores?.[activeDuel.toUserId]?.score ?? 0}</Text>
               <Text style={styles.noticeText}>{t("duel.resultReadyBody")}</Text>
-              {activeDuel.winnerId && isDuelParticipant(activeDuel, user) && !(activeDuel.rewardClaimedBy ?? []).includes(user.uid) ? (
+              {resultRewardPending ? (
                 <Pressable disabled={busy} style={sharedStyles.button} onPress={claimReward}>
                   <Text style={sharedStyles.buttonText}>{busy ? "..." : activeDuel.winnerId === user.uid ? t("duel.claimReward") : t("duel.claimXp")}</Text>
                 </Pressable>
               ) : (
-                <Pressable style={sharedStyles.button} onPress={() => setDismissedResultDuelIds((current) => new Set([...current, activeDuel.id]))}>
-                  <Text style={sharedStyles.buttonText}>{t("common.ok")}</Text>
-                </Pressable>
-              )}
-              {activeDuel.winnerId && isDuelParticipant(activeDuel, user) && !(activeDuel.rewardClaimedBy ?? []).includes(user.uid) && (
-                <Pressable style={sharedStyles.secondaryButton} onPress={() => setDismissedResultDuelIds((current) => new Set([...current, activeDuel.id]))}>
-                  <Text style={sharedStyles.secondaryButtonText}>{t("common.ok")}</Text>
+                <Pressable disabled={busy} style={sharedStyles.button} onPress={acknowledgeResult}>
+                  <Text style={sharedStyles.buttonText}>{busy ? "..." : t("common.ok")}</Text>
                 </Pressable>
               )}
             </View>
@@ -1176,10 +1218,10 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
         </Modal>
       )}
 
-      {duels.length > 0 && (
+      {visibleRecentDuels.length > 0 && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t("duel.recent")}</Text>
-          {duels.slice(0, 6).map((duel) => (
+          {visibleRecentDuels.slice(0, 6).map((duel) => (
             <Pressable key={duel.id} style={styles.duelRow} onPress={() => setActiveDuelId(duel.id)}>
               <Text style={styles.duelRowTitle} numberOfLines={1}>{opponentLabel(duel, user)}</Text>
               <Text style={styles.duelRowMeta}>{statusLabel(duel, t)}</Text>
@@ -2244,6 +2286,10 @@ function isDuelParticipant(duel: BugSmashDuel, user: User) {
   return duel.fromUserId === user.uid || duel.toUserId === user.uid;
 }
 
+function duelResultSeenByUser(duel: BugSmashDuel, user: User) {
+  return (duel.resultSeenBy ?? []).includes(user.uid) || (duel.rewardClaimedBy ?? []).includes(user.uid);
+}
+
 function statusLabel(duel: BugSmashDuel, t: (key: string) => string) {
   return t(`duel.status.${duel.status}`);
 }
@@ -2281,6 +2327,35 @@ const styles = StyleSheet.create({
     marginTop: 12,
     overflow: "hidden",
     position: "relative"
+  },
+  arenaModeButton: {
+    alignItems: "center",
+    backgroundColor: "#edf6ea",
+    borderColor: "#cbdad0",
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 44,
+    paddingHorizontal: 8,
+    paddingVertical: 10
+  },
+  arenaModeButtonActive: {
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57"
+  },
+  arenaModeRow: {
+    flexDirection: "row",
+    gap: 8
+  },
+  arenaModeText: {
+    color: "#102018",
+    fontSize: 12,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  arenaModeTextActive: {
+    color: "#fdfefb"
   },
   bonusLine: {
     color: "#53645d",

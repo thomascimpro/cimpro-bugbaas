@@ -116,6 +116,7 @@ export type BugSmashDuel = {
   scores?: Record<string, BugSmashDuelScore>;
   winnerId?: string;
   rewardClaimedBy?: string[];
+  resultSeenBy?: string[];
 };
 
 export type TradeStatus = "Open" | "Geaccepteerd" | "Afgewezen" | "Geannuleerd";

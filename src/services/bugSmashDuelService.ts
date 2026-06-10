@@ -1,7 +1,8 @@
 import { collection, doc, getDocs, onSnapshot, query, runTransaction, setDoc, where } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 import { BugSmashDuel, User } from "../types";
-import { bugDexEntries } from "./pointsService";
+import { badgesForUser, bugDexEntries, titleForPoints } from "./pointsService";
+import { duelLossXp, duelWinXp } from "./rewardBalanceService";
 
 const demoDuels = new Map<string, BugSmashDuel>();
 
@@ -61,7 +62,8 @@ export async function createBugSmashDuel(fromUser: User, toUser: User): Promise<
     updatedAt: nowIso(),
     durationMs: bugSmashDuelDurationMs,
     scores: {},
-    rewardClaimedBy: []
+    rewardClaimedBy: [],
+    resultSeenBy: []
   };
 
   if (!isFirebaseConfigured) {
@@ -203,24 +205,74 @@ export async function submitBugSmashDuelScore(user: User, duelId: string, score:
   });
 }
 
-export async function claimBugSmashDuelReward(user: User, duelId: string): Promise<"loss" | "win" | null> {
+export async function claimBugSmashDuelReward(user: User, duelId: string): Promise<{ result: "loss" | "win"; user: User } | null> {
   if (!isFirebaseConfigured) {
     const duel = demoDuels.get(duelId);
     if (!duel || duel.status !== "completed" || !isParticipant(duel, user) || !duel.winnerId || (duel.rewardClaimedBy ?? []).includes(user.uid)) return null;
-    demoDuels.set(duelId, { ...duel, rewardClaimedBy: [...(duel.rewardClaimedBy ?? []), user.uid], updatedAt: nowIso() });
-    return duel.winnerId === user.uid ? "win" : "loss";
+    const result = duel.winnerId === user.uid ? "win" : "loss";
+    const totalPoints = Math.max(0, user.totalPoints + (result === "win" ? duelWinXp : duelLossXp));
+    const updatedUser = { ...user, totalPoints, title: titleForPoints(totalPoints) };
+    updatedUser.badges = badgesForUser(updatedUser);
+    demoDuels.set(duelId, {
+      ...duel,
+      rewardClaimedBy: Array.from(new Set([...(duel.rewardClaimedBy ?? []), user.uid])),
+      resultSeenBy: Array.from(new Set([...(duel.resultSeenBy ?? []), user.uid])),
+      updatedAt: nowIso()
+    });
+    return { result, user: updatedUser };
+  }
+
+  return runTransaction(db, async (transaction) => {
+    const ref = duelRef(duelId);
+    const userRef = doc(db, "users", user.uid);
+    const snapshot = await transaction.get(ref);
+    const userSnapshot = await transaction.get(userRef);
+    if (!snapshot.exists() || !userSnapshot.exists()) return null;
+    const duel = snapshot.data() as BugSmashDuel;
+    if (duel.status !== "completed" || !isParticipant(duel, user) || !duel.winnerId || (duel.rewardClaimedBy ?? []).includes(user.uid)) return null;
+    const result = duel.winnerId === user.uid ? "win" : "loss";
+    const currentUser = userSnapshot.data() as User;
+    const totalPoints = Math.max(0, currentUser.totalPoints + (result === "win" ? duelWinXp : duelLossXp));
+    const updatedUser = { ...currentUser, totalPoints, title: titleForPoints(totalPoints) };
+    updatedUser.badges = badgesForUser(updatedUser);
+    transaction.update(ref, {
+      rewardClaimedBy: Array.from(new Set([...(duel.rewardClaimedBy ?? []), user.uid])),
+      resultSeenBy: Array.from(new Set([...(duel.resultSeenBy ?? []), user.uid])),
+      updatedAt: nowIso()
+    });
+    transaction.update(userRef, {
+      badges: updatedUser.badges,
+      title: updatedUser.title,
+      totalPoints: updatedUser.totalPoints
+    });
+    return { result, user: updatedUser };
+  });
+}
+
+export async function acknowledgeBugSmashDuelResult(user: User, duelId: string): Promise<boolean> {
+  if (!isFirebaseConfigured) {
+    const duel = demoDuels.get(duelId);
+    if (!duel || duel.status !== "completed" || !isParticipant(duel, user)) return false;
+    if ((duel.resultSeenBy ?? []).includes(user.uid)) return true;
+    demoDuels.set(duelId, {
+      ...duel,
+      resultSeenBy: Array.from(new Set([...(duel.resultSeenBy ?? []), user.uid])),
+      updatedAt: nowIso()
+    });
+    return true;
   }
 
   return runTransaction(db, async (transaction) => {
     const ref = duelRef(duelId);
     const snapshot = await transaction.get(ref);
-    if (!snapshot.exists()) return null;
+    if (!snapshot.exists()) return false;
     const duel = snapshot.data() as BugSmashDuel;
-    if (duel.status !== "completed" || !isParticipant(duel, user) || !duel.winnerId || (duel.rewardClaimedBy ?? []).includes(user.uid)) return null;
+    if (duel.status !== "completed" || !isParticipant(duel, user)) return false;
+    if ((duel.resultSeenBy ?? []).includes(user.uid)) return true;
     transaction.update(ref, {
-      rewardClaimedBy: [...(duel.rewardClaimedBy ?? []), user.uid],
+      resultSeenBy: Array.from(new Set([...(duel.resultSeenBy ?? []), user.uid])),
       updatedAt: nowIso()
     });
-    return duel.winnerId === user.uid ? "win" : "loss";
+    return true;
   });
 }
