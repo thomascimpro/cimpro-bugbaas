@@ -109,7 +109,25 @@ export async function showPhoneNotification(notification: AppNotification): Prom
   });
 }
 
+export async function dismissPhoneNotification(notificationRequestId: string): Promise<void> {
+  if (!notificationRequestId) return;
+  await Notifications.dismissNotificationAsync(notificationRequestId).catch(() => undefined);
+}
+
+export async function dismissPresentedNotificationsForTarget(target: { bugId?: string; duelId?: string; notificationId?: string; type?: string }): Promise<void> {
+  const entries = Object.entries(target).filter(([, value]) => Boolean(value));
+  if (entries.length === 0) return;
+  const presented = await Notifications.getPresentedNotificationsAsync().catch(() => []);
+  await Promise.all(presented
+    .filter((notification) => {
+      const data = notification.request.content.data as Record<string, unknown>;
+      return entries.every(([key, value]) => String(data[key] ?? "") === String(value));
+    })
+    .map((notification) => dismissPhoneNotification(notification.request.identifier)));
+}
+
 export async function markNotificationRead(user: User, notificationId: string): Promise<void> {
+  await dismissPresentedNotificationsForTarget({ notificationId });
   if (!isFirebaseConfigured) return;
   await updateDoc(doc(db, "users", user.uid, "notifications", notificationId), { read: true });
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.10
+
+- Duel-startflow gefixt: de uitdager krijgt na app sluiten/heropenen opnieuw een startknop zolang hij nog geen score heeft.
+- Er kan nog maar een actief duel tussen twee spelers openstaan; bestaande pending/accepted duels blokkeren nieuwe aanvragen.
+- Android meldingen worden opgeruimd na openen, afhandelen of reward claimen.
+- Actieve Bug Squad toont nu per helper wat Zap, AOE, Sticky, Shield en Mythic specials in duel/campaign doen.
+- Solo Campaign wave 11+ en 14+ hebben meer targets/spawnruimte en boss waves hebben veilige bonus-windows zonder extra penalty.
+
 ## 2.2.9
 
 - Solo Campaign gaat alleen naar de volgende wave als de targetscore echt is gehaald.

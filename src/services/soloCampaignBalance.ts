@@ -3,8 +3,10 @@ import { bugDexEntries, BugDexRarity } from "./pointsService";
 
 export type SoloCampaignConfig = {
   boss: boolean;
+  bugCount: number;
   level: number;
   pcScore: number;
+  spawnSpacingMultiplier: number;
   targetScore: number;
   wave: number;
 };
@@ -33,7 +35,9 @@ export function soloCampaignConfig(wave: number): SoloCampaignConfig {
   const boss = waveInLevel === soloCampaignWavesPerLevel;
   const targetScore = soloCampaignTargetsByLevel[level - 1]?.[waveInLevel - 1] ?? 60;
   const pcScore = Math.max(60, targetScore - (boss ? 6 : 10));
-  return { boss, level, pcScore, targetScore, wave: safeWave };
+  const bugCount = safeWave >= 18 ? 56 : safeWave >= 14 ? 48 : safeWave >= 11 ? 40 : bugSmashDuelBugCount;
+  const spawnSpacingMultiplier = safeWave >= 18 ? 0.58 : safeWave >= 14 ? 0.68 : safeWave >= 11 ? 0.82 : 1;
+  return { boss, bugCount, level, pcScore, spawnSpacingMultiplier, targetScore, wave: safeWave };
 }
 
 export function soloCampaignBugIds(seed: number, config: SoloCampaignConfig) {
@@ -55,7 +59,7 @@ export function soloCampaignBugIds(seed: number, config: SoloCampaignConfig) {
     .map((entry, index) => ({ id: entry.id, sort: stableHash(`${seed}:fallback:${entry.id}:${index}`) }))
     .sort((a, b) => a.sort - b.sort)
     .map((item) => item.id);
-  return [...ids, ...fallback.filter((id) => !ids.includes(id))].slice(0, bugSmashDuelBugCount);
+  return [...ids, ...fallback.filter((id) => !ids.includes(id))].slice(0, config.bugCount);
 }
 
 export function bugDexRarityRank(rarity: BugDexRarity) {

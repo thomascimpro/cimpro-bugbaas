@@ -45,8 +45,25 @@ function isParticipant(duel: BugSmashDuel, user: User) {
   return duel.fromUserId === user.uid || duel.toUserId === user.uid;
 }
 
+function isActiveDuelBetween(duel: BugSmashDuel, firstUserId: string, secondUserId: string) {
+  const samePair = (duel.fromUserId === firstUserId && duel.toUserId === secondUserId)
+    || (duel.fromUserId === secondUserId && duel.toUserId === firstUserId);
+  return samePair && (duel.status === "pending" || duel.status === "accepted");
+}
+
 export async function createBugSmashDuel(fromUser: User, toUser: User): Promise<BugSmashDuel> {
   if (fromUser.uid === toUser.uid) throw new Error("Je kunt jezelf niet uitdagen.");
+  if (!isFirebaseConfigured) {
+    const existing = Array.from(demoDuels.values()).find((duel) => isActiveDuelBetween(duel, fromUser.uid, toUser.uid));
+    if (existing) throw new Error("Er loopt al een actief duel tussen deze spelers.");
+  } else {
+    const [sent, received] = await Promise.all([
+      getDocs(query(collection(db, "bugSmashDuels"), where("fromUserId", "==", fromUser.uid), where("toUserId", "==", toUser.uid))),
+      getDocs(query(collection(db, "bugSmashDuels"), where("fromUserId", "==", toUser.uid), where("toUserId", "==", fromUser.uid)))
+    ]);
+    const existing = [...sent.docs, ...received.docs].find((item) => isActiveDuelBetween(item.data() as BugSmashDuel, fromUser.uid, toUser.uid));
+    if (existing) throw new Error("Er loopt al een actief duel tussen deze spelers.");
+  }
   const id = isFirebaseConfigured ? doc(collection(db, "bugSmashDuels")).id : makeId();
   const seed = Date.now() + Math.floor(Math.random() * 100000);
   const duel: BugSmashDuel = {
@@ -158,7 +175,8 @@ export async function cancelBugSmashDuel(user: User, duelId: string): Promise<bo
 export async function submitBugSmashDuelScore(user: User, duelId: string, score: number, caughtBugIds: string[], bonusScore: number): Promise<BugSmashDuel> {
   const submit = (duel: BugSmashDuel): BugSmashDuel => {
     if (!isParticipant(duel, user)) throw new Error("Je doet niet mee aan dit duel.");
-    if (duel.status !== "accepted" && duel.status !== "completed") throw new Error("Duel is niet actief.");
+    const requesterCanPreplay = duel.status === "pending" && duel.fromUserId === user.uid;
+    if (!requesterCanPreplay && duel.status !== "accepted" && duel.status !== "completed") throw new Error("Duel is niet actief.");
     const scores = {
       ...(duel.scores ?? {}),
       [user.uid]: {

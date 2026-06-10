@@ -40,6 +40,8 @@ import { movementRadarXpPerBug } from "./src/services/rewardBalanceService";
 import { checkLatestVersion, VersionNotice } from "./src/services/versionService";
 import {
   defaultNotificationSettings,
+  dismissPhoneNotification,
+  dismissPresentedNotificationsForTarget,
   getNotificationSettings,
   markNotificationRead,
   notifyBugUpdate,
@@ -226,6 +228,7 @@ function AppContent() {
   const appState = useRef(AppState.currentState);
   const movementCheckInProgress = useRef(false);
   const versionCheckInProgress = useRef(false);
+  const awardedRadarBugCountsRef = useRef(new Map<string, number>());
   const userRef = useRef<User | null>(null);
   const previousRankRef = useRef<{ uid: string; minPoints: number } | null>(null);
   const previousBadgesRef = useRef<{ badges: string[]; uid: string } | null>(null);
@@ -485,6 +488,7 @@ function AppContent() {
       const responseKey = `${request.identifier}:${response.actionIdentifier}`;
       if (handledNotificationResponses.current.has(responseKey)) return;
       handledNotificationResponses.current.add(responseKey);
+      void dismissPhoneNotification(request.identifier);
       void openNotificationTarget(contentData.type, contentData.bugId, contentData.notificationId, contentData.duelId);
     }
 
@@ -623,6 +627,7 @@ function AppContent() {
         setBugDexClaiming(false);
       }
     }
+    await dismissPresentedNotificationsForTarget({ type: "bugdex" }).catch(() => undefined);
     const [nextDrop, ...remaining] = bugDexDropQueue;
     setBugDexDrop(nextDrop ?? null);
     setBugDexDropQueue(remaining);
@@ -653,11 +658,15 @@ function AppContent() {
           nextUser = drop.updatedUser;
           setUser(drop.updatedUser);
         }
-        if (drop) showBugDexDrop(drop);
+        if (drop) {
+          markRadarBugAwarded(bugId);
+          showBugDexDrop(drop);
+        }
       } catch {
         setPendingRadarBugIds((queue) => [...queue, bugId]);
       }
     }
+    await dismissPresentedNotificationsForTarget({ type: "movement" }).catch(() => undefined);
   }
 
   function queueForegroundBug(chance = 1) {
@@ -665,6 +674,19 @@ function AppContent() {
     const bugId = allBugArtIds[Math.floor(Math.random() * allBugArtIds.length)];
     if (!bugId) return;
     setPendingRadarBugIds((queue) => queue.length >= maxQueuedForegroundBugs ? queue : [...queue, bugId]);
+  }
+
+  function markRadarBugAwarded(bugId: string) {
+    const current = awardedRadarBugCountsRef.current.get(bugId) ?? 0;
+    awardedRadarBugCountsRef.current.set(bugId, current + 1);
+  }
+
+  function consumeAwardedRadarBug(bugId: string): boolean {
+    const current = awardedRadarBugCountsRef.current.get(bugId) ?? 0;
+    if (current <= 0) return false;
+    if (current === 1) awardedRadarBugCountsRef.current.delete(bugId);
+    else awardedRadarBugCountsRef.current.set(bugId, current - 1);
+    return true;
   }
 
   function rewardBugFixed(bug: BugReport) {
@@ -692,6 +714,10 @@ function AppContent() {
       const updated = await applyUserPoints(user.uid, xp, 0);
       const splatResult = await recordBugSplat(updated ?? user);
       setUser(splatResult.user);
+      if (consumeAwardedRadarBug(bugId)) {
+        if (splatResult.milestone) void maybeShowBugDexDrop(rollBugDexDrop(splatResult.user, "bug_splat"));
+        return;
+      }
       const caughtBugDrop = await rollSpecificBugDexDrop(splatResult.user, bugId, "bug_splat", 1);
       if (caughtBugDrop) {
         showBugDexDrop(caughtBugDrop);
@@ -778,6 +804,7 @@ function AppContent() {
     if (currentUser && notificationId) {
       await markNotificationRead(currentUser, notificationId).catch(() => undefined);
     }
+    await dismissPresentedNotificationsForTarget({ bugId, duelId, notificationId, type }).catch(() => undefined);
     if (type === "trade") {
       openBugDexTrades();
       return;
