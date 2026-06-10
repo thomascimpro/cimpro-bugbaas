@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ActivityIndicator, Alert, Animated, Image, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { BugSwatterHit, playBugSwatterFeedback } from "../components/BugSwatterHit";
 import { BugDexDropResult, grantBugDexReward, listBugDexInventory } from "../services/bugDexService";
@@ -23,7 +24,7 @@ import { presenceLabel } from "../services/presenceService";
 import { BugDexRarity, bugDexEntries } from "../services/pointsService";
 import { entryByBugId } from "../services/bugDexService";
 import { playBugSound } from "../services/soundService";
-import { soloCampaignConfig, soloCampaignBugIds, soloCampaignMaxLevel, soloCampaignMaxWave, soloCampaignTargetRange, type SoloCampaignConfig } from "../services/soloCampaignBalance";
+import { soloCampaignConfig, soloCampaignBugIds, soloCampaignMaxLevel, soloCampaignMaxWave, type SoloCampaignConfig } from "../services/soloCampaignBalance";
 import { activateSoloLampFocus, consumeSoloBugBomb, emptySoloPowerupInventory, grantSoloBossReward, loadSoloPowerupInventory, soloLampFocusActive, soloLampFocusRemainingMinutes, type SoloPowerupInventory } from "../services/soloPowerupService";
 import { listUsers, updateUserBugSquad } from "../services/userService";
 import { BugDexInventoryItem, BugSmashDuel, User } from "../types";
@@ -54,6 +55,7 @@ const soloBossImages = {
   4: require("../../assets/generated/solo-boss-hornet-hd.png"),
   5: require("../../assets/generated/solo-boss-atlas-hd.png")
 };
+const soloCampaignProgressPrefix = "bugbaas:soloCampaignWave";
 const duelEffectSprites = {
   fireball: require("../../assets/generated/duel_effect_fireball_hd.png"),
   freeze: require("../../assets/generated/duel_effect_iceburst_hd.png"),
@@ -230,6 +232,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const [soloRewardNotice, setSoloRewardNotice] = useState("");
   const [soloBombFlash, setSoloBombFlash] = useState(false);
   const [soloBombPrimed, setSoloBombPrimed] = useState(false);
+  const [soloCampaignUnlockedWave, setSoloCampaignUnlockedWave] = useState(1);
   const [squadModalVisible, setSquadModalVisible] = useState(false);
   const [squadLoading, setSquadLoading] = useState(false);
   const [squadBusyId, setSquadBusyId] = useState("");
@@ -257,6 +260,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const soloBossRewardedRef = useRef(new Set<string>());
   const soloCampaignClearRewardedRef = useRef(new Set<string>());
   const assist = useMemo(() => bugSmashDuelBalanceForUser({ activeBugSquad: activeSquadIds }), [activeSquadIds]);
+  const soloCampaignProgressKey = `${soloCampaignProgressPrefix}:${user.uid}`;
   const opponents = useMemo(() => {
     const items = users.filter((item) => item.uid !== user.uid);
     if (initialOpponent && initialOpponent.uid !== user.uid && !items.some((item) => item.uid === initialOpponent.uid)) {
@@ -292,6 +296,12 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     setHelperImpacts([]);
   }
 
+  async function rememberSoloCampaignWave(wave: number) {
+    const nextWave = Math.max(1, Math.min(soloCampaignMaxWave, Math.floor(wave)));
+    setSoloCampaignUnlockedWave(nextWave);
+    await AsyncStorage.setItem(soloCampaignProgressKey, String(nextWave)).catch(() => undefined);
+  }
+
   useEffect(() => {
     let active = true;
     void Promise.all([listUsers(), listBugSmashDuels(user), listBugDexInventory(user)]).then(([nextUsers, nextDuels, nextInventory]) => {
@@ -311,6 +321,20 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       active = false;
     };
   }, [user.uid, activeDuelId]);
+
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(soloCampaignProgressKey).then((value) => {
+      if (!active) return;
+      const wave = Number(value);
+      setSoloCampaignUnlockedWave(Number.isFinite(wave) ? Math.max(1, Math.min(soloCampaignMaxWave, Math.floor(wave))) : 1);
+    }).catch(() => {
+      if (active) setSoloCampaignUnlockedWave(1);
+    });
+    return () => {
+      active = false;
+    };
+  }, [soloCampaignProgressKey]);
 
   useEffect(() => {
     let active = true;
@@ -738,6 +762,35 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     setNow(Date.now());
   }
 
+  function requestStopTraining() {
+    if (soloRun?.mode !== "campaign") {
+      stopTraining();
+      return;
+    }
+    Alert.alert(t("duel.soloCancelTitle"), t("duel.soloCancelBody"), [
+      { text: t("common.keepPlaying"), style: "cancel" },
+      { text: t("common.exit"), style: "destructive", onPress: stopTraining }
+    ]);
+  }
+
+  function handleSoloCampaignResultAction() {
+    const campaign = soloRun?.mode === "campaign" ? soloRun : null;
+    if (!campaign) return;
+    if (soloCampaignComplete) {
+      void rememberSoloCampaignWave(1);
+      startSoloCampaign(1);
+      return;
+    }
+    if (soloCampaignWon) {
+      const nextWave = Math.min(soloCampaignMaxWave, campaign.wave + 1);
+      void rememberSoloCampaignWave(nextWave);
+      startSoloCampaign(nextWave);
+      return;
+    }
+    void rememberSoloCampaignWave(1);
+    startSoloCampaign(1);
+  }
+
   async function activateLampFocus() {
     const result = await activateSoloLampFocus(user.uid);
     setSoloPowerups(result.inventory);
@@ -840,12 +893,12 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
         <View style={styles.gameHud}>
           <View style={styles.gameHudPlayer}>
             <Text style={styles.gameOpponent} numberOfLines={1}>{trainingDuel ? soloCampaign ? t("duel.soloCampaignTitle") : t("duel.trainingTitle") : opponentLabel(gameDuel, user)}</Text>
-            <Text style={styles.gameScore}>{t("duel.yourScore", { score: gameScore })}</Text>
+            <Text style={styles.gameScore}>{soloCampaign ? t("duel.yourCampaignScore", { score: gameScore, target: soloCampaign.targetScore }) : t("duel.yourScore", { score: gameScore })}</Text>
           </View>
           <Text style={styles.gameTimer}>{remainingSeconds}s</Text>
           <View style={styles.gameHudPlayer}>
             <Text style={styles.gameOpponent} numberOfLines={1}>{trainingDuel ? soloCampaign ? t("duel.soloPcScore", { score: soloPcScore, target: soloCampaign.targetScore }) : t("duel.trainingNoRewardsShort") : opponentScore ? t("duel.theirScore", { score: opponentScore.score }) : t("duel.waitingScore")}</Text>
-            <Pressable style={styles.gameExitButton} onPress={trainingDuel ? stopTraining : onBack}>
+            <Pressable style={styles.gameExitButton} onPress={trainingDuel ? requestStopTraining : onBack}>
               <Text style={styles.gameExitText}>x</Text>
             </Pressable>
           </View>
@@ -865,12 +918,14 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                   <Text style={styles.soloRewardText}>{soloRewardNotice}</Text>
                 </View>
               ) : null}
-              <Pressable style={sharedStyles.button} onPress={soloCampaign ? () => startSoloCampaign(soloCampaignComplete ? 1 : soloCampaignWon ? soloCampaign.wave + 1 : 1) : startTraining}>
+              <Pressable style={sharedStyles.button} onPress={soloCampaign ? handleSoloCampaignResultAction : startTraining}>
                 <Text style={sharedStyles.buttonText}>{soloCampaign ? soloCampaignComplete ? t("duel.soloRestart") : soloCampaignWon ? t("duel.soloNextWave") : t("duel.soloRetry") : t("duel.trainingRetry")}</Text>
               </Pressable>
-              <Pressable style={sharedStyles.secondaryButton} onPress={stopTraining}>
-                <Text style={sharedStyles.secondaryButtonText}>{t("common.done")}</Text>
-              </Pressable>
+              {!(soloCampaign && soloCampaignWon) && (
+                <Pressable style={sharedStyles.secondaryButton} onPress={soloCampaign ? requestStopTraining : stopTraining}>
+                  <Text style={sharedStyles.secondaryButtonText}>{t("common.done")}</Text>
+                </Pressable>
+              )}
             </View>
           ) : isRunning(gameDuel, now) ? (
             <>
@@ -890,7 +945,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
         </View>
         <View style={styles.gameFooter}>
           {!soloCampaign && renderSquadJars(activeSquadIds, activeSquadBonuses, t, openSquadModal, { compact: true, interactive: false })}
-          <Text style={styles.gameFooterText}>{trainingDuel ? soloCampaign ? t("duel.soloCampaignFooter", { wave: soloCampaign.wave, level: soloCampaign.level, maxWave: soloCampaignMaxWave, target: soloCampaign.targetScore }) : t("duel.trainingFooter") : "Kies je targets. Hoge rarity kost meer taps, maar scoort veel meer."}</Text>
+          <Text style={styles.gameFooterText}>{trainingDuel ? soloCampaign ? t("duel.soloCampaignFooter", { wave: soloCampaign.wave, level: soloCampaign.level, maxWave: soloCampaignMaxWave }) : t("duel.trainingFooter") : "Kies je targets. Hoge rarity kost meer taps, maar scoort veel meer."}</Text>
         </View>
       </View>
     );
@@ -915,26 +970,23 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
           <View style={styles.arenaModeRow}>
             <Pressable style={[styles.arenaModeButton, arenaMode === "duel" && styles.arenaModeButtonActive]} onPress={() => setArenaMode("duel")}>
               <Image accessibilityIgnoresInvertColors resizeMode="cover" source={duelHeroImage} style={styles.arenaModeImage} />
-              <View style={styles.arenaModeScrim} />
               <View style={styles.arenaModeCopy}>
-                <Text style={[styles.arenaModeText, arenaMode === "duel" && styles.arenaModeTextActive]}>Duel</Text>
-                <Text style={[styles.arenaModeMeta, arenaMode === "duel" && styles.arenaModeMetaActive]}>{t("duel.modeDuelHint")}</Text>
+                <Text numberOfLines={1} style={[styles.arenaModeText, arenaMode === "duel" && styles.arenaModeTextActive]}>Duel</Text>
+                <Text numberOfLines={1} style={[styles.arenaModeMeta, arenaMode === "duel" && styles.arenaModeMetaActive]}>{t("duel.modeDuelHint")}</Text>
               </View>
             </Pressable>
             <Pressable style={[styles.arenaModeButton, arenaMode === "training" && styles.arenaModeButtonActive]} onPress={() => setArenaMode("training")}>
               <Image accessibilityIgnoresInvertColors resizeMode="cover" source={trainingModeImage} style={styles.arenaModeImage} />
-              <View style={styles.arenaModeScrim} />
               <View style={styles.arenaModeCopy}>
-                <Text style={[styles.arenaModeText, arenaMode === "training" && styles.arenaModeTextActive]}>{t("duel.trainingTitle")}</Text>
-                <Text style={[styles.arenaModeMeta, arenaMode === "training" && styles.arenaModeMetaActive]}>{t("duel.modeTrainingHint")}</Text>
+                <Text numberOfLines={1} style={[styles.arenaModeText, arenaMode === "training" && styles.arenaModeTextActive]}>{t("duel.trainingTitle")}</Text>
+                <Text numberOfLines={1} style={[styles.arenaModeMeta, arenaMode === "training" && styles.arenaModeMetaActive]}>{t("duel.modeTrainingHint")}</Text>
               </View>
             </Pressable>
             <Pressable style={[styles.arenaModeButton, arenaMode === "solo" && styles.arenaModeButtonActive]} onPress={() => setArenaMode("solo")}>
               <Image accessibilityIgnoresInvertColors resizeMode="cover" source={soloCampaignImage} style={styles.arenaModeImage} />
-              <View style={styles.arenaModeScrim} />
               <View style={styles.arenaModeCopy}>
-                <Text style={[styles.arenaModeText, arenaMode === "solo" && styles.arenaModeTextActive]}>{t("duel.soloCampaignTitle")}</Text>
-                <Text style={[styles.arenaModeMeta, arenaMode === "solo" && styles.arenaModeMetaActive]}>{t("duel.modeSoloHint")}</Text>
+                <Text numberOfLines={1} style={[styles.arenaModeText, arenaMode === "solo" && styles.arenaModeTextActive]}>{t("duel.soloCampaignTitle")}</Text>
+                <Text numberOfLines={1} style={[styles.arenaModeMeta, arenaMode === "solo" && styles.arenaModeMetaActive]}>{t("duel.modeSoloHint")}</Text>
               </View>
             </Pressable>
           </View>
@@ -992,22 +1044,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                 </View>
                 <Text style={styles.soloCampaignBody}>{t("duel.soloCampaignBody")}</Text>
                 <View style={styles.soloCampaignMetaRow}>
-                  <Text style={styles.soloCampaignMeta}>{t("duel.soloWave", { wave: 1, level: 1, maxWave: soloCampaignMaxWave })}</Text>
-                  <Text style={styles.soloCampaignMeta}>{t("duel.soloTarget", { score: soloCampaignConfig(1).targetScore })}</Text>
-                </View>
-                <View style={styles.soloTargetBoard}>
-                  <Text style={styles.soloTargetBoardTitle}>{t("duel.soloLevelTargets")}</Text>
-                  <View style={styles.soloTargetGrid}>
-                    {Array.from({ length: soloCampaignMaxLevel }).map((_, index) => {
-                      const range = soloCampaignTargetRange(index + 1);
-                      return (
-                        <View key={index} style={styles.soloTargetChip}>
-                          <Text style={styles.soloTargetLevel}>L{index + 1}</Text>
-                          <Text style={styles.soloTargetValue}>{range.start}-{range.boss}</Text>
-                        </View>
-                      );
-                    })}
-                  </View>
+                  <Text style={styles.soloCampaignMeta}>{t("duel.soloContinueWave", { wave: soloCampaignUnlockedWave, maxWave: soloCampaignMaxWave })}</Text>
                 </View>
                 <View style={styles.soloPowerupPanel}>
                   <View style={styles.soloPowerupItem}>
@@ -1033,8 +1070,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                 </View>
                 {soloRewardNotice ? <Text style={styles.soloRewardInline}>{soloRewardNotice}</Text> : null}
               </View>
-              <Pressable style={styles.soloCampaignButton} onPress={() => startSoloCampaign(1)}>
-                <Text style={styles.soloCampaignButtonText}>{t("duel.soloCampaignAction")}</Text>
+              <Pressable style={styles.soloCampaignButton} onPress={() => startSoloCampaign(soloCampaignUnlockedWave)}>
+                <Text style={styles.soloCampaignButtonText}>{soloCampaignUnlockedWave > 1 ? t("duel.soloContinueAction") : t("duel.soloCampaignAction")}</Text>
               </Pressable>
             </View>
           </View>
@@ -2363,63 +2400,54 @@ const styles = StyleSheet.create({
     position: "relative"
   },
   arenaModeButton: {
-    backgroundColor: "#102018",
-    borderColor: "rgba(215,189,87,0.42)",
+    backgroundColor: "#f8fbf5",
+    borderColor: "#d7e1d9",
     borderRadius: 8,
     borderWidth: 1,
     flex: 1,
-    height: 88,
-    justifyContent: "flex-end",
+    minWidth: 0,
     overflow: "hidden"
   },
   arenaModeButtonActive: {
     borderColor: "#d7bd57",
-    borderWidth: 2
+    borderWidth: 2,
+    shadowColor: "#d7bd57",
+    shadowOpacity: 0.18,
+    shadowRadius: 6
   },
   arenaModeCopy: {
-    gap: 1,
-    paddingHorizontal: 7,
-    paddingVertical: 7,
-    zIndex: 2
+    backgroundColor: "#ffffff",
+    minHeight: 46,
+    paddingHorizontal: 6,
+    paddingVertical: 6
   },
   arenaModeImage: {
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0
+    height: 58,
+    width: "100%"
   },
   arenaModeMeta: {
-    color: "#dbe7df",
+    color: "#65736c",
     fontSize: 9,
     fontWeight: "900",
     lineHeight: 11,
     textAlign: "center"
   },
   arenaModeMetaActive: {
-    color: "#fff7d6"
+    color: "#5b4a10"
   },
   arenaModeRow: {
     flexDirection: "row",
     gap: 8
   },
-  arenaModeScrim: {
-    backgroundColor: "rgba(10,24,17,0.46)",
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-    right: 0,
-    top: 0,
-    zIndex: 1
-  },
   arenaModeText: {
-    color: "#ffffff",
-    fontSize: 13,
+    color: "#102018",
+    fontSize: 12,
     fontWeight: "900",
+    lineHeight: 14,
     textAlign: "center"
   },
   arenaModeTextActive: {
-    color: "#ffe08a"
+    color: "#8b6f14"
   },
   bonusLine: {
     color: "#53645d",

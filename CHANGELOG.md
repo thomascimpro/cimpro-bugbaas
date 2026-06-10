@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.8
+
+- Arena-knoppen voor Duel, Training en Solo Campaign zijn hersteld naar duidelijke thumbnail-knoppen met vaste labels.
+- Solo Campaign toont targetpunten alleen nog in het fullscreen spel als `x / target`.
+- Gewonnen Solo Campaign waves tonen alleen de logische vervolgactie: volgende wave of campaign restart.
+- Stoppen tijdens Solo Campaign vraagt nu bevestiging en de laatst vrijgespeelde wave wordt lokaal onthouden.
+
 ## 2.2.7
 
 - Weekly mission claims zijn server-side toegestaan en worden na claim opnieuw gelezen, zodat claimknoppen niet blijven hangen.
