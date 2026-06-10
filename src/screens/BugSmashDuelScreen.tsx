@@ -29,7 +29,7 @@ import { soloCampaignConfig, soloCampaignBugIds, soloCampaignMaxLevel, soloCampa
 import { claimSoloCampaignBossDailyReward } from "../services/soloCampaignRewardService";
 import { activateSoloLampFocus, consumeSoloBugBomb, emptySoloPowerupInventory, grantSoloBossReward, loadSoloPowerupInventory, soloLampFocusActive, soloLampFocusRemainingMinutes, type SoloPowerupInventory } from "../services/soloPowerupService";
 import { listUsers, updateUserBugSquad } from "../services/userService";
-import { BugDexInventoryItem, BugSmashDuel, User } from "../types";
+import { BugDexInventoryItem, BugSmashDuel, BugSmashDuelScore, User } from "../types";
 import { sharedStyles } from "./sharedStyles";
 
 type Props = {
@@ -248,6 +248,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const [caughtBugIds, setCaughtBugIds] = useState<string[]>([]);
   const [helperImpacts, setHelperImpacts] = useState<HelperImpact[]>([]);
   const [localStartAtByDuelId, setLocalStartAtByDuelId] = useState<Record<string, string>>({});
+  const [localSubmittedScores, setLocalSubmittedScores] = useState<Record<string, BugSmashDuelScore>>({});
   const [acknowledgedWaitingDuelIds, setAcknowledgedWaitingDuelIds] = useState<Set<string>>(new Set());
   const [dismissedResultDuelIds, setDismissedResultDuelIds] = useState<Set<string>>(new Set());
   const [retryingDuelIds, setRetryingDuelIds] = useState<Set<string>>(new Set());
@@ -430,7 +431,14 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
           setRunSubmitted(true);
           if (!trainingDuel) {
             const bonusScore = duelBonusScore(scoreRef.current, assist);
-            void submitBugSmashDuelScore(user, runningDuel.id, scoreRef.current + bonusScore, caughtBugIdsRef.current, bonusScore)
+            const submittedScore = {
+              score: scoreRef.current + bonusScore,
+              caughtBugIds: caughtBugIdsRef.current,
+              bonusScore,
+              submittedAt: new Date().toISOString()
+            };
+            setLocalSubmittedScores((current) => ({ ...current, [runningDuel.id]: submittedScore }));
+            void submitBugSmashDuelScore(user, runningDuel.id, submittedScore.score, submittedScore.caughtBugIds, submittedScore.bonusScore)
               .then((duel) => {
                 setActiveDuel(duel);
                 setRetryingDuelIds((current) => {
@@ -748,11 +756,23 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       return next;
     });
     setRetryingDuelIds((current) => new Set([...current, activeDuel.id]));
+    setLocalSubmittedScores((current) => {
+      const next = { ...current };
+      delete next[activeDuel.id];
+      return next;
+    });
     setLocalStartAtByDuelId((current) => ({
       ...current,
       [activeDuel.id]: new Date(Date.now() + bugSmashDuelStartDelayMs).toISOString()
     }));
     setNow(Date.now());
+  }
+
+  function closeWaitingResultAndGoHome() {
+    if (activeDuel) {
+      setAcknowledgedWaitingDuelIds((current) => new Set([...current, activeDuel.id]));
+    }
+    onBack();
   }
 
   function startTraining() {
@@ -904,10 +924,12 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   }
 
   const activeScore = activeDuel?.scores?.[user.uid];
+  const localSubmittedScore = activeDuel ? localSubmittedScores[activeDuel.id] : undefined;
+  const ownSubmittedScore = activeScore ?? localSubmittedScore;
   const opponentId = activeDuel ? activeDuel.fromUserId === user.uid ? activeDuel.toUserId : activeDuel.fromUserId : "";
   const opponentScore = opponentId ? activeDuel?.scores?.[opponentId] : undefined;
-  const canRetryOwnDuelScore = Boolean(activeDuel && activeScore && !opponentScore && activeScore.score < duelRetryScoreThreshold && (activeDuel.status === "pending" || activeDuel.status === "accepted"));
-  const awaitingOpponentResult = Boolean((activeDuel?.status === "pending" || activeDuel?.status === "accepted") && activeScore && !opponentScore && !retryingActiveDuel);
+  const canRetryOwnDuelScore = Boolean(activeDuel && ownSubmittedScore && !opponentScore && ownSubmittedScore.score < duelRetryScoreThreshold && (activeDuel.status === "pending" || activeDuel.status === "accepted"));
+  const awaitingOpponentResult = Boolean((activeDuel?.status === "pending" || activeDuel?.status === "accepted") && ownSubmittedScore && !opponentScore && !retryingActiveDuel);
   const showWaitingResultModal = Boolean(activeDuel && awaitingOpponentResult && !acknowledgedWaitingDuelIds.has(activeDuel.id));
   const resultRewardPending = Boolean(activeDuel?.winnerId && isDuelParticipant(activeDuel, user) && !(activeDuel.rewardClaimedBy ?? []).includes(user.uid));
   const showResultModal = Boolean(activeDuel?.status === "completed" && isDuelParticipant(activeDuel, user) && !duelResultSeenByUser(activeDuel, user) && !dismissedResultDuelIds.has(activeDuel.id));
@@ -916,9 +938,9 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
   const gameStartAt = gameDuel?.startAt ?? "";
   const countdown = gameStartAt ? Math.max(0, Math.ceil((Date.parse(gameStartAt) - now) / 1000)) : 0;
   const remainingSeconds = gameStartAt && gameDuel ? Math.max(0, Math.ceil((Date.parse(gameStartAt) + gameDuel.durationMs - now) / 1000)) : 0;
-  const activeDuelScore = retryingActiveDuel ? (runSubmitted ? score + duelBonusScore(score, assist) : score) : activeScore?.score ?? (runSubmitted ? score + duelBonusScore(score, assist) : score);
+  const activeDuelScore = retryingActiveDuel ? (runSubmitted ? score + duelBonusScore(score, assist) : score) : ownSubmittedScore?.score ?? (runSubmitted ? score + duelBonusScore(score, assist) : score);
   const incomingPendingDuel = activeDuel?.status === "pending" && activeDuel.toUserId === user.uid;
-  const fullscreenGame = Boolean(trainingDuel) || Boolean(duelCanRun && activeLocalStartAt && !playerNeedsManualStart && !awaitingOpponentResult);
+  const fullscreenGame = Boolean(trainingDuel) || Boolean(duelCanRun && activeLocalStartAt && !playerNeedsManualStart && !awaitingOpponentResult && !runSubmitted);
   const gameScore = trainingDuel && runSubmitted ? score + duelBonusScore(score, assist) : trainingDuel ? score : activeDuelScore;
   const soloCampaign = soloRun?.mode === "campaign" ? soloRun : null;
   const soloProgress = gameStartAt && gameDuel ? Math.max(0, Math.min(1, (now - Date.parse(gameStartAt)) / gameDuel.durationMs)) : 0;
@@ -1340,7 +1362,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
         </Modal>
       )}
       {activeDuel && (
-        <Modal animationType="fade" transparent visible={showWaitingResultModal} onRequestClose={() => setAcknowledgedWaitingDuelIds((current) => new Set([...current, activeDuel.id]))}>
+        <Modal animationType="fade" transparent visible={showWaitingResultModal} onRequestClose={closeWaitingResultAndGoHome}>
           <View style={styles.startModalBackdrop}>
             <View style={styles.startModalCard}>
               <Text style={styles.startTitle}>{t("duel.waitingResultTitle")}</Text>
@@ -1351,7 +1373,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                   <Text style={sharedStyles.buttonText}>{t("duel.retryLowScore", { score: duelRetryScoreThreshold })}</Text>
                 </Pressable>
               ) : null}
-              <Pressable style={sharedStyles.button} onPress={() => setAcknowledgedWaitingDuelIds((current) => new Set([...current, activeDuel.id]))}>
+              <Pressable style={sharedStyles.button} onPress={closeWaitingResultAndGoHome}>
                 <Text style={sharedStyles.buttonText}>{t("common.ok")}</Text>
               </Pressable>
             </View>

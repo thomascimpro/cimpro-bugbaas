@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.13
+
+- Duel waiting hang gefixt: na je eigen ronde wordt de lokale score direct gebruikt om het wacht-op-andere-speler scherm te tonen.
+- Fullscreen duel sluit na submit direct af in plaats van op een lege arena/spinner te blijven hangen.
+- OK op het wacht-op-score scherm brengt je terug naar home.
+
 ## 2.2.12
 
 - Duel preplay tap-regressie gefixt: de uitdager kan na het versturen van een challenge weer direct bugs raken.
