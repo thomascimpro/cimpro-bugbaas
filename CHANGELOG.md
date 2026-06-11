@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.3.0
+
+- Grote feature-release met alle verbeteringen sinds 2.2: Arena is uitgewerkt met Duel, Training en Solo Campaign.
+- Solo Campaign heeft 20 waves, boss waves, dagelijkse boss rewards, levens, opgeslagen progress en betere balancing.
+- Actieve Bug Squad helpt zichtbaar mee met Zap, Sticky, Shield, AOE, Burst en Mythic specials met timer-acties.
+- BugDex heeft betere foreground rewards, nieuwe drop-balans, trade history, aparte Ruilen/Upgrades panels en HD knopbeelden.
+- Organisaties zijn toegevoegd voor private bugs/ideeën/tricks, met ledenbeheer, invites, org-labels en org-ranking.
+- Notificaties en badges zijn slimmer: Arena telt inkomende duels, BugDex telt inkomende ruilen, oude completed acties verdwijnen.
+- Movement, weekly missions, starter boost, rankings en BugBaas Wiki zijn verder opgepoetst en beter uitgelegd.
+
 ## 2.2.35
 
 - BugDex Upgrades heeft een nieuwe HD knopafbeelding met upgrade-machine, potjes en tier-pijlen.
