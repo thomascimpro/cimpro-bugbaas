@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.30
+
+- Home heeft onderaan een Help / BugBaas Wiki knop die de live wiki opent in de voorkeursbrowser.
+
 ## 2.2.29
 
 - Profiel laadt organisatiegegevens vers uit Firestore, zodat Cimpro-leden niet meer als 0 leden blijven staan.

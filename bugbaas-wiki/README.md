@@ -4,9 +4,24 @@ Static Netlify-ready wiki for BugBaas.
 
 ## Deploy
 
-1. Upload this `bugbaas-wiki` folder to Netlify.
-2. Use `bugbaas-wiki` as the publish directory.
-3. No build command is needed.
+The repository has a root `netlify.toml` with:
+
+- publish directory: `bugbaas-wiki`
+- build command: none
+
+Preview deploy:
+
+```powershell
+npm run wiki:deploy
+```
+
+Production deploy:
+
+```powershell
+npm run wiki:deploy:prod
+```
+
+These commands need a Netlify login or `NETLIFY_AUTH_TOKEN`.
 
 ## Local preview
 

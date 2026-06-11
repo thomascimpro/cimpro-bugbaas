@@ -16,3 +16,6 @@ tmp/
 pixel8-*.png
 apk-window.xml
 firebase-debug.log
+
+# Local Netlify folder
+.netlify

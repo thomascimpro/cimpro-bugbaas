@@ -1,6 +1,6 @@
 {
   "name": "bugbaas",
-  "version": "2.2.29",
+  "version": "2.2.30",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -8,6 +8,8 @@
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
     "seed:cimpro-org": "node scripts/seed_cimpro_organization.mjs",
+    "wiki:deploy": "npx netlify-cli deploy --dir bugbaas-wiki",
+    "wiki:deploy:prod": "npx netlify-cli deploy --prod --dir bugbaas-wiki",
     "ios": "expo run:ios"
   },
   "dependencies": {

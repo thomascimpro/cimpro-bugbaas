@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { DimensionValue, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { DimensionValue, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RouteName } from "../../App";
 import { BugArtImage } from "../components/BugArtImage";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
@@ -40,6 +40,7 @@ const rarityColors: Record<BugDexRarity, string> = {
 };
 
 const settingsGearImage = require("../../assets/generated/settings-gear-hd.png");
+const bugBaasWikiUrl = "https://bugbaas-wiki.netlify.app";
 
 export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRadarClaimed, onMovementRegistered, onOpenBugDexWorkshop, onRewardDrop, onUserUpdated, user, onNavigate }: Props) {
   const { language, setLanguage, t, tr } = useI18n();
@@ -174,6 +175,10 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
     } finally {
       setWeeklyBonusClaiming(false);
     }
+  }
+
+  function openBugBaasWiki() {
+    void Linking.openURL(bugBaasWikiUrl);
   }
 
   return (
@@ -429,6 +434,16 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
           {weeklyBonusError ? <Text style={styles.missionError}>{weeklyBonusError}</Text> : null}
         </View>
       </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={t("home.wikiCta")} style={styles.wikiCard} onPress={openBugBaasWiki}>
+        <View style={styles.wikiIcon}>
+          <Text style={styles.wikiIconText}>?</Text>
+        </View>
+        <View style={styles.wikiText}>
+          <Text style={styles.wikiTitle}>{t("home.wikiTitle")}</Text>
+          <Text style={styles.wikiBody}>{t("home.wikiBody")}</Text>
+        </View>
+        <Text style={styles.wikiCta}>{t("home.wikiCta")}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -1080,6 +1095,54 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "900",
     marginTop: 6
+  },
+  wikiCard: {
+    alignItems: "center",
+    backgroundColor: "#fdfefb",
+    borderColor: "#cddfd3",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+    padding: 12
+  },
+  wikiIcon: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 2,
+    height: 44,
+    justifyContent: "center",
+    width: 44
+  },
+  wikiIconText: {
+    color: "#d7bd57",
+    fontSize: 24,
+    fontWeight: "900",
+    lineHeight: 28
+  },
+  wikiText: {
+    flex: 1,
+    minWidth: 0
+  },
+  wikiTitle: {
+    color: "#102018",
+    fontSize: 15,
+    fontWeight: "900"
+  },
+  wikiBody: {
+    color: "#52665d",
+    fontSize: 12,
+    fontWeight: "800",
+    lineHeight: 16,
+    marginTop: 2
+  },
+  wikiCta: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
   },
   rankingHeader: {
     alignItems: "center",
