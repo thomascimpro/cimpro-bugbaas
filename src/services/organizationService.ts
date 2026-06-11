@@ -62,6 +62,17 @@ function isPermissionDeniedError(error: unknown): boolean {
   return code === "permission-denied" || message.includes("missing or insufficient permissions") || message.includes("permission-denied");
 }
 
+function fallbackOrganizationForMember(user: User, organizationId: string): Organization | null {
+  if (!organizationIdsForUser(user).includes(organizationId)) return null;
+  return {
+    id: organizationId,
+    name: organizationNamesForUser(user)[organizationId] ?? organizationId,
+    createdBy: "",
+    createdByName: "",
+    createdAt: ""
+  };
+}
+
 export function isOrganizationAdmin(user: User, organization: Organization | null): boolean {
   return Boolean(organization && organization.createdBy === user.uid);
 }
@@ -79,7 +90,13 @@ export async function getOrganizationForUser(user: User): Promise<Organization |
       createdAt: new Date().toISOString()
     };
   }
-  const snapshot = await getDoc(doc(db, "organizations", organizationId));
+  let snapshot;
+  try {
+    snapshot = await getDoc(doc(db, "organizations", organizationId));
+  } catch (error) {
+    if (isPermissionDeniedError(error)) return fallbackOrganizationForMember(user, organizationId);
+    throw error;
+  }
   return snapshot.exists() ? snapshot.data() as Organization : null;
 }
 
@@ -95,7 +112,13 @@ export async function getOrganizationById(organizationId: string, user?: User): 
       createdAt: new Date().toISOString()
     } : null;
   }
-  const snapshot = await getDoc(doc(db, "organizations", organizationId));
+  let snapshot;
+  try {
+    snapshot = await getDoc(doc(db, "organizations", organizationId));
+  } catch (error) {
+    if (isPermissionDeniedError(error) && user) return fallbackOrganizationForMember(user, organizationId);
+    throw error;
+  }
   return snapshot.exists() ? snapshot.data() as Organization : null;
 }
 

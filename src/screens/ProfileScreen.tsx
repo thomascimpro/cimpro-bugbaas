@@ -154,7 +154,6 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       ]);
       const nextOrganization = organizationResult.status === "fulfilled" ? organizationResult.value : null;
       const nextIncomingInvites = incomingInviteResult.status === "fulfilled" ? incomingInviteResult.value : [];
-      if (organizationResult.status === "rejected") throw organizationResult.reason;
       setOrganization(nextOrganization);
       setIncomingInvites(nextIncomingInvites);
       if (isPublicOrganization(safeOrganizationId)) {

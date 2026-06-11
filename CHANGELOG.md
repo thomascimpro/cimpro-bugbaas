@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.34
+
+- Cimpro ledenlijst stopt niet meer wanneer de organisatie-doc zelf geen leesrecht geeft; bekende leden laden dan alsnog via user-membershipvelden.
+
 ## 2.2.33
 
 - Organisatiebeheer crasht niet meer op optionele invite-permission reads.
