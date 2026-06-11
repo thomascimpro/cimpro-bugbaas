@@ -1,11 +1,12 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { entryByBugId } from "../services/bugDexService";
-import { BugDexRarity, bugDexEntries, getTierForPoints } from "../services/pointsService";
+import { BugDexRarity, bugDexEntries } from "../services/pointsService";
 import { bugDexEntryName, rarityLabel, useI18n } from "../services/i18n";
 import { presenceLabel } from "../services/presenceService";
 import { User } from "../types";
 import { BugArtImage } from "./BugArtImage";
+import { CharacterAvatarImage } from "./CharacterAvatarImage";
 import { MedalIcon } from "./MedalIcon";
 
 const topThreeStyles = [
@@ -29,11 +30,9 @@ const rarityColors: Record<BugDexRarity, string> = {
 };
 
 export function LeaderboardRow({ index, lastCatch, user, onPress }: { index: number; lastCatch?: LastCatchSummary; user: User; onPress: () => void }) {
-  const { t, tr } = useI18n();
+  const { t } = useI18n();
   const isLeader = index === 0;
-  const tier = isLeader ? getTierForPoints(Number.MAX_SAFE_INTEGER) : getTierForPoints(user.totalPoints);
   const medal = topThreeStyles[index];
-  const title = isLeader ? t("tier.super") : tr(tier.title);
   const status = presenceLabel(user, t);
   const lastCatchEntry = lastCatch ? entryByBugId(lastCatch.bugId) : null;
   const lastCatchColor = lastCatch ? rarityColors[lastCatch.rarity] : "#c6d3cc";
@@ -44,13 +43,17 @@ export function LeaderboardRow({ index, lastCatch, user, onPress }: { index: num
       <View style={styles.rankSlot}>
         <MedalIcon index={index} size={index < 3 ? 52 : 38} />
       </View>
-      {medal ? <BugArtImage bugId={medal.bugId} size={isLeader ? 64 : 52} /> : null}
+      {medal ? (
+        <View style={styles.topThreeCharacter}>
+          <CharacterAvatarImage characterId={user.characterId} size={isLeader ? 64 : 54} />
+          <BugArtImage bugId={medal.bugId} size={isLeader ? 30 : 26} />
+        </View>
+      ) : null}
       <View style={styles.body}>
         <View style={styles.nameRow}>
-          <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.78} numberOfLines={1} style={styles.name}>{user.displayName}</Text>
+          <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.78} numberOfLines={1} style={[styles.name, medal && styles.topThreeName]}>{user.displayName}</Text>
           <Text style={[styles.status, medal && { backgroundColor: medal.pill, color: medal.pillText }]}>{status}</Text>
         </View>
-        <Text style={[styles.meta, { color: tier.color }]}>{title}</Text>
         <Text style={styles.subMeta}>{t("leader.bugsDex", { bugs: user.bugCount, caught: user.bugDexCount ?? 0, total: bugDexEntries.length })}</Text>
         <View style={styles.lastCatchRow}>
           {lastCatch && lastCatchEntry ? (
@@ -134,6 +137,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 54
   },
+  topThreeCharacter: {
+    alignItems: "center",
+    gap: 2,
+    justifyContent: "center",
+    width: 66
+  },
   body: {
     flex: 1,
     minWidth: 0
@@ -152,6 +161,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     minWidth: 0
   },
+  topThreeName: {
+    fontSize: 25,
+    lineHeight: 29
+  },
   status: {
     backgroundColor: "#e8f1e6",
     borderRadius: 8,
@@ -164,10 +177,6 @@ const styles = StyleSheet.create({
   leaderStatus: {
     backgroundColor: "#102018",
     color: "#d7bd57"
-  },
-  meta: {
-    fontWeight: "800",
-    marginTop: 2
   },
   subMeta: {
     color: "#52665d",

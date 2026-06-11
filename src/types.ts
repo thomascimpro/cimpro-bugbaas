@@ -63,13 +63,15 @@ export type OrganizationMember = {
   inviteId?: string;
 };
 
-export type OrganizationInviteStatus = "open" | "accepted" | "cancelled";
+export type OrganizationInviteStatus = "open" | "accepted" | "cancelled" | "declined";
 
 export type OrganizationInvite = {
   id: string;
   organizationId: string;
   organizationName: string;
   invitedEmail: string;
+  invitedUserId?: string;
+  invitedUserName?: string;
   invitedById: string;
   invitedByName: string;
   status: OrganizationInviteStatus;
@@ -77,6 +79,8 @@ export type OrganizationInvite = {
   acceptedAt?: string;
   acceptedById?: string;
   cancelledAt?: string;
+  declinedAt?: string;
+  declinedById?: string;
 };
 
 export type BugReport = {

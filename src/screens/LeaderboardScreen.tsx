@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
+import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { LastCatchSummary, LeaderboardRow } from "../components/LeaderboardRow";
 import { MedalIcon } from "../components/MedalIcon";
 import { entryByBugId, listBugDexInventory } from "../services/bugDexService";
@@ -98,7 +99,8 @@ function Podium({ users, onSelectUser }: { users: User[]; onSelectUser: (user: U
           <Pressable key={user.uid} style={[styles.podiumCard, { backgroundColor: medal.background, borderColor: medal.border }, index === 0 && styles.podiumLeader]} onPress={() => onSelectUser(user)}>
             <View style={[styles.podiumShine, { backgroundColor: medal.shine }]} />
             <MedalIcon index={index} size={index === 0 ? 76 : 58} />
-            <BugArtImage bugId={medal.bugId} size={index === 0 ? 58 : 44} />
+            <CharacterAvatarImage characterId={user.characterId} size={index === 0 ? 66 : 56} />
+            <BugArtImage bugId={medal.bugId} size={index === 0 ? 42 : 34} />
             <Text style={[styles.podiumRank, { color: medal.text }]}>#{index + 1}</Text>
             <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.72} numberOfLines={1} style={[styles.podiumName, index === 0 && styles.podiumLeaderName, { color: medal.text }]}>{user.displayName}</Text>
             <Text style={styles.podiumPoints}>{user.totalPoints} {t("leader.score")}</Text>
@@ -155,7 +157,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     elevation: 3,
     flex: 1,
-    minHeight: 166,
+    minHeight: 186,
     overflow: "hidden",
     padding: 10,
     shadowColor: "#102018",
@@ -164,7 +166,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8
   },
   podiumLeader: {
-    minHeight: 178
+    minHeight: 198
   },
   podiumShine: {
     height: 40,
@@ -184,15 +186,15 @@ const styles = StyleSheet.create({
   podiumName: {
     color: "#17211c",
     flexShrink: 1,
-    fontSize: 17,
+    fontSize: 20,
     fontWeight: "900",
-    lineHeight: 20,
+    lineHeight: 23,
     marginTop: 2,
     maxWidth: "100%"
   },
   podiumLeaderName: {
-    fontSize: 20,
-    lineHeight: 24
+    fontSize: 24,
+    lineHeight: 28
   },
   podiumPoints: {
     color: "#52665d",

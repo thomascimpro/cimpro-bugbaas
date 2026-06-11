@@ -1349,6 +1349,18 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
               </View>
             </Pressable>
           </View>
+          <View style={styles.arenaSquadPreview}>
+            <View style={styles.arenaSquadPreviewHeader}>
+              <View style={styles.modeHeaderText}>
+                <Text style={styles.arenaSquadPreviewTitle}>{t("duel.bonusTitle")}</Text>
+                <Text style={styles.arenaSquadPreviewMeta}>{t("duel.squadSelectedCount", { count: activeSquadIds.length, max: maxActiveBugSquadSize })}</Text>
+              </View>
+              <Pressable style={styles.smallButton} onPress={openSquadModal}>
+                <Text style={styles.smallButtonText}>{t("duel.changeSquad")}</Text>
+              </Pressable>
+            </View>
+            {renderSquadJars(activeSquadIds, activeSquadBonuses, t, openSquadModal, { compact: true })}
+          </View>
           {arenaMode === "duel" && (
           <View style={[styles.card, styles.duelModePanel]}>
             <View style={styles.modeHeader}>
@@ -3009,6 +3021,31 @@ const styles = StyleSheet.create({
   arenaModeRow: {
     flexDirection: "row",
     gap: 8
+  },
+  arenaSquadPreview: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 10
+  },
+  arenaSquadPreviewHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    marginBottom: 8
+  },
+  arenaSquadPreviewMeta: {
+    color: "#53645d",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 2
+  },
+  arenaSquadPreviewTitle: {
+    color: "#102018",
+    fontSize: 14,
+    fontWeight: "900"
   },
   arenaModeText: {
     color: "#102018",

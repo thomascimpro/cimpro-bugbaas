@@ -15,13 +15,15 @@ import { presenceLabel } from "../services/presenceService";
 import {
   acceptOrganizationInvite,
   cancelOrganizationInvite,
-  createOrganizationInvite,
+  createOrganizationInviteForUser,
   defaultOrganizationId,
+  declineOrganizationInvite,
   getOrganizationById,
   getOrganizationForUser,
   isOrganizationAdmin,
   isPublicOrganization,
   listIncomingOrganizationInvites,
+  listOrganizationMembers,
   listOrganizationInvites,
   organizationIdsForUser,
   organizationIdForUser,
@@ -69,9 +71,11 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   const [organizationMembers, setOrganizationMembers] = useState<User[]>([]);
   const [organizationInvites, setOrganizationInvites] = useState<OrganizationInvite[]>([]);
   const [incomingInvites, setIncomingInvites] = useState<OrganizationInvite[]>([]);
+  const [organizationUsers, setOrganizationUsers] = useState<User[]>([]);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState(organizationIdsForUser(user)[0] ?? defaultOrganizationId);
   const [organizationMembersOpen, setOrganizationMembersOpen] = useState(true);
-  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteUserPickerOpen, setInviteUserPickerOpen] = useState(false);
+  const [selectedInviteUserId, setSelectedInviteUserId] = useState("");
   const [inviteBusy, setInviteBusy] = useState("");
   const [organizationLoading, setOrganizationLoading] = useState(false);
   const [loadingBugs, setLoadingBugs] = useState(true);
@@ -86,6 +90,13 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   const currentOrganizationName = userOrganizationNames[currentOrganizationId] ?? organizationNameForUser(user);
   const isPublicUser = isPublicOrganization(currentOrganizationId);
   const canManageOrganization = isOwnProfile && isOrganizationAdmin(user, organization);
+  const memberIds = new Set(organizationMembers.map((member) => member.uid));
+  const openInviteUserIds = new Set(organizationInvites.map((invite) => invite.invitedUserId).filter((id): id is string => Boolean(id)));
+  const inviteCandidates = organizationUsers
+    .filter((candidate) => candidate.uid !== user.uid)
+    .filter((candidate) => !memberIds.has(candidate.uid))
+    .filter((candidate) => !openInviteUserIds.has(candidate.uid));
+  const selectedInviteUser = inviteCandidates.find((candidate) => candidate.uid === selectedInviteUserId) ?? null;
   const unlockedBadges = badgeDefinitions.filter((badge) => badgeUnlocked(user, badge));
   const bugDexItems = inventory
     .map((item) => {
@@ -129,14 +140,17 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       if (isPublicOrganization(currentOrganizationId)) {
         setOrganizationMembers([]);
         setOrganizationInvites([]);
+        setOrganizationUsers([]);
         return;
       }
-      const [nextMembers, nextInvites] = await Promise.all([
-        listUsers(),
-        listOrganizationInvites(user, currentOrganizationId)
+      const [nextMembers, nextInvites, nextUsers] = await Promise.all([
+        listOrganizationMembers(user, currentOrganizationId),
+        listOrganizationInvites(user, currentOrganizationId),
+        listUsers()
       ]);
-      setOrganizationMembers(nextMembers.filter((member) => organizationIdsForUser(member).includes(currentOrganizationId)));
+      setOrganizationMembers(nextMembers);
       setOrganizationInvites(nextInvites);
+      setOrganizationUsers(nextUsers);
     } finally {
       setOrganizationLoading(false);
     }
@@ -166,11 +180,14 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   }
 
   async function submitInvite() {
+    const inviteUser = selectedInviteUser;
+    if (!inviteUser) return;
     setInviteBusy("invite");
     setOrganizationError("");
     try {
-      await createOrganizationInvite(user, inviteEmail, currentOrganizationId);
-      setInviteEmail("");
+      await createOrganizationInviteForUser(user, inviteUser, currentOrganizationId);
+      setSelectedInviteUserId("");
+      setInviteUserPickerOpen(false);
       await loadOrganizationState();
     } catch (error) {
       setOrganizationError(error instanceof Error ? error.message : t("profile.organizationInviteFailed"));
@@ -187,6 +204,19 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       onUserUpdated?.(updated);
     } catch (error) {
       setOrganizationError(error instanceof Error ? error.message : t("profile.organizationAcceptFailed"));
+    } finally {
+      setInviteBusy("");
+    }
+  }
+
+  async function declineInvite(invite: OrganizationInvite) {
+    setInviteBusy(invite.id);
+    setOrganizationError("");
+    try {
+      await declineOrganizationInvite(user, invite);
+      await loadOrganizationState();
+    } catch (error) {
+      setOrganizationError(error instanceof Error ? error.message : t("profile.organizationDeclineFailed"));
     } finally {
       setInviteBusy("");
     }
@@ -238,9 +268,29 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       </View>
     );
   };
+  const pendingInvite = incomingInvites[0] ?? null;
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
+      <Modal animationType="fade" transparent visible={Boolean(isOwnProfile && pendingInvite)}>
+        <View style={styles.inviteModalBackdrop}>
+          {pendingInvite && (
+            <View style={styles.inviteModalCard}>
+              <Text style={styles.inviteModalKicker}>{t("profile.organizationIncoming")}</Text>
+              <Text style={styles.inviteModalTitle}>{pendingInvite.organizationName}</Text>
+              <Text style={styles.inviteModalBody}>{t("profile.organizationInvitePopupBody", { name: pendingInvite.invitedByName })}</Text>
+              <View style={styles.inviteModalActions}>
+                <Pressable style={[styles.smallDangerButton, styles.inviteModalButton]} disabled={Boolean(inviteBusy)} onPress={() => declineInvite(pendingInvite)}>
+                  <Text style={styles.smallDangerText}>{inviteBusy === pendingInvite.id ? "..." : t("profile.organizationDecline")}</Text>
+                </Pressable>
+                <Pressable style={[styles.smallActionButton, styles.inviteModalButton]} disabled={Boolean(inviteBusy)} onPress={() => acceptInvite(pendingInvite)}>
+                  <Text style={styles.smallActionText}>{inviteBusy === pendingInvite.id ? "..." : t("profile.organizationAccept")}</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
+        </View>
+      </Modal>
       <View style={styles.hero}>
         <View style={styles.heroText}>
           <Text style={styles.kicker}>{isOwnProfile ? t("profile.own") : t("profile.colleague")}</Text>
@@ -307,6 +357,9 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
                     <Text style={styles.organizationListTitle} numberOfLines={1}>{invite.organizationName}</Text>
                     <Text style={styles.organizationListMeta} numberOfLines={1}>{t("profile.organizationInvitedBy", { name: invite.invitedByName })}</Text>
                   </View>
+                  <Pressable style={styles.smallDangerButton} disabled={Boolean(inviteBusy)} onPress={() => declineInvite(invite)}>
+                    <Text style={styles.smallDangerText}>{inviteBusy === invite.id ? "..." : t("profile.organizationDecline")}</Text>
+                  </Pressable>
                   <Pressable style={styles.smallActionButton} disabled={Boolean(inviteBusy)} onPress={() => acceptInvite(invite)}>
                     <Text style={styles.smallActionText}>{inviteBusy === invite.id ? "..." : t("profile.organizationAccept")}</Text>
                   </Pressable>
@@ -346,16 +399,29 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
                     {canManageOrganization && (
                       <View style={styles.organizationForm}>
                         <Text style={styles.organizationHelp}>{t("profile.organizationManageMembersHelp")}</Text>
-                        <TextInput
-                          autoCapitalize="none"
-                          keyboardType="email-address"
-                          placeholder={t("profile.organizationInvitePlaceholder")}
-                          placeholderTextColor="#77847f"
-                          style={styles.organizationInput}
-                          value={inviteEmail}
-                          onChangeText={setInviteEmail}
-                        />
-                        <Pressable style={[sharedStyles.button, inviteBusy === "invite" && styles.disabledButton]} disabled={Boolean(inviteBusy)} onPress={submitInvite}>
+                        <Pressable style={styles.organizationDropdownHeader} onPress={() => setInviteUserPickerOpen((current) => !current)}>
+                          <View style={styles.organizationListText}>
+                            <Text style={styles.organizationListTitle} numberOfLines={1}>{selectedInviteUser?.displayName ?? t("profile.organizationInviteSelect")}</Text>
+                            <Text style={styles.organizationListMeta} numberOfLines={1}>{selectedInviteUser ? t("profile.organizationInviteSelected") : t("profile.organizationInviteSelectMeta")}</Text>
+                          </View>
+                          <Text style={styles.organizationDropdownAction}>{inviteUserPickerOpen ? t("common.close") : t("common.open")}</Text>
+                        </Pressable>
+                        {inviteUserPickerOpen && (
+                          <View style={styles.organizationUserPicker}>
+                            {inviteCandidates.length ? inviteCandidates.map((candidate) => {
+                              const selected = selectedInviteUser?.uid === candidate.uid;
+                              return (
+                                <Pressable key={candidate.uid} style={[styles.organizationUserOption, selected && styles.organizationUserOptionActive]} onPress={() => setSelectedInviteUserId(candidate.uid)}>
+                                  <Text style={[styles.organizationUserName, selected && styles.organizationUserNameActive]} numberOfLines={1}>{candidate.displayName}</Text>
+                                  <Text style={[styles.organizationUserMeta, selected && styles.organizationUserNameActive]} numberOfLines={1}>{presenceLabel(candidate, t)}</Text>
+                                </Pressable>
+                              );
+                            }) : (
+                              <Text style={styles.organizationHelp}>{t("profile.organizationInviteNoUsers")}</Text>
+                            )}
+                          </View>
+                        )}
+                        <Pressable style={[sharedStyles.button, (inviteBusy === "invite" || !selectedInviteUser) && styles.disabledButton]} disabled={Boolean(inviteBusy) || !selectedInviteUser} onPress={submitInvite}>
                           {inviteBusy === "invite" ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>{t("profile.organizationAddMember")}</Text>}
                         </Pressable>
                       </View>
@@ -366,7 +432,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
                         {organizationInvites.map((invite) => (
                           <View key={invite.id} style={styles.organizationListItem}>
                             <View style={styles.organizationListText}>
-                              <Text style={styles.organizationListTitle} numberOfLines={1}>{invite.invitedEmail}</Text>
+                              <Text style={styles.organizationListTitle} numberOfLines={1}>{invite.invitedUserName || invite.invitedEmail}</Text>
                               <Text style={styles.organizationListMeta} numberOfLines={1}>{t("profile.organizationInviteOpen")}</Text>
                             </View>
                             {canManageOrganization && (
@@ -823,6 +889,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 11
   },
+  organizationUserPicker: {
+    backgroundColor: "#f7faf6",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 7,
+    padding: 8
+  },
+  organizationUserOption: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8
+  },
+  organizationUserOptionActive: {
+    backgroundColor: "#15724f",
+    borderColor: "#15724f"
+  },
+  organizationUserName: {
+    color: "#102018",
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  organizationUserNameActive: {
+    color: "#ffffff"
+  },
+  organizationUserMeta: {
+    color: "#53645d",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 2
+  },
   organizationHelp: {
     color: "#53645d",
     fontSize: 12,
@@ -855,6 +955,46 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.65
+  },
+  inviteModalBackdrop: {
+    backgroundColor: "rgba(16, 32, 24, 0.62)",
+    flex: 1,
+    justifyContent: "center",
+    padding: 18
+  },
+  inviteModalCard: {
+    backgroundColor: "#fdfefb",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 2,
+    padding: 16
+  },
+  inviteModalKicker: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  inviteModalTitle: {
+    color: "#102018",
+    fontSize: 24,
+    fontWeight: "900",
+    marginTop: 4
+  },
+  inviteModalBody: {
+    color: "#53645d",
+    fontSize: 14,
+    fontWeight: "800",
+    lineHeight: 19,
+    marginTop: 8
+  },
+  inviteModalActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14
+  },
+  inviteModalButton: {
+    alignItems: "center",
+    flex: 1
   },
   stats: {
     flexDirection: "row",
