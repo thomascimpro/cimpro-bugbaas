@@ -75,20 +75,20 @@ const dropChances: Record<BugDexDropSource, number> = {
 
 const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   daily_login: [["Gewoon", 100]],
-  bug_reported: [["Gewoon", 58], ["Zeldzaam", 31], ["Episch", 10], ["Legendarisch", 1]],
-  comment: [["Gewoon", 69.4], ["Zeldzaam", 27], ["Episch", 3.5], ["Legendarisch", 0.1]],
-  status_update: [["Zeldzaam", 72.3], ["Episch", 26.5], ["Legendarisch", 1.2]],
-  bug_fixed: [["Gewoon", 25], ["Zeldzaam", 50], ["Episch", 22], ["Legendarisch", 3]],
-  upvote_given: [["Gewoon", 75], ["Zeldzaam", 24.7], ["Episch", 0.3]],
+  bug_reported: [["Gewoon", 70], ["Zeldzaam", 24], ["Episch", 4.8], ["Legendarisch", 1.2]],
+  comment: [["Gewoon", 73], ["Zeldzaam", 23.4], ["Episch", 3.5], ["Legendarisch", 0.1]],
+  status_update: [["Gewoon", 71], ["Zeldzaam", 24], ["Episch", 4.5], ["Legendarisch", 0.5]],
+  bug_fixed: [["Gewoon", 68], ["Zeldzaam", 24], ["Episch", 4.8], ["Legendarisch", 3.2]],
+  upvote_given: [["Gewoon", 75.2], ["Zeldzaam", 24.5], ["Episch", 0.3]],
   profile_view: [["Gewoon", 88], ["Zeldzaam", 12]],
-  bug_splat: [["Gewoon", 69], ["Zeldzaam", 25], ["Episch", 5.3], ["Legendarisch", 0.7]],
-  weekly_mission: [["Zeldzaam", 75], ["Episch", 23], ["Legendarisch", 2]],
+  bug_splat: [["Gewoon", 70], ["Zeldzaam", 24.4], ["Episch", 4.9], ["Legendarisch", 0.7]],
+  weekly_mission: [["Gewoon", 72], ["Zeldzaam", 24], ["Episch", 3.5], ["Legendarisch", 0.5]],
   weekly_mission_common: [["Gewoon", 100]],
-  weekly_mission_rare: [["Zeldzaam", 100]],
+  weekly_mission_rare: [["Gewoon", 75], ["Zeldzaam", 24], ["Episch", 1]],
   solo_boss_common: [["Gewoon", 100]],
-  solo_boss_rare: [["Zeldzaam", 100]],
-  solo_campaign_clear: [["Zeldzaam", 100]],
-  duel_win: [["Gewoon", 70.5], ["Zeldzaam", 24], ["Episch", 5], ["Legendarisch", 0.5]],
+  solo_boss_rare: [["Gewoon", 75], ["Zeldzaam", 24], ["Episch", 1]],
+  solo_campaign_clear: [["Gewoon", 75], ["Zeldzaam", 24], ["Episch", 1]],
+  duel_win: [["Gewoon", 71], ["Zeldzaam", 24], ["Episch", 4.5], ["Legendarisch", 0.5]],
   combine: [["Zeldzaam", 100]]
 };
 
@@ -672,7 +672,7 @@ function pickRarity(source: BugDexDropSource, rarityBoost = 0): BugDexRarity {
 
 function boostedRarityWeights(weights: Array<[BugDexRarity, number]>, rarityBoost: number): Array<[BugDexRarity, number]> {
   const boost = Math.max(0, Math.min(0.05, rarityBoost));
-  if (boost <= 0) return weights;
+  if (boost <= 0) return cappedRarityWeights(weights);
   const commonIndex = weights.findIndex(([rarity]) => rarity === "Gewoon");
   if (commonIndex < 0) return weights;
 
@@ -686,6 +686,23 @@ function boostedRarityWeights(weights: Array<[BugDexRarity, number]>, rarityBoos
   if (rareIndex >= 0) nextWeights[rareIndex][1] += shift * 0.65;
   if (epicIndex >= 0) nextWeights[epicIndex][1] += shift * 0.35;
   if (rareIndex < 0 && epicIndex < 0) nextWeights[commonIndex][1] += shift;
+  return cappedRarityWeights(nextWeights);
+}
+
+function cappedRarityWeights(weights: Array<[BugDexRarity, number]>): Array<[BugDexRarity, number]> {
+  const commonIndex = weights.findIndex(([rarity]) => rarity === "Gewoon");
+  if (commonIndex < 0) return weights;
+  const nextWeights = weights.map(([rarity, weight]) => [rarity, weight] as [BugDexRarity, number]);
+  const total = nextWeights.reduce((sum, [, weight]) => sum + weight, 0);
+  const caps: Array<[BugDexRarity, number]> = [["Zeldzaam", total * 0.245], ["Episch", total * 0.049]];
+
+  for (const [rarity, cap] of caps) {
+    const index = nextWeights.findIndex(([itemRarity]) => itemRarity === rarity);
+    if (index < 0 || nextWeights[index][1] <= cap) continue;
+    const excess = nextWeights[index][1] - cap;
+    nextWeights[index][1] = cap;
+    nextWeights[commonIndex][1] += excess;
+  }
   return nextWeights;
 }
 

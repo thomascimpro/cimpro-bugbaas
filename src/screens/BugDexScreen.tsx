@@ -145,7 +145,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }))
     .filter(({ inventoryItem }) => showLocked || Boolean(inventoryItem));
   const duplicateCount = inventory.reduce((total, item) => total + Math.max(0, item.count - 1), 0);
-  const tradeInventory = inventory.filter((item) => item.count > 0);
+  const tradeInventory = sortTradeInventory(inventory.filter((item) => item.count > 0));
   const squadChoiceInventory = [...tradeInventory].sort((a, b) => {
     const firstEntry = entryByBugId(a.bugId);
     const secondEntry = entryByBugId(b.bugId);
@@ -154,7 +154,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     return bugName(a.bugId).localeCompare(bugName(b.bugId));
   });
   const activeSquadBonuses = activeBugSquadBonusList(activeSquadIds);
-  const recipientTradeInventory = recipientInventory.filter((item) => item.count > 0);
+  const recipientTradeInventory = sortTradeInventory(recipientInventory.filter((item) => item.count > 0));
   const ownedTradeBugIds = new Set(tradeInventory.map((item) => item.bugId));
   const recipientOwnedTradeBugIds = new Set(recipientTradeInventory.map((item) => item.bugId));
   const upgradeOptions = upgradeRarities.map((rarity) => {
@@ -166,6 +166,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   const selectedRecipient = users.find((item) => item.uid === tradeRecipientId);
   const incomingTrades = trades.filter((trade) => trade.toUserId === user.uid && trade.status === "Open");
   const outgoingTrades = trades.filter((trade) => trade.fromUserId === user.uid && trade.status === "Open");
+  const tradeHistory = trades.filter((trade) => trade.status !== "Open").slice(0, 8);
 
   function activeCountForBug(bugId: string) {
     return activeSquadCounts[bugId] ?? 0;
@@ -357,6 +358,25 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   function bugTradeListLabel(bugIds: string[]) {
     if (bugIds.length <= 1) return bugIds[0] ? bugTradeLabel(bugIds[0]) : "";
     return bugIds.map(bugTradeLabel).join(" + ");
+  }
+
+  function sortTradeInventory(items: BugDexInventoryItem[]) {
+    return [...items].sort((a, b) => {
+      const rarityDiff = raritySortOrder[bugRarity(a.bugId)] - raritySortOrder[bugRarity(b.bugId)];
+      if (rarityDiff !== 0) return rarityDiff;
+      return bugName(a.bugId).localeCompare(bugName(b.bugId));
+    });
+  }
+
+  function tradePartnerName(trade: TradeRequest) {
+    return trade.fromUserId === user.uid ? trade.toUserName : trade.fromUserName;
+  }
+
+  function tradeStatusLabel(status: TradeRequest["status"]) {
+    if (status === "Geaccepteerd") return t("bugdex.tradeStatusAccepted");
+    if (status === "Afgewezen") return t("bugdex.tradeStatusRejected");
+    if (status === "Geannuleerd") return t("bugdex.tradeStatusCancelled");
+    return t("bugdex.tradeStatusOpen");
   }
 
   function bugBuffText(bugId: string) {
@@ -802,8 +822,13 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
         )}
         {incomingTrades.map((trade) => (
           <View key={trade.id} style={styles.tradeRequest}>
-            <Text style={styles.tradeRequestTitle}>{trade.fromUserName}</Text>
-            <Text style={styles.tradeRequestText}>{t("bugdex.tradeFor", { offer: bugTradeListLabel(tradeBugIds(trade, "offer")), request: bugTradeListLabel(tradeBugIds(trade, "request")) })}</Text>
+            <Text style={styles.tradeRequestTitle}>{t("bugdex.tradeIncomingFrom", { name: trade.fromUserName })}</Text>
+            <View style={styles.tradeSwapBox}>
+              <Text style={styles.tradeSwapLabel}>{t("bugdex.theyOffer")}</Text>
+              <Text style={styles.tradeRequestText}>{bugTradeListLabel(tradeBugIds(trade, "offer"))}</Text>
+              <Text style={styles.tradeSwapLabel}>{t("bugdex.theyWantFromYou")}</Text>
+              <Text style={styles.tradeRequestText}>{bugTradeListLabel(tradeBugIds(trade, "request"))}</Text>
+            </View>
             <View style={styles.tradeActions}>
               <Pressable style={styles.acceptButton} disabled={tradeBusy === trade.id} onPress={() => respondTrade(trade, true)}>
                 <Text style={styles.actionText}>{t("bugdex.accept")}</Text>
@@ -816,13 +841,37 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
         ))}
         {outgoingTrades.map((trade) => (
           <View key={trade.id} style={styles.tradeRequest}>
-            <Text style={styles.tradeRequestTitle}>{t("bugdex.pendingTrade")}</Text>
-            <Text style={styles.tradeRequestText}>{t("bugdex.openTo", { bug: bugTradeListLabel(tradeBugIds(trade, "offer")), name: trade.toUserName })}</Text>
+            <Text style={styles.tradeRequestTitle}>{t("bugdex.tradeOutgoingTo", { name: trade.toUserName })}</Text>
+            <View style={styles.tradeSwapBox}>
+              <Text style={styles.tradeSwapLabel}>{t("bugdex.youOffer")}</Text>
+              <Text style={styles.tradeRequestText}>{bugTradeListLabel(tradeBugIds(trade, "offer"))}</Text>
+              <Text style={styles.tradeSwapLabel}>{t("bugdex.youAskFromThem")}</Text>
+              <Text style={styles.tradeRequestText}>{bugTradeListLabel(tradeBugIds(trade, "request"))}</Text>
+            </View>
             <Pressable style={styles.cancelButton} disabled={tradeBusy === trade.id} onPress={() => cancelTrade(trade)}>
               <Text style={styles.cancelButtonText}>{tradeBusy === trade.id ? "..." : t("bugdex.cancelTrade")}</Text>
             </Pressable>
           </View>
         ))}
+        {tradeHistory.length > 0 && (
+          <View style={styles.tradeHistoryBlock}>
+            <Text style={styles.tradeHistoryTitle}>{t("bugdex.tradeHistory")}</Text>
+            {tradeHistory.map((trade) => {
+              const receivedIds = trade.toUserId === user.uid ? tradeBugIds(trade, "offer") : tradeBugIds(trade, "request");
+              const gaveIds = trade.toUserId === user.uid ? tradeBugIds(trade, "request") : tradeBugIds(trade, "offer");
+              return (
+                <View key={trade.id} style={styles.tradeHistoryItem}>
+                  <View style={styles.tradeHistoryHeader}>
+                    <Text style={styles.tradeHistoryName}>{tradePartnerName(trade)}</Text>
+                    <Text style={styles.tradeStatusPill}>{tradeStatusLabel(trade.status)}</Text>
+                  </View>
+                  <Text style={styles.tradeRequestText}>{t("bugdex.youReceived")}: {bugTradeListLabel(receivedIds) || "-"}</Text>
+                  <Text style={styles.tradeRequestText}>{t("bugdex.youGave")}: {bugTradeListLabel(gaveIds) || "-"}</Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
         {!!tradeError && <Text style={sharedStyles.error}>{serviceErrorText(tradeError)}</Text>}
       </View>
 
@@ -1782,6 +1831,61 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     marginTop: 2
+  },
+  tradeSwapBox: {
+    backgroundColor: "#ffffff",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 8,
+    padding: 9
+  },
+  tradeSwapLabel: {
+    color: "#15724f",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0,
+    marginTop: 4,
+    textTransform: "uppercase"
+  },
+  tradeHistoryBlock: {
+    marginTop: 12
+  },
+  tradeHistoryTitle: {
+    color: "#102018",
+    fontSize: 14,
+    fontWeight: "900",
+    marginBottom: 4
+  },
+  tradeHistoryItem: {
+    backgroundColor: "#f7faf6",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    marginTop: 6,
+    padding: 9
+  },
+  tradeHistoryHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 4
+  },
+  tradeHistoryName: {
+    color: "#102018",
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "900"
+  },
+  tradeStatusPill: {
+    backgroundColor: "#e3eddf",
+    borderRadius: 999,
+    color: "#52665d",
+    fontSize: 10,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 7,
+    paddingVertical: 3
   },
   tradeActions: {
     flexDirection: "row",

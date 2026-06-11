@@ -114,16 +114,14 @@
       font-weight: 900;
       gap: 5px;
       min-height: 34px;
-      padding: 4px 8px;
+      justify-content: center;
+      min-width: 38px;
+      padding: 4px 7px;
     }
     .language-switch button.active {
       background: #e6f2e7;
       border-color: #b9d4c2;
       color: var(--green);
-    }
-    .language-switch span {
-      font-size: 11px;
-      font-weight: 950;
     }
 
     .hero {
@@ -220,6 +218,7 @@
       border-radius: 8px;
       box-shadow: 0 8px 28px rgba(16, 32, 24, .06);
       flex-direction: column;
+      gap: 10px;
       padding: 10px;
       position: sticky;
       top: 92px;
@@ -231,12 +230,30 @@
       font-weight: 950;
       padding: 8px 10px 10px;
     }
+    .nav-group {
+      border-top: 1px solid rgba(216, 229, 219, .86);
+      display: grid;
+      gap: 5px;
+      padding-top: 10px;
+    }
+    .nav-group:first-of-type {
+      border-top: 0;
+      padding-top: 0;
+    }
+    .nav-group-title {
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 950;
+      padding: 0 10px 2px;
+      text-transform: uppercase;
+    }
     .side-nav a {
       align-items: center;
       border-radius: 8px;
       display: flex;
+      font-size: 12px;
       justify-content: space-between;
-      padding: 10px 12px;
+      padding: 9px 10px 9px 18px;
       white-space: nowrap;
     }
     .side-nav a::after {
@@ -504,11 +521,16 @@
       .side-nav {
         display: grid;
         gap: 8px;
-        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
         overflow: visible;
         position: static;
       }
       .side-nav strong { grid-column: 1 / -1; }
+      .nav-group {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+      }
       .side-nav a { white-space: normal; }
       .quick-grid,
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -542,9 +564,9 @@
       </a>
       <div class="topbar-actions">
         <div class="language-switch" aria-label="Language">
-          <button class="active" type="button" data-lang="nl" aria-label="Nederlands"><span>NL</span>🇳🇱</button>
-          <button type="button" data-lang="en" aria-label="English"><span>EN</span>🇬🇧</button>
-          <button type="button" data-lang="fr" aria-label="Français"><span>FR</span>🇫🇷</button>
+          <button class="active" type="button" data-lang="nl" aria-label="Nederlands">🇳🇱</button>
+          <button type="button" data-lang="en" aria-label="English">🇬🇧</button>
+          <button type="button" data-lang="fr" aria-label="Français">🇫🇷</button>
         </div>
       </div>
     </div>
@@ -553,18 +575,33 @@
   <main id="top" class="shell">
     <div class="wiki-layout">
       <aside class="side-nav" aria-label="Wiki tabs">
-        <strong>Features</strong>
-        <a href="#overview">Overzicht</a>
-        <a href="#features">Functies</a>
-        <a href="#bugdex">BugDex</a>
-        <a href="#kansen">Kansen</a>
-        <a href="#arena">Arena</a>
-        <a href="#campaign">Campaign</a>
-        <a href="#helpers">Helpers</a>
-        <a href="#radar">Radar</a>
-        <a href="#rewards">Rewards</a>
-        <a href="#workshop">Workshop</a>
-        <a href="#tips">Tips</a>
+        <strong>Game tabs</strong>
+        <div class="nav-group">
+          <span class="nav-group-title">Home tab</span>
+          <a href="#overview">Overzicht</a>
+          <a href="#radar">Movement radar</a>
+        </div>
+        <div class="nav-group">
+          <span class="nav-group-title">Bugs tab</span>
+          <a href="#features">Melden & overzicht</a>
+        </div>
+        <div class="nav-group">
+          <span class="nav-group-title">Arena tab</span>
+          <a href="#arena">Duel</a>
+          <a href="#campaign">Solo Campaign</a>
+          <a href="#helpers">Squad helpers</a>
+          <a href="#tips">Speeltips</a>
+        </div>
+        <div class="nav-group">
+          <span class="nav-group-title">BugDex tab</span>
+          <a href="#bugdex">Collectie</a>
+          <a href="#kansen">Drop-kansen</a>
+          <a href="#workshop">Ruilen/upgraden</a>
+        </div>
+        <div class="nav-group">
+          <span class="nav-group-title">Rank tab</span>
+          <a href="#rewards">XP & weekly</a>
+        </div>
       </aside>
       <div class="tab-content">
     <section id="overview" class="active-panel">
@@ -667,22 +704,22 @@
           </thead>
           <tbody>
             <tr><td>Daily login</td><td class="num">35%</td><td class="num">100%</td><td class="num">0%</td><td class="num">0%</td><td class="num">0%</td><td class="num">0%</td></tr>
-            <tr><td>Bug melden</td><td class="num">58%</td><td class="num">58%</td><td class="num">31%</td><td class="num">10%</td><td class="num">1%</td><td class="num">0%</td></tr>
-            <tr><td>Comment</td><td class="num">24%</td><td class="num">69.4%</td><td class="num">27%</td><td class="num">3.5%</td><td class="num">0.1%</td><td class="num">0%</td></tr>
-            <tr><td>Status update</td><td class="num">22%</td><td class="num">0%</td><td class="num">72.3%</td><td class="num">26.5%</td><td class="num">1.2%</td><td class="num">0%</td></tr>
-            <tr><td>Bug gefixt</td><td class="num">45%</td><td class="num">25%</td><td class="num">50%</td><td class="num">22%</td><td class="num">3%</td><td class="num">0%</td></tr>
-            <tr><td>Upvote gegeven</td><td class="num">18%</td><td class="num">75%</td><td class="num">24.7%</td><td class="num">0.3%</td><td class="num">0%</td><td class="num">0%</td></tr>
+            <tr><td>Bug melden</td><td class="num">58%</td><td class="num">70%</td><td class="num">24%</td><td class="num">4.8%</td><td class="num">1.2%</td><td class="num">0%</td></tr>
+            <tr><td>Comment</td><td class="num">24%</td><td class="num">73%</td><td class="num">23.4%</td><td class="num">3.5%</td><td class="num">0.1%</td><td class="num">0%</td></tr>
+            <tr><td>Status update</td><td class="num">22%</td><td class="num">71%</td><td class="num">24%</td><td class="num">4.5%</td><td class="num">0.5%</td><td class="num">0%</td></tr>
+            <tr><td>Bug gefixt</td><td class="num">45%</td><td class="num">68%</td><td class="num">24%</td><td class="num">4.8%</td><td class="num">3.2%</td><td class="num">0%</td></tr>
+            <tr><td>Upvote gegeven</td><td class="num">18%</td><td class="num">75.2%</td><td class="num">24.5%</td><td class="num">0.3%</td><td class="num">0%</td><td class="num">0%</td></tr>
             <tr><td>Profiel bekijken</td><td class="num">8%</td><td class="num">88%</td><td class="num">12%</td><td class="num">0%</td><td class="num">0%</td><td class="num">0%</td></tr>
-            <tr><td>Foreground bug smash</td><td class="num">35%</td><td class="num">69%</td><td class="num">25%</td><td class="num">5.3%</td><td class="num">0.7%</td><td class="num">0%</td></tr>
-            <tr><td>Weekly all-3 bonus</td><td class="num">100%</td><td class="num">0%</td><td class="num">75%</td><td class="num">23%</td><td class="num">2%</td><td class="num">0%</td></tr>
-            <tr><td>Duel win reward</td><td class="num">100%</td><td class="num">70.5%</td><td class="num">24%</td><td class="num">5%</td><td class="num">0.5%</td><td class="num">0%</td></tr>
+            <tr><td>Foreground bug smash</td><td class="num">35%</td><td class="num">70%</td><td class="num">24.4%</td><td class="num">4.9%</td><td class="num">0.7%</td><td class="num">0%</td></tr>
+            <tr><td>Weekly all-3 bonus</td><td class="num">100%</td><td class="num">72%</td><td class="num">24%</td><td class="num">3.5%</td><td class="num">0.5%</td><td class="num">0%</td></tr>
+            <tr><td>Duel win reward</td><td class="num">100%</td><td class="num">71%</td><td class="num">24%</td><td class="num">4.5%</td><td class="num">0.5%</td><td class="num">0%</td></tr>
             <tr><td>Solo boss 2</td><td class="num">100%</td><td class="num">100%</td><td class="num">0%</td><td class="num">0%</td><td class="num">0%</td><td class="num">0%</td></tr>
-            <tr><td>Solo boss 4</td><td class="num">100%</td><td class="num">0%</td><td class="num">100%</td><td class="num">0%</td><td class="num">0%</td><td class="num">0%</td></tr>
+            <tr><td>Solo boss 4</td><td class="num">100%</td><td class="num">75%</td><td class="num">24%</td><td class="num">1%</td><td class="num">0%</td><td class="num">0%</td></tr>
             <tr><td>Upgrade</td><td class="num">100%</td><td class="num">0%</td><td class="num">route</td><td class="num">route</td><td class="num">route</td><td class="num">route</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note">Weekly all-3 bonus betekent: je claimt de extra weekbonus pas nadat alle 3 weekly missions van die week afgerond zijn. De BugDex roll is altijd 100%, maar rolt alleen Zeldzaam, Episch of heel soms Legendarisch.</p>
+      <p class="note">Weekly all-3 bonus betekent: je claimt de extra weekbonus pas nadat alle 3 weekly missions van die week afgerond zijn. De BugDex roll is altijd 100%, maar rare blijft onder 25% en epic onder 5%.</p>
     </section>
 
     <section id="arena">
@@ -958,7 +995,7 @@
         <p>Movement en widget rewards zijn bedoeld als zachte extra progressie. Ze geven kleine XP en af en toe een BugDex-kans, maar niet genoeg om alleen daarmee alles te halen.</p>
       </div>
       <div class="cards">
-        <article class="card"><img src="assets/radar.png" alt="Bug Radar"><div class="card-body"><h3>Android radar-widget</h3><p>Max 3 signals per dag. Rarity roll: 65% Gewoon, 28% Zeldzaam, 6% Episch, 1% Legendarisch.</p></div></article>
+        <article class="card"><img src="assets/radar.png" alt="Bug Radar"><div class="card-body"><h3>Android radar-widget</h3><p>Max 3 signals per dag. Rarity roll: 71% Gewoon, 24% Zeldzaam, 4% Episch, 1% Legendarisch.</p></div></article>
         <article class="card"><img src="assets/lamp.jpg" alt="Lamp Focus"><div class="card-body"><h3>Bug Lamp</h3><p>Elke 5e daily login geeft een lamp. Actief: 24 uur, movement goals halveren en +2.5% rarity boost via Gewoon naar Zeldzaam/Episch.</p></div></article>
         <article class="card"><img src="assets/powerups.jpg" alt="Solo powerups"><div class="card-body"><h3>Solo powerups</h3><p>Boss clears geven Lamp Focus en soms Bug Bomb. Activeer ze vooraf; ze zijn niet constant zichtbaar tijdens waves.</p></div></article>
       </div>
@@ -1064,6 +1101,21 @@
     const translations = {
       en: {
         "BugBaas Wiki": "BugBaas Wiki",
+        "Game tabs": "Game tabs",
+        "Home tab": "Home tab",
+        "Bugs tab": "Bugs tab",
+        "Arena tab": "Arena tab",
+        "BugDex tab": "BugDex tab",
+        "Rank tab": "Rank tab",
+        "Movement radar": "Movement radar",
+        "Melden & overzicht": "Report & overview",
+        "Duel": "Duel",
+        "Squad helpers": "Squad helpers",
+        "Speeltips": "Play tips",
+        "Collectie": "Collection",
+        "Drop-kansen": "Drop chances",
+        "Ruilen/upgraden": "Trade/upgrade",
+        "XP & weekly": "XP & weekly",
         "Features": "Features",
         "Overzicht": "Overview",
         "Functies": "Features",
@@ -1113,6 +1165,21 @@
       },
       fr: {
         "BugBaas Wiki": "Wiki BugBaas",
+        "Game tabs": "Onglets du jeu",
+        "Home tab": "Onglet Home",
+        "Bugs tab": "Onglet Bugs",
+        "Arena tab": "Onglet Arena",
+        "BugDex tab": "Onglet BugDex",
+        "Rank tab": "Onglet Rank",
+        "Movement radar": "Radar mouvement",
+        "Melden & overzicht": "Signaler & apercu",
+        "Duel": "Duel",
+        "Squad helpers": "Helpers squad",
+        "Speeltips": "Conseils de jeu",
+        "Collectie": "Collection",
+        "Drop-kansen": "Chances de drop",
+        "Ruilen/upgraden": "Trade/upgrade",
+        "XP & weekly": "XP & weekly",
         "Features": "Fonctions",
         "Overzicht": "Apercu",
         "Functies": "Fonctions",

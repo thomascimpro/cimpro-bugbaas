@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.2.26
+
+- Duel win BugDex rewards blijven nu als foreground catch verschijnen, ook als je na spelen terug op Arena staat.
+- Ruilen toont duidelijk wat de ander aanbiedt, wat van jou gevraagd wordt, en bewaart een compacte ruilhistorie.
+- Trade-selecties sorteren hogere tiers bovenaan, zodat zeldzame bugs sneller zichtbaar zijn.
+- Random BugDex-routes zijn opnieuw gebalanceerd: Episch blijft onder 5% en Zeldzaam onder 25%, inclusief boosts en Android radar.
+
 ## 2.2.25
 
 - Arena-tab badge telt duelacties nu op basis van echte actieve duelrecords in plaats van oude duel-notificaties.

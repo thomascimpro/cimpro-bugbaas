@@ -310,8 +310,8 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
   private fun pickRarity(): String {
     val roll = Random.nextInt(100)
     return when {
-      roll < 65 -> "Gewoon"
-      roll < 93 -> "Zeldzaam"
+      roll < 71 -> "Gewoon"
+      roll < 95 -> "Zeldzaam"
       roll < 99 -> "Episch"
       else -> "Legendarisch"
     }
@@ -389,8 +389,8 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     private fun pickCompanionRarity(): String {
       val roll = Random.nextInt(100)
       return when {
-        roll < 65 -> "Gewoon"
-        roll < 93 -> "Zeldzaam"
+        roll < 71 -> "Gewoon"
+        roll < 95 -> "Zeldzaam"
         roll < 99 -> "Episch"
         else -> "Legendarisch"
       }

@@ -825,6 +825,9 @@ function AppContent() {
     if (!user) return;
     const pendingReward = activeForegroundRewardRef.current?.bugId === bugId ? activeForegroundRewardRef.current : null;
     activeForegroundRewardRef.current = null;
+    if (pendingReward) {
+      setPendingForegroundRewards((queue) => queue.filter((reward) => reward.id !== pendingReward.id));
+    }
     try {
       const updated = await applyUserPoints(user.uid, xp, 0);
       const splatResult = await recordBugSplat(updated ?? user);
@@ -1170,17 +1173,15 @@ function AppContent() {
       <ForegroundCatchBug
         catchAssist={squadBonuses().catch_assist}
         catchTimeBonus={squadBonuses().catch_time}
-        enabled={!duelRouteActive && foregroundBugEnabled}
+        enabled={foregroundBugEnabled && (!duelRouteActive || pendingForegroundRewards.length > 0) && !(duelRouteActive && duelFullscreen)}
         forcedBugIds={pendingForegroundRewards.map((reward) => reward.bugId)}
         onCaught={(xp, bugId, rarity) => void handleForegroundBugCaught(xp, bugId, rarity)}
-        onForcedBugConsumed={() => {
-          setPendingForegroundRewards((queue) => {
-            const [nextReward, ...remaining] = queue;
-            activeForegroundRewardRef.current = nextReward ?? null;
-            return remaining;
-          });
+        onForcedBugConsumed={(bugId) => {
+          activeForegroundRewardRef.current = pendingForegroundRewards.find((reward) => reward.bugId === bugId) ?? pendingForegroundRewards[0] ?? null;
         }}
-        onForcedBugMissed={() => {
+        onForcedBugMissed={(bugId) => {
+          const missedReward = activeForegroundRewardRef.current?.bugId === bugId ? activeForegroundRewardRef.current : null;
+          setPendingForegroundRewards((queue) => missedReward ? queue.filter((reward) => reward.id !== missedReward.id) : queue.filter((reward) => reward.bugId !== bugId));
           activeForegroundRewardRef.current = null;
         }}
       />
