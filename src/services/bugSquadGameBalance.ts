@@ -7,6 +7,7 @@ export type ForegroundCatchBalance = {
 };
 
 export type BugSmashDuelBalance = {
+  comboBonusEvery: number;
   comboGraceMs: number;
   focusEasyHits: number;
   hitboxMultiplier: number;
@@ -16,7 +17,6 @@ export type BugSmashDuelBalance = {
   targetSpacingMultiplier: number;
   xpDuplicatePointChance: number;
   speedMultiplier: number;
-  streakMissForgiveness: number;
   supportBonusEvery: number;
 };
 
@@ -35,16 +35,36 @@ export function foregroundCatchBalanceForUser(user?: Pick<User, "activeBugSquad"
 export function bugSmashDuelBalanceForUser(user?: Pick<User, "activeBugSquad"> | null): BugSmashDuelBalance {
   const bonuses = activeBugSquadBonuses(user ?? undefined);
   return {
+    comboBonusEvery: comboBonusEveryForValue(bonuses.combo_boost),
     comboGraceMs: Math.round(650 + clamp(bonuses.knowledge_boost, 0, 0.15) * 5200),
-    focusEasyHits: bonuses.focus_boost >= 0.045 ? 1 : 0,
+    focusEasyHits: tieredCount(bonuses.focus_boost, [0.015, 0.045, 0.075], 3),
     hitboxMultiplier: 1.05 + clamp(bonuses.catch_assist, 0, 0.22),
-    movementFinalBonusCap: bonuses.movement_boost >= 0.045 ? 1 : 0,
+    movementFinalBonusCap: tieredCount(bonuses.movement_boost, [0.015, 0.045, 0.075], 3),
     questRewardRarityBoost: clamp(bonuses.quest_boost * 0.35, 0, 0.05),
     radarRarePointChance: clamp(bonuses.radar_rarity * 1.2, 0, 0.08),
     targetSpacingMultiplier: 1 - clamp(bonuses.radar_spawn * 0.45, 0, 0.08),
     xpDuplicatePointChance: clamp(bonuses.xp_boost * 0.9, 0, 0.08),
     speedMultiplier: 1 + clamp(bonuses.catch_time, 0, 0.18),
-    streakMissForgiveness: bonuses.streak_protection > 0 ? 1 : 0,
-    supportBonusEvery: bonuses.support_boost >= 0.075 ? 4 : bonuses.support_boost >= 0.03 ? 6 : 0
+    supportBonusEvery: supportBonusEveryForValue(bonuses.support_boost)
   };
+}
+
+function comboBonusEveryForValue(value: number): number {
+  if (value >= 0.06) return 2;
+  if (value >= 0.03) return 3;
+  if (value >= 0.01) return 4;
+  return 5;
+}
+
+function supportBonusEveryForValue(value: number): number {
+  if (value >= 0.09) return 4;
+  if (value >= 0.075) return 5;
+  if (value >= 0.045) return 6;
+  if (value >= 0.03) return 7;
+  if (value >= 0.015) return 8;
+  return 0;
+}
+
+function tieredCount(value: number, thresholds: number[], cap: number): number {
+  return Math.min(cap, thresholds.filter((threshold) => value >= threshold).length);
 }

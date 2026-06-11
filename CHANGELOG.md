@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.21
+
+- BugDex ruilen en upgrades tonen actieve helperbugs als locked potjes en blokkeren selectie zolang ze actief zijn.
+- Organisatiebeheer op profiel toont bestaande organisaties duidelijker, met inklapbaar ledenbeheer, uitnodigen en verwijderen.
+- Helperbalance is aangepast: hogere rarity bugs geven sterker sticky/shield/control-effect en minder nadruk op pure damage.
+- Arena duel-tegenstanders tonen oude completed scores niet meer; alleen pending scores blijven zichtbaar.
+- Daily duel reward-status toont kort of reward al geclaimd is, terwijl extra duels zonder reward mogelijk blijven.
+- Rank en foreground catch polish: namen zijn beter leesbaar en foreground catches blijven langer beschikbaar terwijl de app open is.
+
 ## 2.2.20
 
 - Organisatiebeheer is zichtbaarer gemaakt: admins kunnen organisaties aanmaken, members beheren en org-meldingen herkennen op cards en details.

@@ -1,6 +1,6 @@
 {
   "name": "bugbaas",
-  "version": "2.2.20",
+  "version": "2.2.21",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {

@@ -127,6 +127,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   const progress = Math.round((unlockedCount / totalCount) * 100);
   const unlockedEntries = inventory.map((item) => entryByBugId(item.bugId)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
   const activeSquadEntries = activeSquadIds.map((bugId) => entryByBugId(bugId)).filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  const activeSquadIdSet = new Set(activeSquadIds);
   const headerEntry = unlockedEntries[unlockedEntries.length - 1];
   const dexCards = bugDexEntries
     .map((entry, index) => ({ entry, index, inventoryItem: inventoryById[entry.id] }))
@@ -198,13 +199,22 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
 
   useEffect(() => {
     const availableIds = new Set(inventory.filter((item) => item.count > 0).map((item) => item.bugId));
+    const isSelectable = (bugId: string) => availableIds.has(bugId) && !activeSquadIds.includes(bugId);
     setUpgradeSelections((current) => ({
-      Gewoon: current.Gewoon.filter((bugId) => availableIds.has(bugId)),
-      Zeldzaam: current.Zeldzaam.filter((bugId) => availableIds.has(bugId)),
-      Episch: current.Episch.filter((bugId) => availableIds.has(bugId)),
-      Legendarisch: current.Legendarisch.filter((bugId) => availableIds.has(bugId))
+      Gewoon: current.Gewoon.filter(isSelectable),
+      Zeldzaam: current.Zeldzaam.filter(isSelectable),
+      Episch: current.Episch.filter(isSelectable),
+      Legendarisch: current.Legendarisch.filter(isSelectable)
     }));
-  }, [inventory]);
+  }, [activeSquadIds, inventory]);
+
+  useEffect(() => {
+    if (!tradeOfferId || !activeSquadIds.includes(tradeOfferId)) return;
+    setTradeOfferId("");
+    setTradeRecipientId("");
+    setTradeRequestId("");
+    setRecipientInventory([]);
+  }, [activeSquadIds, tradeOfferId]);
 
   async function refreshAll() {
     await Promise.all([refreshInventory(), refreshTrades(), refreshDailyUpgradeUsage(), refreshTradeUsers()]);
@@ -240,6 +250,10 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   }
 
   async function combine(bugId: string) {
+    if (activeSquadIds.includes(bugId)) {
+      setUpgradeError(t("bugdex.activeSquadLocked"));
+      return;
+    }
     setCombineBusyId(bugId);
     setUpgradeError("");
     try {
@@ -254,6 +268,10 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   }
 
   async function upgradeDifferent(rarity: UpgradeRarity, bugIds: string[]) {
+    if (bugIds.some((bugId) => activeSquadIds.includes(bugId))) {
+      setUpgradeError(t("bugdex.activeSquadLocked"));
+      return;
+    }
     setUpgradeBusy(rarity);
     setUpgradeError("");
     try {
@@ -269,6 +287,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   }
 
   function toggleUpgradeSelection(rarity: UpgradeRarity, bugId: string) {
+    if (activeSquadIds.includes(bugId)) return;
     setUpgradeSelections((current) => {
       const selected = current[rarity];
       if (selected.includes(bugId)) return { ...current, [rarity]: selected.filter((item) => item !== bugId) };
@@ -340,7 +359,6 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   }
 
   function squadBonusValue(category: BugSquadBonusCategory, value: number): string {
-    if (category === "streak_protection") return value > 0 ? "1x" : "0x";
     return `+${Math.round(value * 100)}%`;
   }
 
@@ -368,6 +386,10 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
 
   async function sendTradeRequest() {
     if (!selectedRecipient || !tradeOfferId || !tradeRequestId) return;
+    if (activeSquadIds.includes(tradeOfferId)) {
+      setTradeError(t("bugdex.activeSquadLocked"));
+      return;
+    }
     setTradeBusy("send");
     setTradeError("");
     try {
@@ -456,7 +478,8 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
             const upgradeRarity = entry.rarity === "Mythisch" ? null : entry.rarity as UpgradeRarity;
             const routeUsedToday = upgradeRarity ? upgradeRouteUsedToday(upgradeRarity) : false;
             const hasEnoughToCombine = unlocked && Number.isFinite(requiredCount) && inventoryItem.count >= requiredCount;
-            const canCombine = hasEnoughToCombine && !routeUsedToday;
+            const activeSquadLocked = activeSquadIdSet.has(entry.id);
+            const canCombine = hasEnoughToCombine && !routeUsedToday && !activeSquadLocked;
             const isMythic = unlocked && entry.rarity === "Mythisch";
             return (
               <View key={entry.id} style={[styles.card, !unlocked && styles.lockedCard, isMythic && styles.mythicCard, { borderColor: unlocked ? color : "#cbd8d1" }]}>
@@ -479,7 +502,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                 </Text>
                 {hasEnoughToCombine && (
                   <Pressable style={[styles.combineButton, !canCombine && styles.combineButtonDisabled]} disabled={!canCombine || combineBusyId === entry.id} onPress={() => combine(entry.id)}>
-                    <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : routeUsedToday ? t("bugdex.tomorrowAgain") : t("bugdex.combineCount", { count: requiredCount })}</Text>
+                    <Text style={styles.combineText}>{combineBusyId === entry.id ? "..." : activeSquadLocked ? t("bugdex.activeSquadLockedShort") : routeUsedToday ? t("bugdex.tomorrowAgain") : t("bugdex.combineCount", { count: requiredCount })}</Text>
                   </Pressable>
                 )}
               </View>
@@ -640,18 +663,36 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
           <View style={styles.tradeSection}>
             <Text style={styles.tradeLabel}>{t("bugdex.offerBug")}</Text>
             <View style={styles.chipRow}>
-              {tradeInventory.map((item) => (
-                <Pressable key={item.bugId} style={[styles.tradeBugChip, tradeOfferId === item.bugId && styles.tradeChipActive]} onPress={() => setTradeOfferId(item.bugId)}>
-                  <BugArtImage bugId={item.bugId} size={34} />
-                  <Text style={[styles.tradeChipText, tradeOfferId === item.bugId && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
-                  <Text style={[styles.tradeRarityPill, { backgroundColor: rarityColors[bugRarity(item.bugId)] }]}>{rarityLabel(bugRarity(item.bugId), t)}</Text>
-                  {!!selectedRecipient && !recipientOwnedTradeBugIds.has(item.bugId) && (
-                    <Text style={[styles.tradeNeedPill, tradeOfferId === item.bugId && styles.tradeNeedPillActive]}>{t("bugdex.colleagueNeedsThis")}</Text>
-                  )}
-                  <Text style={[styles.bugBuffMeta, tradeOfferId === item.bugId && styles.tradeChipTextActive]} numberOfLines={2}>{bugBuffText(item.bugId)}</Text>
-                  {item.count > 1 && <Text style={[styles.tradeChipMeta, tradeOfferId === item.bugId && styles.tradeChipTextActive]}>x{item.count}</Text>}
-                </Pressable>
-              ))}
+              {tradeInventory.map((item) => {
+                const rarity = bugRarity(item.bugId);
+                const activeLocked = activeSquadIdSet.has(item.bugId);
+                const selected = tradeOfferId === item.bugId;
+                return (
+                  <Pressable
+                    key={item.bugId}
+                    disabled={activeLocked}
+                    style={[styles.tradeBugChip, selected && styles.tradeChipActive, activeLocked && styles.activeSquadLockedChip]}
+                    onPress={() => setTradeOfferId(item.bugId)}
+                  >
+                    <View style={styles.tradeJarWrap}>
+                      {activeLocked ? <BugJarArt bugId={item.bugId} rarity={rarity} size={48} unlocked /> : <BugArtImage bugId={item.bugId} size={34} />}
+                      {activeLocked && (
+                        <View style={styles.activeSquadLockBadge}>
+                          <Text style={styles.activeSquadLockText}>LOCK</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[styles.tradeChipText, selected && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
+                    <Text style={[styles.tradeRarityPill, { backgroundColor: rarityColors[rarity] }]}>{rarityLabel(rarity, t)}</Text>
+                    {activeLocked && <Text style={styles.activeSquadLockedText}>{t("bugdex.activeSquadLockedShort")}</Text>}
+                    {!!selectedRecipient && !recipientOwnedTradeBugIds.has(item.bugId) && (
+                      <Text style={[styles.tradeNeedPill, selected && styles.tradeNeedPillActive]}>{t("bugdex.colleagueNeedsThis")}</Text>
+                    )}
+                    <Text style={[styles.bugBuffMeta, selected && styles.tradeChipTextActive]} numberOfLines={2}>{bugBuffText(item.bugId)}</Text>
+                    {item.count > 1 && <Text style={[styles.tradeChipMeta, selected && styles.tradeChipTextActive]}>x{item.count}</Text>}
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         ) : (
@@ -744,19 +785,31 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                   <View style={styles.upgradeChoiceGrid}>
                     {items.map((item) => {
                       const selected = selectedBugIds.includes(item.bugId);
-                      const disabled = !selected && selectedBugIds.length >= 3;
+                      const activeLocked = activeSquadIdSet.has(item.bugId);
+                      const disabled = activeLocked || (!selected && selectedBugIds.length >= 3);
+                      const rarityColor = rarityColors[bugRarity(item.bugId)];
                       return (
                         <Pressable
                           key={item.bugId}
+                          disabled={disabled}
                           style={[
                             styles.upgradeChoice,
                             selected && { backgroundColor: rarityColors[targetRarity], borderColor: rarityColors[targetRarity] },
-                            disabled && styles.upgradeChoiceDisabled
+                            disabled && styles.upgradeChoiceDisabled,
+                            activeLocked && styles.activeSquadLockedChip
                           ]}
                           onPress={() => toggleUpgradeSelection(rarity, item.bugId)}
                         >
-                          <BugArtImage bugId={item.bugId} size={32} />
+                          <View style={styles.tradeJarWrap}>
+                            {activeLocked ? <BugJarArt bugId={item.bugId} rarity={bugRarity(item.bugId)} size={46} unlocked /> : <BugArtImage bugId={item.bugId} size={32} />}
+                            {activeLocked && (
+                              <View style={styles.activeSquadLockBadge}>
+                                <Text style={styles.activeSquadLockText}>LOCK</Text>
+                              </View>
+                            )}
+                          </View>
                           <Text style={[styles.upgradeChoiceText, selected && styles.upgradeChoiceTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
+                          {activeLocked && <Text style={[styles.activeSquadLockedText, { borderColor: rarityColor }]}>{t("bugdex.activeSquadLockedShort")}</Text>}
                           <Text style={[styles.bugBuffMeta, selected && styles.upgradeChoiceTextActive]} numberOfLines={2}>{bugBuffText(item.bugId)}</Text>
                           {item.count > 1 && <Text style={[styles.upgradeChoiceCount, selected && styles.upgradeChoiceTextActive]}>x{item.count}</Text>}
                         </Pressable>
@@ -1488,6 +1541,48 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 8,
     width: 108
+  },
+  tradeJarWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+    position: "relative"
+  },
+  activeSquadLockedChip: {
+    backgroundColor: "#f6fbf8",
+    borderColor: "#d7bd57",
+    opacity: 1
+  },
+  activeSquadLockBadge: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57",
+    borderRadius: 999,
+    borderWidth: 1,
+    minWidth: 28,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    position: "absolute",
+    right: -8,
+    top: -4
+  },
+  activeSquadLockText: {
+    color: "#ffffff",
+    fontSize: 7,
+    fontWeight: "900"
+  },
+  activeSquadLockedText: {
+    borderColor: "#d7bd57",
+    borderRadius: 999,
+    borderWidth: 1,
+    color: "#5c480a",
+    fontSize: 8,
+    fontWeight: "900",
+    marginTop: 3,
+    overflow: "hidden",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    textAlign: "center"
   },
   squadBugChipActive: {
     backgroundColor: "#173126",

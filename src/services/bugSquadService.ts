@@ -12,7 +12,7 @@ export type BugSquadBonusCategory =
   | "support_boost"
   | "quest_boost"
   | "xp_boost"
-  | "streak_protection";
+  | "combo_boost";
 
 export type BugSquadBonus = {
   bugId: string;
@@ -46,7 +46,7 @@ const baseBonusValue: Record<BugSquadBonusCategory, number> = {
   support_boost: 0.015,
   quest_boost: 0.015,
   xp_boost: 0.01,
-  streak_protection: 1
+  combo_boost: 0.01
 };
 
 const bonusCaps: Record<BugSquadBonusCategory, number> = {
@@ -60,12 +60,12 @@ const bonusCaps: Record<BugSquadBonusCategory, number> = {
   support_boost: 0.15,
   quest_boost: 0.15,
   xp_boost: 0.1,
-  streak_protection: 1
+  combo_boost: 0.06
 };
 
 const categoriesByInsect: Record<InsectVariant, BugSquadBonusCategory[]> = {
   beetle: ["movement_boost", "quest_boost", "focus_boost"],
-  crawler: ["catch_assist", "streak_protection"],
+  crawler: ["catch_assist", "combo_boost"],
   dragonfly: ["radar_spawn", "radar_rarity", "catch_time"],
   grasshopper: ["catch_assist", "movement_boost"],
   ladybug: ["focus_boost", "support_boost", "quest_boost"],
@@ -78,7 +78,7 @@ export function bugSquadBonusForEntry(entry: BugDexEntry): BugSquadBonus {
   const categories = categoriesByInsect[entry.insect];
   const category = categories[stableHash(entry.id) % categories.length];
   const scale = rarityScale[entry.rarity];
-  const rawValue = category === "streak_protection" ? 1 : baseBonusValue[category] * scale;
+  const rawValue = baseBonusValue[category] * scale;
   return {
     bugId: entry.id,
     category,
@@ -100,7 +100,7 @@ export function emptyBugSquadBonuses(): BugSquadBonusTotals {
     support_boost: 0,
     quest_boost: 0,
     xp_boost: 0,
-    streak_protection: 0
+    combo_boost: 0
   };
 }
 
@@ -120,7 +120,8 @@ export function activeBugSquadBonusList(userOrIds?: Pick<User, "activeBugSquad">
 export function bugSquadAttackKindForCategory(category: BugSquadBonusCategory): BugSquadAttackKind {
   if (category === "catch_assist" || category === "catch_time") return "sticky";
   if (category === "radar_spawn" || category === "radar_rarity" || category === "xp_boost") return "splash";
-  if (category === "movement_boost" || category === "streak_protection") return "shield";
+  if (category === "movement_boost") return "shield";
+  if (category === "combo_boost") return "burst";
   if (category === "focus_boost" || category === "knowledge_boost" || category === "support_boost" || category === "quest_boost") return "zap";
   return "burst";
 }

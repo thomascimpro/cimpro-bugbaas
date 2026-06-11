@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Animated, AppState, Easing, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { allBugArtIds, BugArtId } from "../services/bugArt";
 import { bugDexEntries } from "../services/pointsService";
 import { foregroundCatchXpByRarity } from "../services/rewardBalanceService";
@@ -42,7 +42,7 @@ type Props = {
   onForcedBugMissed?: (bugId: BugArtId) => void;
 };
 
-const catchDurationMs = 30000;
+const catchDurationMs = 3 * 60 * 1000;
 const tapDebounceMs = 140;
 const movementInput = [0, 0.055, 0.1, 0.16, 0.22, 0.3, 0.37, 0.45, 0.53, 0.61, 0.69, 0.76, 0.83, 0.9, 0.96, 1];
 const timerSegments = Array.from({ length: 24 }, (_, index) => index);
@@ -98,13 +98,17 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
   const hitFeedback = useRef(new Animated.Value(0)).current;
   const poof = useRef(new Animated.Value(0)).current;
   const timerProgress = useRef(new Animated.Value(0)).current;
-  const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const expireTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const caughtClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const moveAnimation = useRef<Animated.CompositeAnimation | null>(null);
   const timerAnimation = useRef<Animated.CompositeAnimation | null>(null);
   const activeRef = useRef<ActiveBug | null>(null);
   const caughtRef = useRef(false);
   const hitsRef = useRef(0);
   const lastTapAtRef = useRef(0);
+  const progressValueRef = useRef(0);
+  const timerProgressValueRef = useRef(0);
+  const [appActive, setAppActive] = useState(AppState.currentState === "active");
 
   useEffect(() => {
     activeRef.current = activeBug;
@@ -115,51 +119,56 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
   }, [enabled]);
 
   useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      setAppActive(nextState === "active");
+    });
+    const progressListenerId = progress.addListener(({ value }) => {
+      progressValueRef.current = value;
+    });
+    const timerListenerId = timerProgress.addListener(({ value }) => {
+      timerProgressValueRef.current = value;
+    });
     return () => {
-      if (clearTimer.current) clearTimeout(clearTimer.current);
+      if (expireTimer.current) clearTimeout(expireTimer.current);
+      if (caughtClearTimer.current) clearTimeout(caughtClearTimer.current);
       moveAnimation.current?.stop();
       timerAnimation.current?.stop();
+      progress.removeListener(progressListenerId);
+      timerProgress.removeListener(timerListenerId);
+      subscription.remove();
     };
-  }, []);
+  }, [progress, timerProgress]);
 
   useEffect(() => {
     if (!activeBug) return;
     progress.setValue(0);
+    progressValueRef.current = 0;
     hitFeedback.setValue(0);
     poof.setValue(0);
     timerProgress.setValue(0);
+    timerProgressValueRef.current = 0;
     setCaught(false);
     caughtRef.current = false;
     setHits(0);
     hitsRef.current = 0;
     lastTapAtRef.current = 0;
 
-    const animation = Animated.timing(progress, {
-      duration: activeBug.motionCycleMs,
-      easing: Easing.linear,
-      toValue: 1,
-      useNativeDriver: true
-    });
-    moveAnimation.current = animation;
-    animation.start();
-
-    const timer = Animated.timing(timerProgress, {
-      duration: activeBug.durationMs,
-      easing: Easing.linear,
-      toValue: 1,
-      useNativeDriver: false
-    });
-    timerAnimation.current = timer;
-    timer.start();
-
-    clearTimer.current = setTimeout(clearActiveBug, activeBug.durationMs);
+    if (appActive) startActiveBugTimers(activeBug);
     return () => {
-      animation.stop();
-      timer.stop();
-      if (moveAnimation.current === animation) moveAnimation.current = null;
-      if (timerAnimation.current === timer) timerAnimation.current = null;
+      stopActiveBugTimers();
     };
-  }, [activeBug, hitFeedback, progress, poof, timerProgress]);
+  }, [activeBug?.id]);
+
+  useEffect(() => {
+    const currentBug = activeRef.current;
+    if (!currentBug || caughtRef.current) return;
+    if (appActive) {
+      startActiveBugTimers(currentBug);
+      return () => stopActiveBugTimers();
+    }
+    stopActiveBugTimers();
+    return undefined;
+  }, [appActive]);
 
   useEffect(() => {
     if (!enabled || activeRef.current || forcedBugIds.length === 0) return;
@@ -257,14 +266,11 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
 
   function clearActiveBug() {
     const missedBug = activeRef.current && activeRef.current.forced && !caughtRef.current ? activeRef.current.bugId : "";
-    if (clearTimer.current) {
-      clearTimeout(clearTimer.current);
-      clearTimer.current = null;
+    stopActiveBugTimers();
+    if (caughtClearTimer.current) {
+      clearTimeout(caughtClearTimer.current);
+      caughtClearTimer.current = null;
     }
-    moveAnimation.current?.stop();
-    timerAnimation.current?.stop();
-    moveAnimation.current = null;
-    timerAnimation.current = null;
     setActiveBug(null);
     setCaught(false);
     caughtRef.current = false;
@@ -304,12 +310,61 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
       useNativeDriver: true
     }).start();
 
-    if (clearTimer.current) clearTimeout(clearTimer.current);
-    clearTimer.current = setTimeout(clearActiveBug, 680);
+    if (expireTimer.current) {
+      clearTimeout(expireTimer.current);
+      expireTimer.current = null;
+    }
+    if (caughtClearTimer.current) clearTimeout(caughtClearTimer.current);
+    caughtClearTimer.current = setTimeout(clearActiveBug, 680);
   }
 
   function playHitFeedback() {
     playBugSwatterFeedback(hitFeedback);
+  }
+
+  function stopActiveBugTimers() {
+    if (expireTimer.current) {
+      clearTimeout(expireTimer.current);
+      expireTimer.current = null;
+    }
+    moveAnimation.current?.stop();
+    timerAnimation.current?.stop();
+    moveAnimation.current = null;
+    timerAnimation.current = null;
+  }
+
+  function startActiveBugTimers(bug: ActiveBug) {
+    stopActiveBugTimers();
+    const remainingMotionMs = Math.max(0, Math.round(bug.motionCycleMs * (1 - progressValueRef.current)));
+    if (remainingMotionMs > 0) {
+      const animation = Animated.timing(progress, {
+        duration: remainingMotionMs,
+        easing: Easing.linear,
+        toValue: 1,
+        useNativeDriver: true
+      });
+      moveAnimation.current = animation;
+      animation.start(({ finished }) => {
+        if (finished && moveAnimation.current === animation) moveAnimation.current = null;
+      });
+    }
+
+    const remainingCatchMs = Math.max(0, Math.round(bug.durationMs * (1 - timerProgressValueRef.current)));
+    if (remainingCatchMs <= 0) {
+      clearActiveBug();
+      return;
+    }
+    const timer = Animated.timing(timerProgress, {
+      duration: remainingCatchMs,
+      easing: Easing.linear,
+      toValue: 1,
+      useNativeDriver: false
+    });
+    timerAnimation.current = timer;
+    timer.start(({ finished }) => {
+      if (finished && timerAnimation.current === timer) timerAnimation.current = null;
+    });
+    expireTimer.current = setTimeout(clearActiveBug, remainingCatchMs);
   }
 
   if (!enabled || !activeBug) return null;

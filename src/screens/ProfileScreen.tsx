@@ -70,6 +70,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   const [organizationInvites, setOrganizationInvites] = useState<OrganizationInvite[]>([]);
   const [incomingInvites, setIncomingInvites] = useState<OrganizationInvite[]>([]);
   const [selectedOrganizationId, setSelectedOrganizationId] = useState(organizationIdsForUser(user)[0] ?? defaultOrganizationId);
+  const [organizationMembersOpen, setOrganizationMembersOpen] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteBusy, setInviteBusy] = useState("");
   const [organizationLoading, setOrganizationLoading] = useState(false);
@@ -146,7 +147,6 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   }
 
   function squadBonusValue(category: BugSquadBonusCategory, value: number): string {
-    if (category === "streak_protection") return value > 0 ? "1x" : "0x";
     return `+${Math.round(value * 100)}%`;
   }
 
@@ -279,7 +279,9 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
           <Text style={styles.organizationCurrent}>
             {t("profile.organizationCurrent", { name: isPublicUser ? t("profile.organizationPublic") : currentOrganizationName })}
           </Text>
-          {userOrganizationIds.length > 1 && (
+          {userOrganizationIds.length > 0 && (
+            <>
+            <Text style={styles.organizationSectionTitle}>{t("profile.organizationExisting")}</Text>
             <View style={styles.organizationPicker}>
               {userOrganizationIds.map((orgId) => (
                 <Pressable
@@ -293,6 +295,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
                 </Pressable>
               ))}
             </View>
+            </>
           )}
           {organizationLoading && <ActivityIndicator color="#15724f" />}
           {incomingInvites.length > 0 && (
@@ -330,47 +333,55 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
           {!isPublicUser && (
             <>
               <Text style={styles.organizationHelp}>{t("profile.organizationHelp")}</Text>
-              {canManageOrganization && (
-                <View style={styles.organizationSection}>
-                  <Text style={styles.organizationSectionTitle}>{t("profile.organizationManageMembers")}</Text>
-                  <Text style={styles.organizationHelp}>{t("profile.organizationManageMembersHelp")}</Text>
-                  <TextInput
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    placeholder={t("profile.organizationInvitePlaceholder")}
-                    placeholderTextColor="#77847f"
-                    style={styles.organizationInput}
-                    value={inviteEmail}
-                    onChangeText={setInviteEmail}
-                  />
-                  <Pressable style={[sharedStyles.button, inviteBusy === "invite" && styles.disabledButton]} disabled={Boolean(inviteBusy)} onPress={submitInvite}>
-                    {inviteBusy === "invite" ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>{t("profile.organizationAddMember")}</Text>}
-                  </Pressable>
-                </View>
-              )}
-              {organizationInvites.length > 0 && (
-                <View style={styles.organizationSection}>
-                  <Text style={styles.organizationSectionTitle}>{t("profile.organizationOpenInvites")}</Text>
-                  {organizationInvites.map((invite) => (
-                    <View key={invite.id} style={styles.organizationListItem}>
-                      <View style={styles.organizationListText}>
-                        <Text style={styles.organizationListTitle} numberOfLines={1}>{invite.invitedEmail}</Text>
-                        <Text style={styles.organizationListMeta} numberOfLines={1}>{t("profile.organizationInviteOpen")}</Text>
-                      </View>
-                      {canManageOrganization && (
-                        <Pressable style={styles.smallDangerButton} disabled={Boolean(inviteBusy)} onPress={() => cancelInvite(invite)}>
-                          <Text style={styles.smallDangerText}>{inviteBusy === invite.id ? "..." : t("common.cancel")}</Text>
-                        </Pressable>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              )}
               <View style={styles.organizationSection}>
-                <Text style={styles.organizationSectionTitle}>{t("profile.organizationMembers")}</Text>
-                {canManageOrganization && <Text style={styles.organizationHelp}>{t("profile.organizationRemoveHelp")}</Text>}
-                {organizationMembers.map((member) => (
-                  <View key={member.uid} style={styles.organizationListItem}>
+                <Pressable style={styles.organizationDropdownHeader} onPress={() => setOrganizationMembersOpen((current) => !current)}>
+                  <View style={styles.organizationListText}>
+                    <Text style={styles.organizationSectionTitle}>{t("profile.organizationManageMembers")}</Text>
+                    <Text style={styles.organizationListMeta}>{t("profile.organizationMembersCount", { count: organizationMembers.length })}</Text>
+                  </View>
+                  <Text style={styles.organizationDropdownAction}>{organizationMembersOpen ? t("common.close") : t("common.open")}</Text>
+                </Pressable>
+                {organizationMembersOpen && (
+                  <>
+                    {canManageOrganization && (
+                      <View style={styles.organizationForm}>
+                        <Text style={styles.organizationHelp}>{t("profile.organizationManageMembersHelp")}</Text>
+                        <TextInput
+                          autoCapitalize="none"
+                          keyboardType="email-address"
+                          placeholder={t("profile.organizationInvitePlaceholder")}
+                          placeholderTextColor="#77847f"
+                          style={styles.organizationInput}
+                          value={inviteEmail}
+                          onChangeText={setInviteEmail}
+                        />
+                        <Pressable style={[sharedStyles.button, inviteBusy === "invite" && styles.disabledButton]} disabled={Boolean(inviteBusy)} onPress={submitInvite}>
+                          {inviteBusy === "invite" ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>{t("profile.organizationAddMember")}</Text>}
+                        </Pressable>
+                      </View>
+                    )}
+                    {organizationInvites.length > 0 && (
+                      <View style={styles.organizationSection}>
+                        <Text style={styles.organizationSectionTitle}>{t("profile.organizationOpenInvites")}</Text>
+                        {organizationInvites.map((invite) => (
+                          <View key={invite.id} style={styles.organizationListItem}>
+                            <View style={styles.organizationListText}>
+                              <Text style={styles.organizationListTitle} numberOfLines={1}>{invite.invitedEmail}</Text>
+                              <Text style={styles.organizationListMeta} numberOfLines={1}>{t("profile.organizationInviteOpen")}</Text>
+                            </View>
+                            {canManageOrganization && (
+                              <Pressable style={styles.smallDangerButton} disabled={Boolean(inviteBusy)} onPress={() => cancelInvite(invite)}>
+                                <Text style={styles.smallDangerText}>{inviteBusy === invite.id ? "..." : t("common.cancel")}</Text>
+                              </Pressable>
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                    <Text style={styles.organizationSectionTitle}>{t("profile.organizationMembers")}</Text>
+                    {canManageOrganization && <Text style={styles.organizationHelp}>{t("profile.organizationRemoveHelp")}</Text>}
+                    {organizationMembers.map((member) => (
+                      <View key={member.uid} style={styles.organizationListItem}>
                     <View style={styles.organizationListText}>
                       <Text style={styles.organizationListTitle} numberOfLines={1}>{member.displayName}</Text>
                       <Text style={styles.organizationListMeta} numberOfLines={1}>{member.email || t("profile.organizationMember")}</Text>
@@ -381,7 +392,9 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
                       </Pressable>
                     )}
                   </View>
-                ))}
+                    ))}
+                  </>
+                )}
               </View>
             </>
           )}
@@ -754,6 +767,21 @@ const styles = StyleSheet.create({
   organizationSection: {
     gap: 8,
     marginTop: 12
+  },
+  organizationDropdownHeader: {
+    alignItems: "center",
+    backgroundColor: "#eef4ed",
+    borderColor: "#c6d3cc",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    padding: 10
+  },
+  organizationDropdownAction: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
   },
   organizationSectionTitle: {
     color: "#102018",

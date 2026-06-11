@@ -147,19 +147,19 @@ const styles = StyleSheet.create({
     color: "#17211c",
     flex: 1,
     flexShrink: 1,
-    fontSize: 16,
-    fontWeight: "800",
-    lineHeight: 20,
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 26,
     minWidth: 0
   },
   status: {
     backgroundColor: "#e8f1e6",
     borderRadius: 8,
     color: "#15724f",
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: "900",
-    paddingHorizontal: 7,
-    paddingVertical: 3
+    paddingHorizontal: 6,
+    paddingVertical: 2
   },
   leaderStatus: {
     backgroundColor: "#102018",

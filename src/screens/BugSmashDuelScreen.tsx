@@ -163,7 +163,7 @@ const mythicSpecials: Record<string, MythicSpecialSpec> = {
   "koningin-alexandravlinder": {
     animationStyle: "pulse",
     color: "#60a5fa",
-    freezeMs: 900,
+    freezeMs: 1150,
     kind: "royal_freeze",
     label: "Royal Freeze",
     symbol: "FRZ"
@@ -185,7 +185,7 @@ const mythicSpecials: Record<string, MythicSpecialSpec> = {
   "roze-esdoornmot": {
     animationStyle: "orb",
     color: "#f472b6",
-    freezeMs: 650,
+    freezeMs: 900,
     kind: "candy_slow",
     label: "Candy Slow",
     symbol: "SLOW"
@@ -214,7 +214,7 @@ const mythicSpecials: Record<string, MythicSpecialSpec> = {
   "glorieuze-scarabee": {
     animationStyle: "pulse",
     color: "#38bdf8",
-    freezeMs: 500,
+    freezeMs: 760,
     kind: "mirror_guard",
     label: "Mirror Guard",
     symbol: "MIR"
@@ -809,7 +809,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
     comboRef.current = catchAt - lastCatchAtRef.current <= assist.comboGraceMs ? comboRef.current + 1 : 1;
     lastCatchAtRef.current = catchAt;
     caughtBugIdsRef.current = caughtBugIdsRef.current.includes(bugId) ? caughtBugIdsRef.current : [...caughtBugIdsRef.current, bugId];
-    scoreRef.current += scoreByRarity[entry.rarity] + soloBossScoreBonus(bossLevel) + bossBreakBonus + duelCatchBonusPoints(entry.rarity, bugId, assist) + duelComboBonusPoint(comboRef.current);
+    scoreRef.current += scoreByRarity[entry.rarity] + soloBossScoreBonus(bossLevel) + bossBreakBonus + duelCatchBonusPoints(entry.rarity, bugId, assist) + duelComboBonusPoint(comboRef.current, assist.comboBonusEvery);
     if (bossBreakBonus > 0) setSoloRewardNotice(`Boss break +${bossBreakBonus}`);
     setCaughtBugIds(caughtBugIdsRef.current);
     setScore(scoreRef.current);
@@ -1242,7 +1242,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
           </View>
           <Text style={styles.gameTimer}>{remainingSeconds}s</Text>
           <View style={styles.gameHudPlayer}>
-            <Text style={styles.gameOpponent} numberOfLines={1}>{trainingDuel ? soloCampaign ? t("duel.soloPcScore", { score: soloPcScore, target: soloCampaign.targetScore }) : t("duel.trainingNoRewardsShort") : opponentScore ? t("duel.theirScore", { score: opponentScore.score }) : t("duel.waitingScore")}</Text>
+            <Text style={styles.gameOpponent} numberOfLines={1}>{trainingDuel ? soloCampaign ? t("duel.soloPcScore", { score: soloPcScore, target: soloCampaign.targetScore }) : t("duel.trainingNoRewardsShort") : opponentScore ? `${opponentLabel(gameDuel, user)}: ${displayDuelScore(opponentScore)}` : t("duel.waitingScore")}</Text>
             {trainingDuel ? (
               <Pressable style={styles.gameExitButton} onPress={requestStopTraining}>
                 <Text style={styles.gameExitText}>x</Text>
@@ -1366,11 +1366,18 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                 const pairOwnScore = activePairDuel ? activePairDuel.scores?.[user.uid] ?? localSubmittedScores[activePairDuel.id] : undefined;
                 const pairOpponentScore = activePairDuel ? activePairDuel.scores?.[opponent.uid] : undefined;
                 const showOwnWaitingScore = Boolean(activePairDuel?.fromUserId === user.uid && (activePairDuel.status === "pending" || activePairDuel.status === "accepted") && pairOwnScore && !pairOpponentScore);
+                const showOpponentWaitingScore = Boolean(activePairDuel?.fromUserId === opponent.uid && (activePairDuel.status === "pending" || activePairDuel.status === "accepted") && pairOpponentScore && !pairOwnScore);
+                const dailyRewardClaimed = duelDailyRewardClaimedAgainstOpponent(duels, user.uid, opponent.uid);
                 const opponentMeta = showOwnWaitingScore
                   ? t("duel.yourScore", { score: displayDuelScore(pairOwnScore) })
+                  : showOpponentWaitingScore
+                    ? `${opponent.displayName}: ${displayDuelScore(pairOpponentScore)}`
                   : blocked && activePairDuel
                     ? statusLabel(activePairDuel, t)
-                    : `${opponent.totalPoints} ${t("common.pointsShort")}`;
+                    : dailyRewardClaimed
+                      ? t("duel.dailyRewardClaimed")
+                      : t("duel.dailyRewardAvailable");
+                const opponentPresence = blocked ? t("duel.activeBetween") : dailyRewardClaimed ? t("duel.noDailyRewardShort") : presenceLabel(opponent, t);
                 return (
                   <Pressable
                     key={opponent.uid}
@@ -1386,7 +1393,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                   >
                     <Text style={[styles.opponentName, selected && styles.opponentNameSelected]} numberOfLines={1}>{opponent.displayName}</Text>
                     <Text style={styles.opponentMeta}>{opponentMeta}</Text>
-                    <Text style={[styles.opponentPresence, selected && styles.opponentPresenceSelected]} numberOfLines={1}>{blocked ? t("duel.activeBetween") : presenceLabel(opponent, t)}</Text>
+                    <Text style={[styles.opponentPresence, selected && styles.opponentPresenceSelected]} numberOfLines={1}>{opponentPresence}</Text>
                   </Pressable>
                 );
               })}
@@ -1474,6 +1481,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
           {activeDuel.status === "pending" && activeDuel.toUserId === user.uid && (
             <View style={styles.incomingPanel}>
               <Text style={styles.incomingBody}>{t("duel.incomingBody", { name: activeDuel.fromUserName })}</Text>
+              {opponentScore ? <Text style={styles.resultLine}>{activeDuel.fromUserName}: {displayDuelScore(opponentScore)}</Text> : null}
               <Text style={styles.incomingHint}>{t("duel.incomingHint")}</Text>
               <Pressable disabled={busy} style={sharedStyles.button} onPress={() => respond(true)}>
                 <Text style={sharedStyles.buttonText}>{t("duel.accept")}</Text>
@@ -1497,6 +1505,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
             <View style={styles.startPanel}>
               <Text style={styles.startTitle}>{t("duel.readyTitle")}</Text>
               <Text style={styles.startBody}>{t("duel.asyncReadyBody", { name: opponentLabel(activeDuel, user) })}</Text>
+              {opponentScore ? <Text style={styles.resultLine}>{opponentLabel(activeDuel, user)}: {displayDuelScore(opponentScore)}</Text> : null}
               <Pressable style={sharedStyles.button} onPress={startAcceptedDuel}>
                 <Text style={sharedStyles.buttonText}>{t("duel.startNow")}</Text>
               </Pressable>
@@ -1520,7 +1529,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
             <>
               <View style={styles.scoreRow}>
                 <Text style={styles.scoreText}>{t("duel.yourScore", { score: activeDuelScore })}</Text>
-                <Text style={styles.scoreText}>{opponentScore ? t("duel.theirScore", { score: opponentScore.score }) : t("duel.waitingScore")}</Text>
+                <Text style={styles.scoreText}>{opponentScore ? `${opponentLabel(activeDuel, user)}: ${displayDuelScore(opponentScore)}` : t("duel.waitingScore")}</Text>
               </View>
               <View style={styles.arena}>
                 {countdown > 0 ? (
@@ -1541,8 +1550,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
           {activeDuel.status === "completed" && (
             <View style={styles.resultBox}>
               <Text style={styles.resultTitle}>{resultLabel(activeDuel, user, t)}</Text>
-              <Text style={styles.resultLine}>{activeDuel.fromUserName}: {activeDuel.scores?.[activeDuel.fromUserId]?.score ?? 0}</Text>
-              <Text style={styles.resultLine}>{activeDuel.toUserName}: {activeDuel.scores?.[activeDuel.toUserId]?.score ?? 0}</Text>
+              <Text style={styles.resultLine}>{activeDuel.fromUserName}: {displayDuelScore(activeDuel.scores?.[activeDuel.fromUserId])}</Text>
+              <Text style={styles.resultLine}>{activeDuel.toUserName}: {displayDuelScore(activeDuel.scores?.[activeDuel.toUserId])}</Text>
               {activeDuel.winnerId && isDuelParticipant(activeDuel, user) && !(activeDuel.rewardClaimedBy ?? []).includes(user.uid) && (
                 <Pressable disabled={busy} style={sharedStyles.button} onPress={claimReward}>
                   <Text style={sharedStyles.buttonText}>{busy ? "..." : activeDuel.winnerId === user.uid ? t("duel.claimReward") : t("duel.claimXp")}</Text>
@@ -1662,8 +1671,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
             <View style={styles.startModalCard}>
               <Text style={styles.startTitle}>{t("duel.resultReadyTitle")}</Text>
               <Text style={styles.startBody}>{resultLabel(activeDuel, user, t)}</Text>
-              <Text style={styles.resultLine}>{activeDuel.fromUserName}: {activeDuel.scores?.[activeDuel.fromUserId]?.score ?? 0}</Text>
-              <Text style={styles.resultLine}>{activeDuel.toUserName}: {activeDuel.scores?.[activeDuel.toUserId]?.score ?? 0}</Text>
+              <Text style={styles.resultLine}>{activeDuel.fromUserName}: {displayDuelScore(activeDuel.scores?.[activeDuel.fromUserId])}</Text>
+              <Text style={styles.resultLine}>{activeDuel.toUserName}: {displayDuelScore(activeDuel.scores?.[activeDuel.toUserId])}</Text>
               <Text style={styles.noticeText}>{t("duel.resultReadyBody")}</Text>
               {resultRewardPending ? (
                 <Pressable disabled={busy} style={sharedStyles.button} onPress={claimReward}>
@@ -1682,12 +1691,22 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       {visibleRecentDuels.length > 0 && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>{t("duel.recent")}</Text>
-          {visibleRecentDuels.slice(0, 6).map((duel) => (
-            <Pressable key={duel.id} style={styles.duelRow} onPress={() => setActiveDuelId(duel.id)}>
-              <Text style={styles.duelRowTitle} numberOfLines={1}>{opponentLabel(duel, user)}</Text>
-              <Text style={styles.duelRowMeta}>{statusLabel(duel, t)}</Text>
-            </Pressable>
-          ))}
+          {visibleRecentDuels.slice(0, 6).map((duel) => {
+            const rowOpponentId = duel.fromUserId === user.uid ? duel.toUserId : duel.fromUserId;
+            const rowOwnScore = duel.scores?.[user.uid];
+            const rowOpponentScore = duel.scores?.[rowOpponentId];
+            const rowMeta = rowOpponentScore && !rowOwnScore
+              ? `${opponentLabel(duel, user)}: ${displayDuelScore(rowOpponentScore)}`
+              : rowOwnScore && !rowOpponentScore
+                ? t("duel.yourScore", { score: displayDuelScore(rowOwnScore) })
+                : statusLabel(duel, t);
+            return (
+              <Pressable key={duel.id} style={styles.duelRow} onPress={() => setActiveDuelId(duel.id)}>
+                <Text style={styles.duelRowTitle} numberOfLines={1}>{opponentLabel(duel, user)}</Text>
+                <Text style={styles.duelRowMeta}>{rowMeta}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       )}
     </ScrollView>
@@ -1925,7 +1944,8 @@ function helperTargetScore(target: VisibleDuelTarget, bonus: ReturnType<typeof a
 
 function helperRarityPreference(category: BugSquadBonusCategory) {
   if (category === "focus_boost" || category === "knowledge_boost" || category === "quest_boost" || category === "radar_rarity") return 1.1;
-  if (category === "movement_boost" || category === "streak_protection") return 0.5;
+  if (category === "movement_boost") return 0.5;
+  if (category === "combo_boost") return 0.9;
   return 0.75;
 }
 
@@ -1964,8 +1984,8 @@ function helperHitsForTarget(bonus: ReturnType<typeof activeBugSquadBonusList>[n
   const kind = helperKindForCategory(bonus.category);
   const baseDamage = helperBaseHitsForRarity(bonus.rarity);
   const resistance = Math.max(0, Math.floor(targetRank / 2));
-  const tierAdvantage = helperRank >= targetRank + 2 ? 1 : 0;
-  const premiumHelperBonus = helperRank >= 2 && targetRank > 0 && targetRank <= helperRank ? 1 : 0;
+  const tierAdvantage = kind === "burst" && helperRank >= targetRank + 2 ? 1 : 0;
+  const premiumHelperBonus = kind === "zap" && helperRank >= 3 && targetRank > 0 && targetRank <= helperRank ? 1 : 0;
   const specialBonus = helperSpecialBonusHits(special, target, remaining);
   const kindBonus = special ? 0 : helperKindBonusHits(kind, target, remaining);
   const damage = Math.max(1, baseDamage - resistance + tierAdvantage + premiumHelperBonus + specialBonus + kindBonus);
@@ -1973,27 +1993,27 @@ function helperHitsForTarget(bonus: ReturnType<typeof activeBugSquadBonusList>[n
 }
 
 function helperKindBonusHits(kind: HelperImpactKind, target: VisibleDuelTarget, remaining: number) {
-  if (kind === "sticky") return remaining > 2 ? 2 : remaining > 1 ? 1 : 0;
-  if (kind === "shield") return target.motion.progress > 0.78 ? 3 : target.motion.progress > 0.56 ? 2 : 0;
+  if (kind === "sticky") return remaining > 3 ? 1 : 0;
+  if (kind === "shield") return target.motion.progress > 0.82 ? 1 : 0;
   if (kind === "zap") return target.entry.rarity !== "Gewoon" ? 1 : 0;
   if (kind === "splash") return remaining > 2 ? 1 : 0;
   return 0;
 }
 
 function helperControlMsForKind(kind: HelperImpactKind, rarity: BugDexRarity, progress: number) {
-  const rarityBonus = rarity === "Mythisch" ? 420 : rarity === "Legendarisch" ? 310 : rarity === "Episch" ? 220 : rarity === "Zeldzaam" ? 120 : 0;
-  if (kind === "sticky") return 420 + rarityBonus;
-  if (kind === "shield" && progress > 0.5) return 360 + rarityBonus;
+  const rarityBonus = helperControlBonusMsForRarity(rarity);
+  if (kind === "sticky") return 520 + rarityBonus;
+  if (kind === "shield" && progress > 0.45) return 480 + rarityBonus + (progress > 0.78 ? 180 : 0);
   return 0;
 }
 
 function helperSpecialBonusHits(special: MythicSpecialSpec | undefined, target: VisibleDuelTarget, remaining: number) {
   if (!special) return 0;
   const targetRank = helperRarityRank(target.entry.rarity);
-  if (special.kind === "bloom_blade") return remaining <= 3 ? 2 : 1;
+  if (special.kind === "bloom_blade") return remaining <= 3 ? 1 : 0;
   if (special.kind === "pattern_break" && targetRank >= 2) return 1;
-  if (special.kind === "longneck_scout" && targetRank >= 2) return 1;
-  if (special.kind === "mirror_guard" && target.motion.progress > 0.7) return 1;
+  if (special.kind === "longneck_scout" && targetRank >= 3) return 1;
+  if (special.kind === "mirror_guard" && target.motion.progress > 0.82) return 1;
   return 0;
 }
 
@@ -2042,11 +2062,19 @@ function helperSplashHitsForTarget(bonus: ReturnType<typeof activeBugSquadBonusL
 }
 
 function helperBaseHitsForRarity(rarity: BugDexRarity) {
-  if (rarity === "Mythisch") return 7;
-  if (rarity === "Legendarisch") return 5;
+  if (rarity === "Mythisch") return 5;
+  if (rarity === "Legendarisch") return 4;
   if (rarity === "Episch") return 3;
   if (rarity === "Zeldzaam") return 2;
   return 1;
+}
+
+function helperControlBonusMsForRarity(rarity: BugDexRarity) {
+  if (rarity === "Mythisch") return 820;
+  if (rarity === "Legendarisch") return 620;
+  if (rarity === "Episch") return 420;
+  if (rarity === "Zeldzaam") return 220;
+  return 0;
 }
 
 function helperCooldownMsForRarity(rarity: BugDexRarity) {
@@ -2803,15 +2831,15 @@ function duelCatchBonusPoints(rarity: BugDexRarity, bugId: string, assist: BugSm
   return Math.min(1, rareBonus + xpBonus);
 }
 
-function duelComboBonusPoint(combo: number) {
-  return combo > 0 && combo % 5 === 0 ? 1 : 0;
+function duelComboBonusPoint(combo: number, comboBonusEvery = 5) {
+  const every = Math.max(2, comboBonusEvery);
+  return combo > 0 && combo % every === 0 ? 1 : 0;
 }
 
 function duelBonusScore(score: number, assist: BugSmashDuelBalance) {
   const supportBonus = assist.supportBonusEvery > 0 ? Math.min(3, Math.floor(score / assist.supportBonusEvery)) : 0;
   const movementBonus = score >= 12 ? assist.movementFinalBonusCap : 0;
-  const streakBonus = score >= 16 ? assist.streakMissForgiveness : 0;
-  return supportBonus + movementBonus + streakBonus;
+  return supportBonus + movementBonus;
 }
 
 function displayDuelScore(score?: BugSmashDuelScore) {
@@ -2883,6 +2911,24 @@ function isActiveDuelBetweenUsers(duel: BugSmashDuel, firstUserId: string, secon
   return samePair && (duel.status === "pending" || duel.status === "accepted");
 }
 
+function duelDailyRewardClaimedAgainstOpponent(duels: BugSmashDuel[], userId: string, opponentId: string) {
+  return duels.some((duel) => {
+    const samePair = (duel.fromUserId === userId && duel.toUserId === opponentId)
+      || (duel.fromUserId === opponentId && duel.toUserId === userId);
+    if (!samePair || duel.status !== "completed" || !(duel.rewardClaimedBy ?? []).includes(userId)) return false;
+    return localDayIdFromIso(duel.updatedAt) === localDayIdFromIso(new Date().toISOString());
+  });
+}
+
+function localDayIdFromIso(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function duelResultSeenByUser(duel: BugSmashDuel, user: User) {
   return (duel.resultSeenBy ?? []).includes(user.uid) || (duel.rewardClaimedBy ?? []).includes(user.uid);
 }
@@ -2906,7 +2952,6 @@ function squadBonusLabel(category: BugSquadBonusCategory, t: (key: string) => st
 }
 
 function squadBonusValue(category: BugSquadBonusCategory, value: number): string {
-  if (category === "streak_protection") return "1x";
   return `+${Math.round(value * 100)}%`;
 }
 
