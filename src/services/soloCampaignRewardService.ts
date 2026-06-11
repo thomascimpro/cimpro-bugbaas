@@ -21,7 +21,8 @@ const soloBossDailyRewards: Record<number, SoloBossDailyReward | undefined> = {
   1: { kind: "xp", xp: 5 },
   2: { kind: "bug", source: "solo_boss_common" },
   3: { kind: "xp", xp: 10 },
-  4: { kind: "bug", source: "solo_boss_rare" }
+  4: { kind: "bug", source: "solo_boss_rare" },
+  5: { kind: "xp", xp: 15 }
 };
 
 export async function claimSoloCampaignBossDailyReward(user: User, bossLevel: number): Promise<SoloBossDailyRewardResult | null> {

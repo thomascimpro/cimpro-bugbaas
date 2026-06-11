@@ -6,9 +6,11 @@ import { useI18n } from "../services/i18n";
 import { BugArtImage } from "./BugArtImage";
 
 type NavRoute = "home" | "bugs" | "duel" | "bugdex" | "leaderboard";
+type NavBadges = Partial<Record<NavRoute, number>>;
 
 type Props = {
   activeRoute: RouteName;
+  badges?: NavBadges;
   onNavigate: (route: NavRoute) => void;
 };
 
@@ -20,16 +22,24 @@ const items: Array<{ route: NavRoute; labelKey: string; bugId: BugArtId }> = [
   { route: "leaderboard", labelKey: "nav.rank", bugId: "goliathkever" }
 ];
 
-export function BottomNav({ activeRoute, onNavigate }: Props) {
+export function BottomNav({ activeRoute, badges = {}, onNavigate }: Props) {
   const { t } = useI18n();
   return (
     <View style={styles.wrap}>
       {items.map((item) => {
         const active = activeRoute === item.route;
         const primary = item.route === "duel";
+        const badgeCount = Math.max(0, Math.floor(badges[item.route] ?? 0));
         return (
           <Pressable key={item.route} style={[styles.item, primary && styles.primaryItem, active && styles.activeItem, primary && active && styles.activePrimary]} onPress={() => onNavigate(item.route)}>
-            <BugArtImage bugId={item.bugId} size={primary ? 40 : active ? 28 : 24} />
+            <View style={styles.iconWrap}>
+              <BugArtImage bugId={item.bugId} size={primary ? 40 : active ? 28 : 24} />
+              {badgeCount > 0 && (
+                <View style={[styles.badge, primary && styles.primaryBadge]}>
+                  <Text style={styles.badgeText}>{badgeCount > 9 ? "9+" : badgeCount}</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.label, primary && styles.primaryLabel, active && styles.activeLabel, primary && active && styles.activePrimaryLabel]}>{t(item.labelKey)}</Text>
           </Pressable>
         );
@@ -70,6 +80,36 @@ const styles = StyleSheet.create({
     minHeight: 64,
     justifyContent: "center",
     paddingVertical: 7
+  },
+  iconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+    minWidth: 40
+  },
+  badge: {
+    alignItems: "center",
+    backgroundColor: "#c7352b",
+    borderColor: "#fdfefb",
+    borderRadius: 9,
+    borderWidth: 2,
+    height: 18,
+    justifyContent: "center",
+    minWidth: 18,
+    paddingHorizontal: 5,
+    position: "absolute",
+    right: -7,
+    top: -5
+  },
+  primaryBadge: {
+    right: -5,
+    top: -3
+  },
+  badgeText: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "900",
+    lineHeight: 12
   },
   primaryItem: {
     backgroundColor: "#102018",

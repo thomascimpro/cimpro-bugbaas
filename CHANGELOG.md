@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.24
+
+- Navigatie-acties voor duels en ruilen zijn verplaatst van bovenin-toast naar badges op Arena, BugDex en de relevante tegenstanderkaarten.
+- Solo Campaign is gebalanceerd: waves tot en met 16 zijn beter haalbaar met epische helpers; waves 17-20 blijven endgame.
+- Actieve helperselectie toont nu attack-type afbeeldingen, inclusief Mythic special visuals.
+- Boss 5 geeft nu een dagelijkse 15 XP reward en weekly all-3 bonus is lager gebalanceerd naar 75% Zeldzaam, 23% Episch en 2% Legendarisch.
+- BugBaas Wiki toegevoegd met tabnavigatie, taalkeuze, drop-kansen, upgrade-uitleg en Mythic special kaarten.
+
 ## 2.2.23
 
 - Epic en Legendary BugDex-kansen zijn lager gebalanceerd voor normale rewards, duel rewards, weekly rewards en foreground splats.

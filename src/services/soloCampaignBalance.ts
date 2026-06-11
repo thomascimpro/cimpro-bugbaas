@@ -16,11 +16,11 @@ export const soloCampaignWavesPerLevel = 4;
 export const soloCampaignMaxWave = soloCampaignMaxLevel * soloCampaignWavesPerLevel;
 
 export const soloCampaignTargetsByLevel = [
-  [56, 66, 76, 88],
-  [70, 82, 94, 110],
-  [86, 100, 114, 134],
-  [104, 120, 136, 160],
-  [124, 142, 162, 190]
+  [54, 64, 74, 84],
+  [66, 78, 90, 104],
+  [80, 94, 108, 126],
+  [94, 108, 124, 144],
+  [150, 164, 180, 198]
 ];
 
 export function soloCampaignTargetRange(level: number) {
@@ -35,8 +35,8 @@ export function soloCampaignConfig(wave: number): SoloCampaignConfig {
   const boss = waveInLevel === soloCampaignWavesPerLevel;
   const targetScore = soloCampaignTargetsByLevel[level - 1]?.[waveInLevel - 1] ?? 60;
   const pcScore = Math.max(60, targetScore - (boss ? 6 : 10));
-  const bugCount = safeWave >= 18 ? 56 : safeWave >= 14 ? 48 : safeWave >= 11 ? 40 : bugSmashDuelBugCount;
-  const spawnSpacingMultiplier = safeWave >= 18 ? 0.58 : safeWave >= 14 ? 0.68 : safeWave >= 11 ? 0.82 : 1;
+  const bugCount = safeWave >= 17 ? 64 : safeWave >= 13 ? 60 : bugSmashDuelBugCount;
+  const spawnSpacingMultiplier = safeWave >= 17 ? 0.56 : safeWave >= 13 ? 0.68 : safeWave >= 9 ? 0.86 : 1;
   return { boss, bugCount, level, pcScore, spawnSpacingMultiplier, targetScore, wave: safeWave };
 }
 

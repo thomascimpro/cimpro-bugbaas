@@ -82,7 +82,7 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   upvote_given: [["Gewoon", 75], ["Zeldzaam", 24.7], ["Episch", 0.3]],
   profile_view: [["Gewoon", 88], ["Zeldzaam", 12]],
   bug_splat: [["Gewoon", 69], ["Zeldzaam", 25], ["Episch", 5.3], ["Legendarisch", 0.7]],
-  weekly_mission: [["Zeldzaam", 65], ["Episch", 31], ["Legendarisch", 4]],
+  weekly_mission: [["Zeldzaam", 75], ["Episch", 23], ["Legendarisch", 2]],
   weekly_mission_common: [["Gewoon", 100]],
   weekly_mission_rare: [["Zeldzaam", 100]],
   solo_boss_common: [["Gewoon", 100]],

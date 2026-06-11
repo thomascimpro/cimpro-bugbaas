@@ -443,8 +443,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       setInventory(nextInventory);
       setActiveSquadIds(sanitizeActiveBugSquad(user.activeBugSquad, nextInventory));
       if (!activeDuelId) {
-        const actionableDuel = nextDuels.find((duel) => duel.status === "pending" && duel.toUserId === user.uid)
-          ?? nextDuels.find((duel) => duel.status === "pending" && duel.fromUserId === user.uid && Boolean(duel.scores?.[user.uid]) && !isAcknowledgedWaitingDuel(duel))
+        const actionableDuel = nextDuels.find((duel) => duel.status === "pending" && duel.fromUserId === user.uid && Boolean(duel.scores?.[user.uid]) && !isAcknowledgedWaitingDuel(duel))
           ?? nextDuels.find((duel) => duel.status === "accepted" && !duel.scores?.[user.uid] && !isAcknowledgedWaitingDuel(duel))
           ?? nextDuels.find((duel) => duel.status === "completed" && isDuelParticipant(duel, user) && !duelResultSeenByUser(duel, user));
         if (actionableDuel) setActiveDuelId(actionableDuel.id);
@@ -1391,10 +1390,15 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                 const blocked = Boolean(activePairDuel);
                 const pairOwnScore = activePairDuel ? activePairDuel.scores?.[user.uid] ?? localSubmittedScores[activePairDuel.id] : undefined;
                 const pairOpponentScore = activePairDuel ? activePairDuel.scores?.[opponent.uid] : undefined;
+                const incomingDuelAction = Boolean(activePairDuel?.status === "pending" && activePairDuel.toUserId === user.uid);
+                const needsPlayAction = Boolean(activePairDuel?.status === "accepted" && !pairOwnScore);
+                const opponentActionCount = incomingDuelAction || needsPlayAction ? 1 : 0;
                 const showOwnWaitingScore = Boolean(activePairDuel?.fromUserId === user.uid && (activePairDuel.status === "pending" || activePairDuel.status === "accepted") && pairOwnScore && !pairOpponentScore);
                 const showOpponentWaitingScore = Boolean(activePairDuel?.fromUserId === opponent.uid && (activePairDuel.status === "pending" || activePairDuel.status === "accepted") && pairOpponentScore && !pairOwnScore);
                 const dailyRewardClaimed = duelDailyRewardClaimedAgainstOpponent(duels, user.uid, opponent.uid);
-                const opponentMeta = showOwnWaitingScore
+                const opponentMeta = incomingDuelAction
+                  ? t("duel.incomingStatus")
+                  : showOwnWaitingScore
                   ? t("duel.yourScore", { score: displayDuelScore(pairOwnScore) })
                   : showOpponentWaitingScore
                     ? `${opponent.displayName}: ${displayDuelScore(pairOpponentScore)}`
@@ -1403,11 +1407,11 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                     : dailyRewardClaimed
                       ? t("duel.dailyRewardClaimed")
                       : t("duel.dailyRewardAvailable");
-                const opponentPresence = blocked ? t("duel.activeBetween") : dailyRewardClaimed ? t("duel.noDailyRewardShort") : presenceLabel(opponent, t);
+                const opponentPresence = incomingDuelAction ? t("duel.pendingBadge") : blocked ? t("duel.activeBetween") : dailyRewardClaimed ? t("duel.noDailyRewardShort") : presenceLabel(opponent, t);
                 return (
                   <Pressable
                     key={opponent.uid}
-                    style={[styles.opponentButton, selected && styles.opponentButtonSelected, blocked && styles.opponentButtonBlocked]}
+                    style={[styles.opponentButton, selected && styles.opponentButtonSelected, blocked && !opponentActionCount && styles.opponentButtonBlocked]}
                     onPress={() => {
                       if (activePairDuel) {
                         setActiveDuelId(activePairDuel.id);
@@ -1417,6 +1421,11 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                       setSelectedOpponentId(opponent.uid);
                     }}
                   >
+                    {opponentActionCount > 0 && (
+                      <View style={styles.opponentActionBadge}>
+                        <Text style={styles.opponentActionBadgeText}>{opponentActionCount}</Text>
+                      </View>
+                    )}
                     <Text style={[styles.opponentName, selected && styles.opponentNameSelected]} numberOfLines={1}>{opponent.displayName}</Text>
                     <Text style={styles.opponentMeta}>{opponentMeta}</Text>
                     <Text style={[styles.opponentPresence, selected && styles.opponentPresenceSelected]} numberOfLines={1}>{opponentPresence}</Text>
@@ -1637,6 +1646,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                     const spec = helperSpecForBonus(bonus);
                     const selected = activeSquadIds.includes(item.bugId);
                     const disabled = !selected && activeSquadIds.length >= maxActiveBugSquadSize;
+                    const spriteKey = helperSpriteKeyForSpec(spec.kind, spec.special);
                     return (
                       <Pressable
                         key={item.bugId}
@@ -1647,7 +1657,10 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                         <BugArtImage bugId={item.bugId} size={50} />
                         <Text style={[styles.squadChoiceName, selected && styles.squadChoiceNameActive]} numberOfLines={1}>{bugDexEntryName(entry, t)}</Text>
                         <Text style={[styles.rarityPill, { backgroundColor: rarityColors[entry.rarity] }]}>{rarityLabel(entry.rarity, t)}</Text>
-                        <Text style={[styles.squadChoiceAttack, selected && styles.squadChoiceNameActive]} numberOfLines={1}>{t("duel.helperAttack", { attack: helperKindLabel(spec.kind, t) })}</Text>
+                        <View style={[styles.squadChoiceAttackBadge, selected && styles.squadChoiceAttackBadgeActive]}>
+                          <Image accessibilityIgnoresInvertColors resizeMode="contain" source={duelEffectSprites[spriteKey]} style={styles.squadChoiceAttackIcon} />
+                          <Text style={[styles.squadChoiceAttack, selected && styles.squadChoiceNameActive]} numberOfLines={1}>{t("duel.helperAttack", { attack: spec.special?.label ?? helperKindLabel(spec.kind, t) })}</Text>
+                        </View>
                         <Text style={[styles.squadChoiceMeta, selected && styles.squadChoiceMetaActive]} numberOfLines={2}>{squadBonusLabel(bonus.category, t)} {squadBonusValue(bonus.category, bonus.value)}</Text>
                         <Text style={[styles.squadSelectedPill, selected && styles.squadSelectedPillActive]}>{selected ? t("duel.active") : "+"}</Text>
                       </Pressable>
@@ -2252,6 +2265,19 @@ function helperSpriteKeyForImpact(impact: HelperImpact): DuelEffectSpriteKey {
   return "fireball";
 }
 
+function helperSpriteKeyForSpec(kind: HelperImpactKind, special?: MythicSpecialSpec): DuelEffectSpriteKey {
+  if (special?.kind === "royal_freeze" || special?.kind === "candy_slow") return "freeze";
+  if (special?.kind === "bloom_blade") return "slash";
+  if (special?.kind === "mirror_guard") return "shield";
+  if (special?.kind === "pattern_break") return "goo";
+  if (special?.kind === "prism_chain" || special?.kind === "lantern_signal" || special?.kind === "longneck_scout") return "lightning";
+  if (kind === "zap") return "lightning";
+  if (kind === "sticky") return "goo";
+  if (kind === "shield") return "shield";
+  if (kind === "splash") return "fireball";
+  return "fireball";
+}
+
 function helperProjectileStepsForSprite(sprite: DuelEffectSpriteKey) {
   if (sprite === "shield" || sprite === "freeze") return [0.86];
   if (sprite === "slash") return [0.58, 0.82];
@@ -2808,7 +2834,7 @@ function targetMotion(index: number, seed: number, elapsedMs: number, rarity: Bu
   const rarityLifetime = rarity === "Gewoon" ? 3900 : rarity === "Zeldzaam" ? 5000 : rarity === "Episch" ? 6200 : rarity === "Legendarisch" ? 7400 : 8600;
   const duration = rarityLifetime * assist.speedMultiplier * (bossLevel > 0 ? 2.8 + bossLevel * 0.25 : 1);
   const lastSpawnAt = Math.max(0, duelDurationMs - duelTargetFinalSpawnBufferMs);
-  const spawnSpacing = targetCount > 1 ? lastSpawnAt / (targetCount - 1) : lastSpawnAt;
+  const spawnSpacing = (targetCount > 1 ? lastSpawnAt / (targetCount - 1) : lastSpawnAt) * Math.max(0.5, Math.min(1.1, spawnSpacingMultiplier));
   const spawnJitter = Math.min(260, Math.max(0, spawnSpacing * 0.35));
   const spawnStart = bossLevel > 0 ? 260 : Math.min(lastSpawnAt, index * spawnSpacing + ((seed + index * 173) % Math.max(1, Math.round(spawnJitter))));
   const progress = (elapsedMs - spawnStart) / duration;
@@ -3862,7 +3888,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     flexBasis: "48%",
-    padding: 10
+    padding: 10,
+    position: "relative"
+  },
+  opponentActionBadge: {
+    alignItems: "center",
+    backgroundColor: "#c7352b",
+    borderColor: "#fdfefb",
+    borderRadius: 10,
+    borderWidth: 2,
+    height: 20,
+    justifyContent: "center",
+    minWidth: 20,
+    paddingHorizontal: 5,
+    position: "absolute",
+    right: -6,
+    top: -7,
+    zIndex: 2
+  },
+  opponentActionBadgeText: {
+    color: "#ffffff",
+    fontSize: 11,
+    fontWeight: "900",
+    lineHeight: 13
   },
   opponentButtonBlocked: {
     opacity: 0.45
@@ -4424,8 +4472,29 @@ const styles = StyleSheet.create({
     color: "#102018",
     fontSize: 11,
     fontWeight: "900",
-    marginTop: 5,
+    flex: 1,
     textAlign: "center"
+  },
+  squadChoiceAttackBadge: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 5,
+    marginTop: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    width: "100%"
+  },
+  squadChoiceAttackBadgeActive: {
+    backgroundColor: "#234435",
+    borderColor: "#69c88d"
+  },
+  squadChoiceAttackIcon: {
+    height: 20,
+    width: 20
   },
   squadChoiceName: {
     color: "#102018",

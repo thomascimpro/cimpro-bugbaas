@@ -8,7 +8,7 @@ import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import { MythicRarityFrame } from "../components/MythicRarityFrame";
 import { TradeAnimationModal } from "../components/TradeAnimationModal";
 import { BugDexDropResult, DailyUpgradeUsage, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, differentUpgradeRequiredCount, entryByBugId, getDailyUpgradeUsage, listBugDexInventory } from "../services/bugDexService";
-import { activeBugSquadBonusList, bugSquadAttackKindForCategory, maxActiveBugSquadSize, sanitizeActiveBugSquad, BugSquadBonusCategory } from "../services/bugSquadService";
+import { activeBugSquadBonusList, bugSquadAttackKindForCategory, maxActiveBugSquadSize, sanitizeActiveBugSquad, BugSquadAttackKind, BugSquadBonusCategory } from "../services/bugSquadService";
 import { bugDexEntryName, bugDexEntryNote, bugDexEntryTitle, rarityLabel, useI18n } from "../services/i18n";
 import { notifyTradeAccepted, notifyTradeRequest } from "../services/notificationService";
 import { bugDexEntries, BugDexEntry, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
@@ -61,6 +61,13 @@ const emptyDailyUpgradeUsage: DailyUpgradeUsage = {
 };
 const activeBugSquadHeroImage = require("../../assets/generated/active-bug-squad-selection-hd.jpg");
 const bugDexWorkshopImage = require("../../assets/generated/bugdex-workshop-shortcut.png");
+const attackIconImages: Record<BugSquadAttackKind, number> = {
+  burst: require("../../assets/generated/duel_effect_slash_hd.png"),
+  shield: require("../../assets/generated/duel_effect_shield_hd.png"),
+  splash: require("../../assets/generated/duel_effect_fireball_hd.png"),
+  sticky: require("../../assets/generated/duel_effect_goo_hd.png"),
+  zap: require("../../assets/generated/duel_effect_lightning_hd.png")
+};
 const maxTradeBugSelection = 6;
 
 const completedTradeStorageKey = (uid: string) => `bugbaas:seenCompletedTrades:${uid}`;
@@ -658,6 +665,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
               const selected = activeSquadIds.includes(item.bugId);
               const disabled = !selected && activeSquadIds.length >= maxActiveBugSquadSize;
               const bonus = activeBugSquadBonusList([item.bugId])[0];
+              const attackKind = bonus ? bugSquadAttackKindForCategory(bonus.category) : null;
               return (
                 <Pressable
                   key={item.bugId}
@@ -668,7 +676,12 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                   <BugArtImage bugId={item.bugId} size={34} />
                   <Text style={[styles.squadBugChipText, selected && styles.squadBugChipTextActive]} numberOfLines={1}>{bugName(item.bugId)}</Text>
                   <Text style={[styles.tradeRarityPill, { backgroundColor: rarityColors[entry.rarity] }]}>{rarityLabel(entry.rarity, t)}</Text>
-                  {bonus && <Text style={[styles.squadBugChipAttack, selected && styles.squadBugChipTextActive]}>{bugAttackText(bonus.category)}</Text>}
+                  {bonus && attackKind && (
+                    <View style={[styles.squadAttackBadge, selected && styles.squadAttackBadgeActive]}>
+                      <Image accessibilityIgnoresInvertColors resizeMode="contain" source={attackIconImages[attackKind]} style={styles.squadAttackIcon} />
+                      <Text style={[styles.squadBugChipAttack, selected && styles.squadBugChipTextActive]}>{bugAttackText(bonus.category)}</Text>
+                    </View>
+                  )}
                   {bonus && <Text style={[styles.squadBugChipMeta, selected && styles.squadBugChipTextActive]}>{`${squadBonusLabel(bonus.category)} ${squadBonusValue(bonus.category, bonus.value)}`}</Text>}
                 </Pressable>
               );
@@ -1662,8 +1675,28 @@ const styles = StyleSheet.create({
     color: "#102018",
     fontSize: 10,
     fontWeight: "900",
-    marginTop: 4,
     textAlign: "center"
+  },
+  squadAttackBadge: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#d7e1d9",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 4,
+    marginTop: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    width: "100%"
+  },
+  squadAttackBadgeActive: {
+    backgroundColor: "#234435",
+    borderColor: "#69c88d"
+  },
+  squadAttackIcon: {
+    height: 18,
+    width: 18
   },
   tradeChipText: {
     color: "#102018",

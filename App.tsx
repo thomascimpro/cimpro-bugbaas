@@ -84,6 +84,17 @@ type PendingForegroundReward = {
   starterBoostBonus?: boolean;
 };
 
+type RequestTabBadges = {
+  duel: number;
+  trade: number;
+};
+
+const emptyRequestTabBadges: RequestTabBadges = { duel: 0, trade: 0 };
+
+function isRequestNotification(notification: AppNotification) {
+  return notification.type === "trade" || notification.type === "duel";
+}
+
 type ChangelogFeature = {
   key: string;
   image: ImageSourcePropType;
@@ -230,6 +241,7 @@ function AppContent() {
   const [badgeUnlockQueue, setBadgeUnlockQueue] = useState<BadgeDefinition[]>([]);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(defaultNotificationSettings);
   const [notification, setNotification] = useState<AppNotification | null>(null);
+  const [requestTabBadges, setRequestTabBadges] = useState<RequestTabBadges>(emptyRequestTabBadges);
   const [openBugDexTradeRequest, setOpenBugDexTradeRequest] = useState(0);
   const [helpVisible, setHelpVisible] = useState(false);
   const [helpGateChecked, setHelpGateChecked] = useState(false);
@@ -492,7 +504,7 @@ function AppContent() {
     if (!user) return () => undefined;
     return subscribeUserNotifications(user, notificationSettings, (nextNotification) => {
       if (appState.current === "active") {
-        setNotification(nextNotification);
+        if (!isRequestNotification(nextNotification)) setNotification(nextNotification);
         if (nextNotification.type === "trade" || nextNotification.type === "comment" || nextNotification.type === "duel") void showPhoneNotification(nextNotification).catch(() => undefined);
         return;
       }
@@ -502,10 +514,12 @@ function AppContent() {
 
   useEffect(() => {
     if (!user) {
+      setRequestTabBadges(emptyRequestTabBadges);
       void setRadarRequestCounts(0, 0).catch(() => undefined);
       return () => undefined;
     }
     return subscribeRequestNotificationCounts(user, (counts) => {
+      setRequestTabBadges(counts);
       void setRadarRequestCounts(counts.trade, counts.duel).catch(() => undefined);
     });
   }, [user]);
@@ -1136,8 +1150,8 @@ function AppContent() {
           <SettingsScreen settings={notificationSettings} onBack={() => setRoute("home")} onChange={updateNotificationSettings} onShowHelp={showHelpTour} />
         )}
       </View>
-      {!(duelRouteActive && duelFullscreen) && <BottomNav activeRoute={route} onNavigate={navigateMain} />}
-      {!duelRouteActive && <InAppNotificationToast notification={notification} onClose={closeNotification} onOpen={openNotification} />}
+      {!(duelRouteActive && duelFullscreen) && <BottomNav activeRoute={route} badges={{ bugdex: requestTabBadges.trade, duel: requestTabBadges.duel }} onNavigate={navigateMain} />}
+      {!duelRouteActive && <InAppNotificationToast notification={notification && !isRequestNotification(notification) ? notification : null} onClose={closeNotification} onOpen={openNotification} />}
       <ForegroundCatchBug
         catchAssist={squadBonuses().catch_assist}
         catchTimeBonus={squadBonuses().catch_time}
