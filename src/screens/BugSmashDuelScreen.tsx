@@ -14,6 +14,7 @@ import {
   cancelBugSmashDuel,
   claimBugSmashDuelReward,
   createBugSmashDuel,
+  isBugSmashDuelActionForUser,
   listBugSmashDuels,
   respondBugSmashDuel,
   submitBugSmashDuelScore,
@@ -1392,7 +1393,8 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
                 const pairOpponentScore = activePairDuel ? activePairDuel.scores?.[opponent.uid] : undefined;
                 const incomingDuelAction = Boolean(activePairDuel?.status === "pending" && activePairDuel.toUserId === user.uid);
                 const needsPlayAction = Boolean(activePairDuel?.status === "accepted" && !pairOwnScore);
-                const opponentActionCount = incomingDuelAction || needsPlayAction ? 1 : 0;
+                const outgoingWaitingAction = Boolean(activePairDuel && isBugSmashDuelActionForUser(activePairDuel, user.uid) && activePairDuel.fromUserId === user.uid && pairOwnScore && !pairOpponentScore);
+                const opponentActionCount = incomingDuelAction || needsPlayAction || outgoingWaitingAction ? 1 : 0;
                 const showOwnWaitingScore = Boolean(activePairDuel?.fromUserId === user.uid && (activePairDuel.status === "pending" || activePairDuel.status === "accepted") && pairOwnScore && !pairOpponentScore);
                 const showOpponentWaitingScore = Boolean(activePairDuel?.fromUserId === opponent.uid && (activePairDuel.status === "pending" || activePairDuel.status === "accepted") && pairOpponentScore && !pairOwnScore);
                 const dailyRewardClaimed = duelDailyRewardClaimedAgainstOpponent(duels, user.uid, opponent.uid);

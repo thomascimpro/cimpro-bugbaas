@@ -58,6 +58,7 @@ import {
   subscribeRequestNotificationCounts,
   subscribeUserNotifications
 } from "./src/services/notificationService";
+import { subscribeBugSmashDuelActionCount } from "./src/services/bugSmashDuelService";
 import { setRadarRequestCounts } from "./src/services/movementRadarService";
 
 export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "profile" | "userProfile" | "bugdex" | "settings" | "duel";
@@ -518,10 +519,24 @@ function AppContent() {
       void setRadarRequestCounts(0, 0).catch(() => undefined);
       return () => undefined;
     }
-    return subscribeRequestNotificationCounts(user, (counts) => {
-      setRequestTabBadges(counts);
-      void setRadarRequestCounts(counts.trade, counts.duel).catch(() => undefined);
+    let tradeCount = 0;
+    let duelCount = 0;
+    const publishCounts = () => {
+      setRequestTabBadges({ trade: tradeCount, duel: duelCount });
+      void setRadarRequestCounts(tradeCount, duelCount).catch(() => undefined);
+    };
+    const unsubscribeRequests = subscribeRequestNotificationCounts(user, (counts) => {
+      tradeCount = counts.trade;
+      publishCounts();
     });
+    const unsubscribeDuels = subscribeBugSmashDuelActionCount(user, (count) => {
+      duelCount = count;
+      publishCounts();
+    });
+    return () => {
+      unsubscribeRequests();
+      unsubscribeDuels();
+    };
   }, [user]);
 
   useEffect(() => {

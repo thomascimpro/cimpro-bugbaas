@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.25
+
+- Arena-tab badge telt duelacties nu op basis van echte actieve duelrecords in plaats van oude duel-notificaties.
+- Uitgaande wachtduels tellen als 1 actieve Arena-actie en stale completed/gelezen duels tellen niet meer mee.
+- Wiki-navigatie is verder opgepoetst met linkernavigatie, losse featurepagina's en uitgebreidere Mythic special uitleg.
+
 ## 2.2.24
 
 - Navigatie-acties voor duels en ruilen zijn verplaatst van bovenin-toast naar badges op Arena, BugDex en de relevante tegenstanderkaarten.

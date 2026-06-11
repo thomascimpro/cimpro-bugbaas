@@ -132,6 +132,55 @@ export async function listBugSmashDuels(user: User): Promise<BugSmashDuel[]> {
   return Array.from(byId.values()).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+export function countBugSmashDuelActionsForUser(duels: BugSmashDuel[], userId: string): number {
+  return duels.filter((duel) => isBugSmashDuelActionForUser(duel, userId)).length;
+}
+
+export function isBugSmashDuelActionForUser(duel: BugSmashDuel, userId: string): boolean {
+  if (duel.fromUserId !== userId && duel.toUserId !== userId) return false;
+  const opponentId = duel.fromUserId === userId ? duel.toUserId : duel.fromUserId;
+  const ownScore = duel.scores?.[userId];
+  const opponentScore = duel.scores?.[opponentId];
+
+  if (duel.status === "pending") {
+    if (duel.toUserId === userId) return true;
+    return duel.fromUserId === userId && !opponentScore;
+  }
+  if (duel.status === "accepted") {
+    return !ownScore || !opponentScore;
+  }
+  if (duel.status === "completed") {
+    return !(duel.resultSeenBy ?? []).includes(userId) && !(duel.rewardClaimedBy ?? []).includes(userId);
+  }
+  return false;
+}
+
+export function subscribeBugSmashDuelActionCount(user: User, onCount: (count: number) => void): () => void {
+  if (!isFirebaseConfigured) {
+    onCount(countBugSmashDuelActionsForUser(Array.from(demoDuels.values()), user.uid));
+    return () => undefined;
+  }
+
+  const sentDuels = new Map<string, BugSmashDuel>();
+  const receivedDuels = new Map<string, BugSmashDuel>();
+  const publish = () => {
+    const duelsById = new Map<string, BugSmashDuel>([...sentDuels, ...receivedDuels]);
+    onCount(countBugSmashDuelActionsForUser(Array.from(duelsById.values()), user.uid));
+  };
+  const syncSnapshot = (target: Map<string, BugSmashDuel>, snapshot: Awaited<ReturnType<typeof getDocs>>) => {
+    target.clear();
+    snapshot.docs.forEach((item) => target.set(item.id, item.data() as BugSmashDuel));
+    publish();
+  };
+
+  const unsubscribeSent = onSnapshot(query(collection(db, "bugSmashDuels"), where("fromUserId", "==", user.uid)), (snapshot) => syncSnapshot(sentDuels, snapshot));
+  const unsubscribeReceived = onSnapshot(query(collection(db, "bugSmashDuels"), where("toUserId", "==", user.uid)), (snapshot) => syncSnapshot(receivedDuels, snapshot));
+  return () => {
+    unsubscribeSent();
+    unsubscribeReceived();
+  };
+}
+
 export function subscribeBugSmashDuel(duelId: string, onDuel: (duel: BugSmashDuel | null) => void): () => void {
   if (!duelId) return () => undefined;
   if (!isFirebaseConfigured) {

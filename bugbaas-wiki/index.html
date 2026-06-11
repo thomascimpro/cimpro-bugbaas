@@ -72,24 +72,11 @@
       place-items: center;
       width: 40px;
     }
-    .topbar-actions {
-      align-items: center;
-      display: flex;
-      gap: 10px;
-      min-width: 0;
-    }
-    .nav,
+    .topbar-actions { align-items: center; display: flex; gap: 10px; }
     .side-nav {
       display: flex;
       gap: 4px;
     }
-    .nav {
-      overflow-x: auto;
-      padding: 8px 0;
-      scrollbar-width: none;
-    }
-    .nav::-webkit-scrollbar { display: none; }
-    .nav a,
     .side-nav a {
       border: 1px solid transparent;
       border-radius: 999px;
@@ -99,8 +86,6 @@
       font-weight: 850;
       padding: 9px 12px;
     }
-    .nav a:hover,
-    .nav a.active,
     .side-nav a:hover,
     .side-nav a.active {
       background: #fff;
@@ -208,7 +193,7 @@
     .metric b { display: block; font-size: 28px; line-height: 1; }
     .metric span { color: var(--muted); display: block; font-size: 13px; font-weight: 800; margin-top: 7px; }
 
-    main { padding-bottom: 56px; }
+    main { padding-bottom: 56px; padding-top: 24px; }
     .nav-hint {
       align-items: center;
       background: #fff;
@@ -219,7 +204,7 @@
       font-size: 14px;
       font-weight: 850;
       gap: 10px;
-      margin: -18px 0 28px;
+      margin: 18px 0 0;
       padding: 12px 14px;
     }
     .nav-hint b { color: var(--green); }
@@ -227,7 +212,7 @@
       align-items: start;
       display: grid;
       gap: 22px;
-      grid-template-columns: 210px minmax(0, 1fr);
+      grid-template-columns: 230px minmax(0, 1fr);
     }
     .side-nav {
       background: rgba(247, 251, 246, .9);
@@ -237,7 +222,7 @@
       flex-direction: column;
       padding: 10px;
       position: sticky;
-      top: 86px;
+      top: 92px;
     }
     .side-nav strong {
       color: var(--ink);
@@ -245,6 +230,23 @@
       font-size: 13px;
       font-weight: 950;
       padding: 8px 10px 10px;
+    }
+    .side-nav a {
+      align-items: center;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 12px;
+      white-space: nowrap;
+    }
+    .side-nav a::after {
+      color: #9aa9a0;
+      content: ">";
+      font-weight: 950;
+    }
+    .side-nav a.active::after { color: var(--green); }
+    .tab-content {
+      min-height: 680px;
     }
     .tab-content > section { display: none; }
     .tab-content > section.active-panel { display: block; }
@@ -385,7 +387,7 @@
     .mythic-special-grid {
       display: grid;
       gap: 14px;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       margin-top: 14px;
     }
     .mythic-card {
@@ -446,6 +448,37 @@
       line-height: 1.42;
       margin: 0;
     }
+    .mythic-stats {
+      display: grid;
+      gap: 7px;
+      margin: 12px 0 0;
+    }
+    .mythic-stat {
+      background: rgba(255, 255, 255, .76);
+      border: 1px solid rgba(124, 58, 237, .16);
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+    .mythic-stat b {
+      color: var(--ink);
+      display: block;
+      font-size: 11px;
+      font-weight: 950;
+      text-transform: uppercase;
+    }
+    .mythic-stat span {
+      color: var(--muted);
+      display: block;
+      font-size: 13px;
+      font-weight: 780;
+      line-height: 1.35;
+      margin-top: 2px;
+    }
+    .mythic-summary { margin-top: 16px; }
+    .mythic-summary table td:first-child {
+      color: var(--mythic);
+      font-weight: 950;
+    }
 
     .note {
       background: #fff7d6;
@@ -469,13 +502,14 @@
       .two-col,
       .wiki-layout { grid-template-columns: 1fr; }
       .side-nav {
-        flex-direction: row;
-        overflow-x: auto;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+        overflow: visible;
         position: static;
-        scrollbar-width: none;
       }
-      .side-nav::-webkit-scrollbar { display: none; }
-      .side-nav strong { display: none; }
+      .side-nav strong { grid-column: 1 / -1; }
+      .side-nav a { white-space: normal; }
       .quick-grid,
       .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -507,18 +541,6 @@
         <span>BugBaas Wiki</span>
       </a>
       <div class="topbar-actions">
-        <nav class="nav" aria-label="Wiki navigatie">
-          <a href="#features">Functies</a>
-          <a href="#bugdex">BugDex</a>
-          <a href="#kansen">Kansen</a>
-          <a href="#arena">Arena</a>
-          <a href="#campaign">Campaign</a>
-          <a href="#helpers">Helpers</a>
-          <a href="#radar">Radar</a>
-          <a href="#rewards">Rewards</a>
-          <a href="#workshop">Workshop</a>
-          <a href="#tips">Tips</a>
-        </nav>
         <div class="language-switch" aria-label="Language">
           <button class="active" type="button" data-lang="nl" aria-label="Nederlands"><span>NL</span>🇳🇱</button>
           <button type="button" data-lang="en" aria-label="English"><span>EN</span>🇬🇧</button>
@@ -528,35 +550,11 @@
     </div>
   </header>
 
-  <div id="top" class="shell">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Game guide voor spelers die alles willen snappen</p>
-        <h1>BugBaas Wiki</h1>
-        <p>Alles over BugDex unlocks, Arena Duel, Solo Campaign, actieve Bug Squad helpers, XP, weekly missions en de echte drop-kansen achter rewards.</p>
-        <div class="hero-actions">
-          <a class="button" href="#kansen">Bekijk drop-kansen</a>
-          <a class="button secondary" href="#arena">Leer Arena</a>
-        </div>
-      </div>
-      <div class="hero-art">
-        <img src="assets/wiki-hero.png" alt="BugBaas wiki hero met bug jars, arena en radar">
-      </div>
-    </section>
-
-    <div class="quick-grid" aria-label="Snelle feiten">
-      <div class="metric"><b>3</b><span>Actieve helperbugs in je Bug Squad</span></div>
-      <div class="metric"><b>30s</b><span>Duel, training en campaign wave duur</span></div>
-      <div class="metric"><b>20</b><span>Solo Campaign waves in 5 levels</span></div>
-      <div class="metric"><b>0%</b><span>Mythisch via random drops; alleen via upgrade</span></div>
-    </div>
-  </div>
-
-  <main class="shell">
-    <div class="nav-hint"><b>Kies links een onderwerp.</b><span>De wiki werkt nu als tabs: klik op Functies, Kansen, Helpers, Workshop of Tips om alleen dat onderdeel te zien.</span></div>
+  <main id="top" class="shell">
     <div class="wiki-layout">
       <aside class="side-nav" aria-label="Wiki tabs">
-        <strong>Onderwerpen</strong>
+        <strong>Features</strong>
+        <a href="#overview">Overzicht</a>
         <a href="#features">Functies</a>
         <a href="#bugdex">BugDex</a>
         <a href="#kansen">Kansen</a>
@@ -569,7 +567,33 @@
         <a href="#tips">Tips</a>
       </aside>
       <div class="tab-content">
-    <section id="features" class="active-panel">
+    <section id="overview" class="active-panel">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Game guide voor spelers die alles willen snappen</p>
+          <h1>BugBaas Wiki</h1>
+          <p>Alles over BugDex unlocks, Arena Duel, Solo Campaign, actieve Bug Squad helpers, XP, weekly missions en de echte drop-kansen achter rewards.</p>
+          <div class="hero-actions">
+            <a class="button" href="#kansen">Bekijk drop-kansen</a>
+            <a class="button secondary" href="#arena">Leer Arena</a>
+          </div>
+        </div>
+        <div class="hero-art">
+          <img src="assets/wiki-hero.png" alt="BugBaas wiki hero met bug jars, arena en radar">
+        </div>
+      </div>
+
+      <div class="quick-grid" aria-label="Snelle feiten">
+        <div class="metric"><b>3</b><span>Actieve helperbugs in je Bug Squad</span></div>
+        <div class="metric"><b>30s</b><span>Duel, training en campaign wave duur</span></div>
+        <div class="metric"><b>20</b><span>Solo Campaign waves in 5 levels</span></div>
+        <div class="metric"><b>0%</b><span>Mythisch via random drops; alleen via upgrade</span></div>
+      </div>
+
+      <div class="nav-hint"><b>Kies links een feature.</b><span>Elke klik opent één featurepagina. Gebruik de linkernavigatie om snel door alle onderdelen te gaan.</span></div>
+    </section>
+
+    <section id="features">
       <div class="section-head">
         <h2>Wat Zit Erin</h2>
         <p>BugBaas combineert teamfeedback, een verzamelgame en snelle tap-gevechten. De meeste rewards zijn klein, maar consistent spelen bouwt je collectie en helpers op.</p>
@@ -779,7 +803,7 @@
       </div>
       <div class="panel">
         <h3>Mythic specials</h3>
-        <p>Mythische bugs zijn geen simpele extra damage. Elke mythic heeft een eigen rol: control, chain hits, finish damage of emergency defense. Ze blijven bewust niet te sterk, maar maken late waves en zware duel-targets duidelijk makkelijker als je timing goed is.</p>
+        <p>Mythische bugs zijn geen simpele extra damage. Elke mythic heeft een eigen rol: control, chain hits, finish damage of emergency defense. De kaarten hieronder laten per special zien wat je krijgt, wanneer je hem het best merkt en waarom hij niet te sterk wordt.</p>
       </div>
       <div class="mythic-special-grid" aria-label="Mythische helper specials">
         <article class="mythic-card">
@@ -791,6 +815,11 @@
             <p class="mythic-kicker">Royal Freeze</p>
             <h3>Koningin-Alexandravlinder</h3>
             <p>Bevriest het gekozen target en nabije bugs kort. Beste gebruik: drukke boss waves waarin je even controle nodig hebt.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Freeze op het target plus kleine radius eromheen.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Als veel bugs tegelijk bijna uit beeld lopen.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Geeft tijd, maar geen grote score zonder goede taps.</span></div>
+            </div>
           </div>
         </article>
         <article class="mythic-card">
@@ -802,6 +831,11 @@
             <p class="mythic-kicker">Prism Chain</p>
             <h3>Zonsondergangsmot</h3>
             <p>Ketst lichte hits door naar bugs dichtbij. Beste gebruik: groepjes Zeldzaam/Episch waar losse taps net te traag zijn.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Chain-hit springt naar extra targets in de buurt.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Compacte clusters met meerdere middelzware bugs.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Sterk tegen groepjes, minder nuttig bij losse targets.</span></div>
+            </div>
           </div>
         </article>
         <article class="mythic-card">
@@ -813,6 +847,11 @@
             <p class="mythic-kicker">Pattern Break</p>
             <h3>Picasso-wants</h3>
             <p>Doet bonus damage op Episch+ targets. Beste gebruik: dure targets die anders te veel taps kosten voor hun score.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Extra break-hit op hoge rarity targets.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Episch, Legendarisch of Mythisch target vroeg kiezen.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Niet bedoeld voor gewone bugs; waarde zit in target-keuze.</span></div>
+            </div>
           </div>
         </article>
         <article class="mythic-card">
@@ -824,6 +863,11 @@
             <p class="mythic-kicker">Candy Slow</p>
             <h3>Roze esdoornmot</h3>
             <p>Vertraagt een klein groepje bugs. Beste gebruik: targets die bijna uit beeld lopen terwijl je combo wilt vasthouden.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Sticky slow op een kleine groep targets.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Snelle waves waar je net taps tekortkomt.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Maakt targets haalbaarder, maar finisht ze niet vanzelf.</span></div>
+            </div>
           </div>
         </article>
         <article class="mythic-card">
@@ -835,6 +879,11 @@
             <p class="mythic-kicker">Longneck Scout</p>
             <h3>Giraffekevertje</h3>
             <p>Scant naar hoge-rarity targets en geeft daar extra hits op. Beste gebruik: Legendarisch/Mythisch targets vroeg kiezen.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Zoekt zwaardere targets en helpt daar met extra hits.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Als er veel laagwaardige afleiding op het veld staat.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Helpt prioriteren, maar blijft afhankelijk van spawns.</span></div>
+            </div>
           </div>
         </article>
         <article class="mythic-card">
@@ -846,6 +895,11 @@
             <p class="mythic-kicker">Bloom Blade</p>
             <h3>Doornbloembidsprinkhaan</h3>
             <p>Finisht sterke of bijna kapotte bugs met extra slash damage. Beste gebruik: geen taps verspillen op laatste hit.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Execute-hit op targets die bijna kapot zijn.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Late wave of bossfase met veel halfgeraakte bugs.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Heeft eerst damage nodig; geen gratis full-health kill.</span></div>
+            </div>
           </div>
         </article>
         <article class="mythic-card">
@@ -857,6 +911,11 @@
             <p class="mythic-kicker">Lantern Signal</p>
             <h3>Lantaarndrager</h3>
             <p>Markeert gevaarlijke targets en chain-hit extra bugs. Beste gebruik: snel bepalen welke bug nu de meeste waarde heeft.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Markeert targets met hoge waarde of hoog risico.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Drukke duels waar target-keuze belangrijker is dan alles tappen.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Geeft richting en kleine hulp, geen automatische win.</span></div>
+            </div>
           </div>
         </article>
         <article class="mythic-card">
@@ -868,8 +927,28 @@
             <p class="mythic-kicker">Mirror Guard</p>
             <h3>Glorieuze scarabee</h3>
             <p>Vangt late ontsnappers op met shield damage en korte freeze. Beste gebruik: score redden aan het einde van een wave.</p>
+            <div class="mythic-stats">
+              <div class="mythic-stat"><b>Doet</b><span>Shield-hit op ontsnappers met korte controle.</span></div>
+              <div class="mythic-stat"><b>Beste moment</b><span>Laatste seconden van duel of campaign wave.</span></div>
+              <div class="mythic-stat"><b>Balans</b><span>Redt soms een fout, maar kan een slechte run niet dragen.</span></div>
+            </div>
           </div>
         </article>
+      </div>
+      <div class="table-wrap mythic-summary">
+        <table>
+          <thead><tr><th>Special</th><th>Rol</th><th>Waar sterk</th><th>Bewuste beperking</th></tr></thead>
+          <tbody>
+            <tr><td>Royal Freeze</td><td>Control</td><td>Drukke boss waves</td><td>Koopt tijd, geen grote damage.</td></tr>
+            <tr><td>Prism Chain</td><td>AOE/chain</td><td>Clusters met meerdere targets</td><td>Zwakt af bij losse bugs.</td></tr>
+            <tr><td>Pattern Break</td><td>Anti-rarity</td><td>Episch+ targets</td><td>Weinig waarde op gewone bugs.</td></tr>
+            <tr><td>Candy Slow</td><td>Slow</td><td>Snelle targets vlak voor ontsnappen</td><td>Vertraagt, maar killt niet vanzelf.</td></tr>
+            <tr><td>Longneck Scout</td><td>Target focus</td><td>Zware targets tussen lage spawns</td><td>Afhankelijk van goede target-keuze.</td></tr>
+            <tr><td>Bloom Blade</td><td>Finisher</td><td>Bijna-dode sterke bugs</td><td>Heeft eerst damage nodig.</td></tr>
+            <tr><td>Lantern Signal</td><td>Mark/priority</td><td>Drukke duels met veel keuzes</td><td>Kleine hulp, geen auto-clear.</td></tr>
+            <tr><td>Mirror Guard</td><td>Emergency defense</td><td>Laatste seconden</td><td>Redt alleen beperkte missers.</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
 
@@ -979,12 +1058,14 @@
 
   <script>
     const panels = [...document.querySelectorAll(".tab-content > section[id]")];
-    const links = [...document.querySelectorAll(".nav a, .side-nav a, .hero-actions a")];
+    const links = [...document.querySelectorAll(".side-nav a, .hero-actions a")];
     const panelIds = new Set(panels.map((panel) => panel.id));
     const languageButtons = [...document.querySelectorAll(".language-switch button")];
     const translations = {
       en: {
         "BugBaas Wiki": "BugBaas Wiki",
+        "Features": "Features",
+        "Overzicht": "Overview",
         "Functies": "Features",
         "Kansen": "Chances",
         "Arena": "Arena",
@@ -1001,9 +1082,8 @@
         "Duel, training en campaign wave duur": "Duel, training and campaign wave duration",
         "Solo Campaign waves in 5 levels": "Solo Campaign waves across 5 levels",
         "Mythisch via random drops; alleen via upgrade": "Mythic from random drops; upgrade only",
-        "Kies links een onderwerp.": "Choose a topic on the left.",
-        "De wiki werkt nu als tabs: klik op Functies, Kansen, Helpers, Workshop of Tips om alleen dat onderdeel te zien.": "The wiki now works as tabs: click Features, Chances, Helpers, Workshop or Tips to show only that topic.",
-        "Onderwerpen": "Topics",
+        "Kies links een feature.": "Choose a feature on the left.",
+        "Elke klik opent één featurepagina. Gebruik de linkernavigatie om snel door alle onderdelen te gaan.": "Each click opens one feature page. Use the left navigation to move through every part quickly.",
         "Wat Zit Erin": "What Is Included",
         "BugDex & Rarity": "BugDex & Rarity",
         "Drop-Kansen": "Drop Chances",
@@ -1033,6 +1113,8 @@
       },
       fr: {
         "BugBaas Wiki": "Wiki BugBaas",
+        "Features": "Fonctions",
+        "Overzicht": "Apercu",
         "Functies": "Fonctions",
         "Kansen": "Chances",
         "Arena": "Arena",
@@ -1049,9 +1131,8 @@
         "Duel, training en campaign wave duur": "Duree des duels, trainings et waves campaign",
         "Solo Campaign waves in 5 levels": "Waves Solo Campaign sur 5 levels",
         "Mythisch via random drops; alleen via upgrade": "Mythique via drops random; upgrade seulement",
-        "Kies links een onderwerp.": "Choisis un sujet a gauche.",
-        "De wiki werkt nu als tabs: klik op Functies, Kansen, Helpers, Workshop of Tips om alleen dat onderdeel te zien.": "Le wiki fonctionne en onglets : clique sur Fonctions, Chances, Helpers, Atelier ou Conseils pour afficher un seul sujet.",
-        "Onderwerpen": "Sujets",
+        "Kies links een feature.": "Choisis une fonction a gauche.",
+        "Elke klik opent één featurepagina. Gebruik de linkernavigatie om snel door alle onderdelen te gaan.": "Chaque clic ouvre une page de fonction. Utilise la navigation a gauche pour parcourir toutes les parties rapidement.",
         "Wat Zit Erin": "Ce Qu'il Contient",
         "BugDex & Rarity": "BugDex & Rareté",
         "Drop-Kansen": "Chances de Drop",
@@ -1098,12 +1179,11 @@
     }
 
     function showPanel(id, updateHash = true) {
-      const safeId = panelIds.has(id) ? id : "features";
+      const safeId = panelIds.has(id) ? id : "overview";
       panels.forEach((panel) => panel.classList.toggle("active-panel", panel.id === safeId));
       links.forEach((link) => link.classList.toggle("active", link.getAttribute("href") === `#${safeId}`));
       if (updateHash) {
         history.replaceState(null, "", `#${safeId}`);
-        document.querySelector("main").scrollIntoView({ block: "start", behavior: "smooth" });
       }
     }
 
