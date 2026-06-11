@@ -148,10 +148,13 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
       }
       const orgIds = organizationIdsForUser(orgUser);
       const safeOrganizationId = orgIds.includes(selectedOrganizationId) ? selectedOrganizationId : orgIds[0] ?? organizationIdForUser(orgUser);
-      const [nextOrganization, nextIncomingInvites] = await Promise.all([
+      const [organizationResult, incomingInviteResult] = await Promise.allSettled([
         isPublicOrganization(safeOrganizationId) ? getOrganizationForUser(orgUser) : getOrganizationById(safeOrganizationId, orgUser),
         listIncomingOrganizationInvites(orgUser)
       ]);
+      const nextOrganization = organizationResult.status === "fulfilled" ? organizationResult.value : null;
+      const nextIncomingInvites = incomingInviteResult.status === "fulfilled" ? incomingInviteResult.value : [];
+      if (organizationResult.status === "rejected") throw organizationResult.reason;
       setOrganization(nextOrganization);
       setIncomingInvites(nextIncomingInvites);
       if (isPublicOrganization(safeOrganizationId)) {
@@ -161,11 +164,16 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
         setOrganizationRenameName("");
         return;
       }
-      const [nextMembers, nextInvites, nextUsers] = await Promise.all([
+      const [membersResult, invitesResult, usersResult] = await Promise.allSettled([
         listOrganizationMembers(orgUser, safeOrganizationId),
         listOrganizationInvites(orgUser, safeOrganizationId),
         listUsers()
       ]);
+      const nextMembers = membersResult.status === "fulfilled" ? membersResult.value : [];
+      const nextInvites = invitesResult.status === "fulfilled" ? invitesResult.value : [];
+      const nextUsers = usersResult.status === "fulfilled" ? usersResult.value : [];
+      if (membersResult.status === "rejected") throw membersResult.reason;
+      if (usersResult.status === "rejected") throw usersResult.reason;
       setOrganizationMembers(nextMembers);
       setOrganizationInvites(nextInvites);
       setOrganizationUsers(nextUsers);

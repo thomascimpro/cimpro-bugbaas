@@ -56,6 +56,12 @@ function inviteMatchesUser(invite: OrganizationInvite, user: User): boolean {
   return invite.invitedUserId === user.uid || Boolean(invite.invitedEmail && invite.invitedEmail === cleanInviteEmail(user.email));
 }
 
+function isPermissionDeniedError(error: unknown): boolean {
+  const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : "";
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  return code === "permission-denied" || message.includes("missing or insufficient permissions") || message.includes("permission-denied");
+}
+
 export function isOrganizationAdmin(user: User, organization: Organization | null): boolean {
   return Boolean(organization && organization.createdBy === user.uid);
 }
@@ -168,15 +174,19 @@ export async function createOrganizationInviteForUser(user: User, invitedUser: U
 
   if (!isFirebaseConfigured) return baseInvite;
 
-  const duplicateSnapshot = await getDocs(query(
-    collection(db, "organizationInvites"),
-    where("organizationId", "==", organization.id),
-    where("invitedUserId", "==", invitedUser.uid)
-  ));
-  const duplicate = duplicateSnapshot.docs
-    .map((item) => item.data() as OrganizationInvite)
-    .find((invite) => invite.organizationId === organization.id && invite.status === "open");
-  if (duplicate) throw new Error("Deze gebruiker heeft al een open uitnodiging.");
+  try {
+    const duplicateSnapshot = await getDocs(query(
+      collection(db, "organizationInvites"),
+      where("organizationId", "==", organization.id),
+      where("invitedUserId", "==", invitedUser.uid)
+    ));
+    const duplicate = duplicateSnapshot.docs
+      .map((item) => item.data() as OrganizationInvite)
+      .find((invite) => invite.organizationId === organization.id && invite.status === "open");
+    if (duplicate) throw new Error("Deze gebruiker heeft al een open uitnodiging.");
+  } catch (error) {
+    if (!isPermissionDeniedError(error)) throw error;
+  }
 
   const ref = doc(collection(db, "organizationInvites"));
   const invite = { ...baseInvite, id: ref.id };
@@ -187,7 +197,13 @@ export async function createOrganizationInviteForUser(user: User, invitedUser: U
 export async function listOrganizationInvites(user: User, organizationId?: string): Promise<OrganizationInvite[]> {
   const organization = organizationId ? await getOrganizationById(organizationId, user) : await getOrganizationForUser(user);
   if (!organization || !isOrganizationAdmin(user, organization) || !isFirebaseConfigured) return [];
-  const snapshot = await getDocs(query(collection(db, "organizationInvites"), where("organizationId", "==", organization.id)));
+  let snapshot;
+  try {
+    snapshot = await getDocs(query(collection(db, "organizationInvites"), where("organizationId", "==", organization.id)));
+  } catch (error) {
+    if (isPermissionDeniedError(error)) return [];
+    throw error;
+  }
   return snapshot.docs
     .map((item) => item.data() as OrganizationInvite)
     .filter((invite) => invite.status === "open")
@@ -219,40 +235,57 @@ async function userForOrganizationMember(member: OrganizationMember): Promise<Us
 
 export async function listOrganizationMembers(user: User, organizationId: string): Promise<User[]> {
   if (isPublicOrganization(organizationId)) return [];
-  const organization = await getOrganizationById(organizationId, user);
-  if (!organization) return [];
+  const organization = await getOrganizationById(organizationId, user).catch((error) => {
+    if (isPermissionDeniedError(error)) return null;
+    throw error;
+  });
+  const fallbackOrganization: Organization = {
+    id: organizationId,
+    name: organizationNamesForUser(user)[organizationId] ?? organizationNameForUser(user),
+    createdBy: user.uid,
+    createdByName: user.displayName,
+    createdAt: ""
+  };
+  const activeOrganization = organization ?? (organizationIdsForUser(user).includes(organizationId) ? fallbackOrganization : null);
+  if (!activeOrganization) return [];
   if (!isFirebaseConfigured) {
-    return organizationIdsForUser(user).includes(organizationId) ? [withOrganizationMembership(user, organization.id, organization.name)] : [];
+    return organizationIdsForUser(user).includes(organizationId) ? [withOrganizationMembership(user, activeOrganization.id, activeOrganization.name)] : [];
   }
 
-  const snapshot = await getDocs(collection(db, "organizations", organization.id, "members"));
   const membersById = new Map<string, User>();
-  const memberUsers = await Promise.all(snapshot.docs.map((item) => userForOrganizationMember(item.data() as OrganizationMember)));
+  const memberDocs: OrganizationMember[] = [];
+  try {
+    const snapshot = await getDocs(collection(db, "organizations", activeOrganization.id, "members"));
+    memberDocs.push(...snapshot.docs.map((item) => item.data() as OrganizationMember));
+  } catch (error) {
+    if (!isPermissionDeniedError(error)) throw error;
+  }
+  const memberUsers = await Promise.all(memberDocs.map((item) => userForOrganizationMember(item)));
   for (const memberUser of memberUsers) {
-    membersById.set(memberUser.uid, withOrganizationMembership(memberUser, organization.id, organization.name));
+    membersById.set(memberUser.uid, withOrganizationMembership(memberUser, activeOrganization.id, activeOrganization.name));
   }
 
   const userSnapshots = await Promise.all([
-    getDocs(query(collection(db, "users"), where("organizationIds", "array-contains", organization.id))),
-    getDocs(query(collection(db, "users"), where("organizationId", "==", organization.id)))
+    getDocs(query(collection(db, "users"), where("organizationIds", "array-contains", activeOrganization.id))),
+    getDocs(query(collection(db, "users"), where("organizationId", "==", activeOrganization.id)))
   ]);
   for (const userSnapshot of userSnapshots) {
     for (const userDoc of userSnapshot.docs) {
       const memberUser = userDoc.data() as User;
       if (memberUser.active === false) continue;
-      membersById.set(memberUser.uid, withOrganizationMembership(memberUser, organization.id, organization.name));
+      membersById.set(memberUser.uid, withOrganizationMembership(memberUser, activeOrganization.id, activeOrganization.name));
     }
   }
 
-  if (organizationIdsForUser(user).includes(organization.id)) {
-    membersById.set(user.uid, withOrganizationMembership(user, organization.id, organization.name));
+  if (organizationIdsForUser(user).includes(activeOrganization.id)) {
+    membersById.set(user.uid, withOrganizationMembership(user, activeOrganization.id, activeOrganization.name));
   }
 
-  if (organization.createdBy && !membersById.has(organization.createdBy)) {
-    const creatorSnapshot = await getDoc(doc(db, "users", organization.createdBy));
+  if (activeOrganization.createdBy && !membersById.has(activeOrganization.createdBy)) {
+    const creatorSnapshot = await getDoc(doc(db, "users", activeOrganization.createdBy));
     const creator = creatorSnapshot.exists() ? creatorSnapshot.data() as User : null;
     if (creator) {
-      membersById.set(creator.uid, withOrganizationMembership(creator, organization.id, organization.name));
+      membersById.set(creator.uid, withOrganizationMembership(creator, activeOrganization.id, activeOrganization.name));
     }
   }
 
@@ -344,12 +377,16 @@ export async function deleteOrganization(manager: User, organizationId: string):
 export async function listIncomingOrganizationInvites(user: User): Promise<OrganizationInvite[]> {
   const invitedEmail = cleanInviteEmail(user.email);
   if (!isFirebaseConfigured) return [];
-  const [emailSnapshot, userSnapshot] = await Promise.all([
+  const [emailSnapshot, userSnapshot] = await Promise.allSettled([
     invitedEmail ? getDocs(query(collection(db, "organizationInvites"), where("invitedEmail", "==", invitedEmail))) : Promise.resolve({ docs: [] }),
     getDocs(query(collection(db, "organizationInvites"), where("invitedUserId", "==", user.uid)))
   ]);
   const byId = new Map<string, OrganizationInvite>();
-  for (const item of [...emailSnapshot.docs, ...userSnapshot.docs]) {
+  const emailDocs = emailSnapshot.status === "fulfilled" ? emailSnapshot.value.docs : [];
+  const userDocs = userSnapshot.status === "fulfilled" ? userSnapshot.value.docs : [];
+  if (emailSnapshot.status === "rejected" && !isPermissionDeniedError(emailSnapshot.reason)) throw emailSnapshot.reason;
+  if (userSnapshot.status === "rejected" && !isPermissionDeniedError(userSnapshot.reason)) throw userSnapshot.reason;
+  for (const item of [...emailDocs, ...userDocs]) {
     const invite = item.data() as OrganizationInvite;
     byId.set(invite.id, invite);
   }

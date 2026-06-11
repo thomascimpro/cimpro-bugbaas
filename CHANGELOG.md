@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.33
+
+- Organisatiebeheer crasht niet meer op optionele invite-permission reads.
+- Ledenlijst wordt robuuster geladen via user-membershipvelden en vult members-subcollection aanvullend aan.
+- Firestore rules opnieuw gedeployed voor organisatiebeheer.
+
 ## 2.2.32
 
 - BugDex heeft nu aparte dropdowns voor Ruilen en Upgrades, zodat de twee flows niet meer samen in een lange workshop zitten.
