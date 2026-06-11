@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.28
+
+- Starter boost zit nu in de APK met de nieuwe drempel: accounts onder 80 XP krijgen 3 dagen 2x XP en extra BugDex-rolls.
+- Bestaande actieve users onder 80 XP zijn server-side met terugwerkende kracht bijgewerkt.
+
 ## 2.2.27
 
 - Arena-badge telt nu alleen inkomende duelacties, zodat uitgaande wachtduels geen onterechte badge meer geven.
