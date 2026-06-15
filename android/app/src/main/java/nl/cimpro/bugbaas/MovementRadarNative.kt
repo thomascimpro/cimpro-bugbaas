@@ -11,6 +11,7 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
@@ -211,13 +212,14 @@ object MovementRadarNative {
 
   private suspend fun aggregateSteps(client: HealthConnectClient, start: Instant, end: Instant): Long {
     if (!end.isAfter(start)) return 0
-    val response = client.aggregate(
-      AggregateRequest(
-        metrics = setOf(StepsRecord.COUNT_TOTAL),
+    return client.readRecords(
+      ReadRecordsRequest(
+        recordType = StepsRecord::class,
         timeRangeFilter = TimeRangeFilter.between(start, end)
       )
-    )
-    return response[StepsRecord.COUNT_TOTAL] ?: 0L
+    ).records
+      .filter { trustedStepRecording(it.metadata.recordingMethod) }
+      .sumOf { it.count }
   }
 
   private suspend fun aggregateDistanceMeters(client: HealthConnectClient, start: Instant, end: Instant): Double {
@@ -236,6 +238,11 @@ object MovementRadarNative {
     if (steps <= 0L) return 0.0
     if (distanceMeters <= 0.0) return stepMeters
     return maxOf(stepMeters, minOf(distanceMeters, steps * 1.15))
+  }
+
+  private fun trustedStepRecording(recordingMethod: Int): Boolean {
+    return recordingMethod == Metadata.RECORDING_METHOD_AUTOMATICALLY_RECORDED
+      || recordingMethod == Metadata.RECORDING_METHOD_ACTIVELY_RECORDED
   }
 
   private suspend fun buildDataTypeStatuses(

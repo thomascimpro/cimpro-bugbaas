@@ -17,6 +17,7 @@ import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.DistanceRecord
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.metadata.Metadata
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.facebook.react.bridge.Arguments
@@ -325,8 +326,15 @@ class BugBaasNativeModule(private val reactContext: ReactApplicationContext) : R
         recordType = StepsRecord::class,
         timeRangeFilter = TimeRangeFilter.between(start, end)
       )
-    ).records.sumOf { it.count }
+    ).records
+      .filter { trustedStepRecording(it.metadata.recordingMethod) }
+      .sumOf { it.count }
     return steps * estimatedMetersPerStep
+  }
+
+  private fun trustedStepRecording(recordingMethod: Int): Boolean {
+    return recordingMethod == Metadata.RECORDING_METHOD_AUTOMATICALLY_RECORDED
+      || recordingMethod == Metadata.RECORDING_METHOD_ACTIVELY_RECORDED
   }
 
   private fun exerciseBucket(type: Int): String? {
