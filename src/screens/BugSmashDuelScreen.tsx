@@ -588,7 +588,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       .catch(() => undefined);
   }, [activeDuel?.id, activeDuel?.scores, user]);
 
-  const activeLocalStartAt = activeDuel ? localStartAtByDuelId[activeDuel.id] : "";
+  const activeLocalStartAt = activeDuel ? localStartAtByDuelId[activeDuel.id] || activeDuel.startAt || "" : "";
   const activeDuelOwnScore = activeDuel?.scores?.[user.uid];
   const retryingActiveDuel = Boolean(activeDuel && retryingDuelIds.has(activeDuel.id));
   const requesterCanPreplay = Boolean(activeDuel?.status === "pending" && activeDuel.fromUserId === user.uid);
@@ -712,7 +712,7 @@ export function BugSmashDuelScreen({ user, initialDuelId = "", initialOpponent, 
       setActiveDuel(duel);
       setLocalStartAtByDuelId((current) => ({ ...current, [duel.id]: startAt }));
       setNow(Date.now());
-      setChallengeNotice(t("duel.randomFinding"));
+      setChallengeNotice("");
       await refreshDuels();
     } catch (event) {
       setError(event instanceof Error ? event.message : t("duel.createFailed"));

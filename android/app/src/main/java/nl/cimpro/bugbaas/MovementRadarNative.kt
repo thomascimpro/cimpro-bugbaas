@@ -18,7 +18,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import kotlin.math.max
 
 data class MovementGoalSnapshot(
   val earned: Int,
@@ -170,20 +169,15 @@ object MovementRadarNative {
       val movementSessions = nonOverlappingSessions(sessions)
       for (session in movementSessions) {
         val distanceMeters = if (canReadDistance) aggregateDistanceMeters(client, session.start, session.end) else 0.0
-        val walkingStepMeters = if (canReadSteps && session.bucket == "walking") {
-          aggregateSteps(client, session.start, session.end) * estimatedMetersPerStep
+        val steps = if (canReadSteps && (session.bucket == "walking" || session.bucket == "running")) {
+          aggregateSteps(client, session.start, session.end)
         } else {
-          0.0
-        }
-        val runningStepMeters = if (canReadSteps && session.bucket == "running") {
-          aggregateSteps(client, session.start, session.end) * estimatedRunningMetersPerStep
-        } else {
-          0.0
+          0L
         }
         when (session.bucket) {
-          "walking" -> walkingMeters += max(distanceMeters, walkingStepMeters)
-          "running" -> runningMeters += max(distanceMeters, runningStepMeters)
-          "cycling" -> cyclingMeters += distanceMeters
+          "walking" -> walkingMeters += trustedStepBackedMeters(distanceMeters, steps, estimatedMetersPerStep)
+          "running" -> runningMeters += trustedStepBackedMeters(distanceMeters, steps, estimatedRunningMetersPerStep)
+          "cycling" -> cyclingMeters += 0.0
         }
       }
 
@@ -235,6 +229,13 @@ object MovementRadarNative {
       )
     )
     return response[DistanceRecord.DISTANCE_TOTAL]?.inMeters ?: 0.0
+  }
+
+  private fun trustedStepBackedMeters(distanceMeters: Double, steps: Long, metersPerStep: Double): Double {
+    val stepMeters = steps * metersPerStep
+    if (steps <= 0L) return 0.0
+    if (distanceMeters <= 0.0) return stepMeters
+    return maxOf(stepMeters, minOf(distanceMeters, steps * 1.15))
   }
 
   private suspend fun buildDataTypeStatuses(
