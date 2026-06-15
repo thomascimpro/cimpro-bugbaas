@@ -42,36 +42,36 @@ const weeklyMissionTemplates: MissionTemplate[] = [
     id: "walk-15k",
     title: "mission.walk15Week",
     target: 15,
-    reward: "mission.rewardXp25",
+    reward: "mission.rewardXp15",
     rewardType: "xp",
-    rewardXp: 25,
+    rewardXp: 15,
     progressFor: (user, _context, weekStart) => weeklyWalkingKm(user, weekStart)
   },
   {
     id: "walk-30k",
     title: "mission.walk30Week",
     target: 30,
-    reward: "mission.rewardXp40",
+    reward: "mission.rewardXp20",
     rewardType: "xp",
-    rewardXp: 40,
+    rewardXp: 20,
     progressFor: (user, _context, weekStart) => weeklyWalkingKm(user, weekStart)
   },
   {
     id: "walk-45k",
     title: "mission.walk45Week",
     target: 45,
-    reward: "mission.rewardXp55",
+    reward: "mission.rewardXp25",
     rewardType: "xp",
-    rewardXp: 55,
+    rewardXp: 25,
     progressFor: (user, _context, weekStart) => weeklyWalkingKm(user, weekStart)
   },
   {
     id: "walk-60k",
     title: "mission.walk60Week",
     target: 60,
-    reward: "mission.rewardXp70",
+    reward: "mission.rewardXp30",
     rewardType: "xp",
-    rewardXp: 70,
+    rewardXp: 30,
     progressFor: (user, _context, weekStart) => weeklyWalkingKm(user, weekStart)
   },
   {
