@@ -1,6 +1,6 @@
 import { collection, doc, getDocs, onSnapshot, query, runTransaction, setDoc, updateDoc, where } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
-import { BugDexInventoryItem, BugDexUnlock, TradeRequest, User } from "../types";
+import { BugDexInventoryItem, TradeRequest, User } from "../types";
 import { entryByBugId, listBugDexInventory } from "./bugDexService";
 
 const demoTrades: TradeRequest[] = [];
@@ -47,18 +47,6 @@ function addBug(item: BugDexInventoryItem | null, bugId: string, rarity: string,
         sources: ["trade"],
         lastTradeId: tradeId
       };
-}
-
-function tradeUnlockItem(existing: BugDexUnlock | null, bugId: string, rarity: string, tradeId: string): BugDexUnlock {
-  const now = nowIso();
-  return {
-    bugId,
-    firstUnlockedAt: existing?.firstUnlockedAt ?? now,
-    lastTradeId: tradeId,
-    lastUnlockedAt: now,
-    rarity,
-    sources: Array.from(new Set([...(existing?.sources ?? []), "trade", tradeId]))
-  };
 }
 
 function removeTradeBug(item: BugDexInventoryItem, tradeId: string, amount = 1): BugDexInventoryItem {
@@ -181,14 +169,10 @@ export async function respondToTradeRequest(user: User, trade: TradeRequest, acc
     const toRequestRefs = requestBugIds.map((bugId) => doc(db, "users", freshTrade.toUserId, "bugdex", bugId));
     const fromRequestRefs = requestBugIds.map((bugId) => doc(db, "users", freshTrade.fromUserId, "bugdex", bugId));
     const toOfferRefs = offerBugIds.map((bugId) => doc(db, "users", freshTrade.toUserId, "bugdex", bugId));
-    const fromRequestUnlockRefs = requestBugIds.map((bugId) => doc(db, "users", freshTrade.fromUserId, "bugdexUnlocks", bugId));
-    const toOfferUnlockRefs = offerBugIds.map((bugId) => doc(db, "users", freshTrade.toUserId, "bugdexUnlocks", bugId));
     const fromOfferSnapshots = await Promise.all(fromOfferRefs.map((ref) => transaction.get(ref)));
     const toRequestSnapshots = await Promise.all(toRequestRefs.map((ref) => transaction.get(ref)));
     const fromRequestSnapshots = await Promise.all(fromRequestRefs.map((ref) => transaction.get(ref)));
     const toOfferSnapshots = await Promise.all(toOfferRefs.map((ref) => transaction.get(ref)));
-    const fromRequestUnlockSnapshots = await Promise.all(fromRequestUnlockRefs.map((ref) => transaction.get(ref)));
-    const toOfferUnlockSnapshots = await Promise.all(toOfferUnlockRefs.map((ref) => transaction.get(ref)));
     const updatedAt = nowIso();
 
     offerBugIds.forEach((bugId, index) => {
@@ -205,19 +189,15 @@ export async function respondToTradeRequest(user: User, trade: TradeRequest, acc
     });
     requestBugIds.forEach((bugId, index) => {
       const existing = fromRequestSnapshots[index].exists() ? fromRequestSnapshots[index].data() as BugDexInventoryItem : null;
-      const existingUnlock = fromRequestUnlockSnapshots[index].exists() ? fromRequestUnlockSnapshots[index].data() as BugDexUnlock : null;
       const entry = entryByBugId(bugId);
       if (!entry) return;
       transaction.set(fromRequestRefs[index], addBug(existing, bugId, entry.rarity, freshTrade.id, requestCounts.get(bugId) ?? 1));
-      transaction.set(fromRequestUnlockRefs[index], tradeUnlockItem(existingUnlock, bugId, entry.rarity, freshTrade.id));
     });
     offerBugIds.forEach((bugId, index) => {
       const existing = toOfferSnapshots[index].exists() ? toOfferSnapshots[index].data() as BugDexInventoryItem : null;
-      const existingUnlock = toOfferUnlockSnapshots[index].exists() ? toOfferUnlockSnapshots[index].data() as BugDexUnlock : null;
       const entry = entryByBugId(bugId);
       if (!entry) return;
       transaction.set(toOfferRefs[index], addBug(existing, bugId, entry.rarity, freshTrade.id, offerCounts.get(bugId) ?? 1));
-      transaction.set(toOfferUnlockRefs[index], tradeUnlockItem(existingUnlock, bugId, entry.rarity, freshTrade.id));
     });
     const acceptedUpdate: Partial<TradeRequest> = { status: "Geaccepteerd", updatedAt };
     if (normalizedOfferBugIds.length > 1 || normalizedRequestBugIds.length > 1) {
