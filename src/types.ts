@@ -42,6 +42,9 @@ export type User = {
   movementRegisteredDayKm?: number;
   movementRegisteredWeek?: string;
   movementRegisteredWeekKm?: number;
+  momentumCycle?: number;
+  momentumLastActiveDay?: string;
+  momentumSegments?: number;
   mythicBugDexCount?: number;
   tradedBugDexCount?: number;
   upgradedBugDexCount?: number;
@@ -176,6 +179,7 @@ export type BugMasterySkill = {
 
 export type BugMastery = {
   bugId: string;
+  battleWins: number;
   level: number;
   xp: number;
   lifetimeXp: number;
@@ -229,7 +233,8 @@ export type BugSmashDuelScore = {
   submittedAt: string;
 };
 
-export type ArcadeMode = "tap_duel" | "web_runner" | "nest_defense" | "bug_glide" | "bug_tower" | "bubble_swarm";
+export type ArcadeMode = "tap_duel" | "web_runner" | "nest_defense" | "bug_glide" | "bug_tower" | "bubble_swarm" | "butterfly_catch";
+export type ArcadeResultMode = ArcadeMode;
 
 export type BugSmashDuel = {
   id: string;
@@ -258,7 +263,7 @@ export type BugSmashDuel = {
 };
 
 export type ArcadeRunResult = {
-  mode: ArcadeMode;
+  mode: ArcadeResultMode;
   score: number;
   durationMs: number;
   pickups: number;

@@ -1,5 +1,6 @@
 import { NativeModules, Platform } from "react-native";
 import { BugSoundName, WebSoundProfile, webSoundProfile, webUiSoundTargetSelector, webUiTapProfile } from "./webSoundProfile";
+import { webSoundAsset } from "./webSoundAssets";
 
 export type { BugSoundName } from "./webSoundProfile";
 
@@ -11,6 +12,8 @@ const nativeModule = NativeModules.BugBaasNative as BugBaasNativeSoundModule | u
 
 let webAudioContext: AudioContext | null = null;
 let lastNamedWebSoundAt = 0;
+const webAudioPool = new Map<string, HTMLAudioElement[]>();
+const maxWebAudioPlayersPerSound = 4;
 
 function browserAudioContext(): AudioContext | null {
   if (Platform.OS !== "web" || typeof window === "undefined") return null;
@@ -21,7 +24,7 @@ function browserAudioContext(): AudioContext | null {
   return webAudioContext;
 }
 
-function playWebSound(profile: WebSoundProfile) {
+function playWebTone(profile: WebSoundProfile) {
   const context = browserAudioContext();
   if (!context) return;
   const play = () => {
@@ -44,6 +47,37 @@ function playWebSound(profile: WebSoundProfile) {
   else play();
 }
 
+function webSoundAssetUri(asset: ReturnType<typeof webSoundAsset>): string | null {
+  if (typeof asset === "string") return asset;
+  if (typeof asset === "object" && asset && typeof asset.uri === "string") return asset.uri;
+  return null;
+}
+
+function playWebAsset(name: BugSoundName): boolean {
+  if (typeof window === "undefined" || typeof Audio === "undefined") return false;
+  const uri = webSoundAssetUri(webSoundAsset(name));
+  if (!uri) return false;
+
+  const pool = webAudioPool.get(uri) ?? [];
+  let player = pool.find((candidate) => candidate.paused || candidate.ended);
+  if (!player && pool.length < maxWebAudioPlayersPerSound) player = new Audio(uri);
+  if (!player) {
+    player = pool[0];
+    player.pause();
+  }
+  player.preload = "auto";
+  player.volume = 0.42;
+  player.currentTime = 0;
+  if (!pool.includes(player)) pool.push(player);
+  webAudioPool.set(uri, pool);
+  void player.play().catch(() => playWebTone(webSoundProfile(name)));
+  return true;
+}
+
+function playWebSound(name: BugSoundName) {
+  if (!playWebAsset(name)) playWebTone(webSoundProfile(name));
+}
+
 export function installWebUiSounds(): () => void {
   if (Platform.OS !== "web" || typeof document === "undefined") return () => undefined;
   const onClick = (event: MouseEvent) => {
@@ -51,7 +85,8 @@ export function installWebUiSounds(): () => void {
     const interactive = target?.closest(webUiSoundTargetSelector);
     if (!interactive || interactive.getAttribute("aria-disabled") === "true" || interactive.hasAttribute("disabled")) return;
     if (Date.now() - lastNamedWebSoundAt < 90) return;
-    playWebSound(webUiTapProfile);
+    lastNamedWebSoundAt = Date.now();
+    if (!playWebAsset("arcade_tap")) playWebTone(webUiTapProfile);
   };
   document.addEventListener("click", onClick);
   return () => document.removeEventListener("click", onClick);
@@ -64,6 +99,6 @@ export function playBugSound(name: BugSoundName) {
   }
   if (Platform.OS === "web") {
     lastNamedWebSoundAt = Date.now();
-    playWebSound(webSoundProfile(name));
+    playWebSound(name);
   }
 }

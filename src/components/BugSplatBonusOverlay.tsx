@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo } from "react";
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { nativeDriver } from "../services/animationPlatform";
 import { allBugArtIds, BugArtId } from "../services/bugArt";
 import { useI18n } from "../services/i18n";
 import { BugArtImage } from "./BugArtImage";
@@ -26,7 +27,7 @@ export function BugSplatBonusOverlay({ visible, onSkip }: Props) {
   const { height, width } = useWindowDimensions();
   const tracks = useMemo(
     () =>
-      allBugArtIds.slice(0, 36).map((bugId, index) => ({
+      allBugArtIds.slice(0, 16).map((bugId, index) => ({
         bugId,
         delay: (index % 8) * 210,
         direction: index % 2 === 0 ? "right" as const : "left" as const,
@@ -47,22 +48,15 @@ export function BugSplatBonusOverlay({ visible, onSkip }: Props) {
   useEffect(() => {
     if (!visible) return;
     const animations = tracks.map((track) => {
-      const animation = Animated.loop(
-        Animated.sequence([
+      const animation = Animated.sequence([
           Animated.delay(track.delay),
           Animated.timing(track.progress, {
             duration: track.duration,
             easing: Easing.inOut(Easing.cubic),
             toValue: 1,
-            useNativeDriver: true
-          }),
-          Animated.timing(track.progress, {
-            duration: 0,
-            toValue: 0,
-            useNativeDriver: true
+            useNativeDriver: nativeDriver
           })
-        ])
-      );
+        ]);
       animation.start();
       return animation;
     });
@@ -80,9 +74,14 @@ export function BugSplatBonusOverlay({ visible, onSkip }: Props) {
   return (
     <Modal transparent animationType="fade" visible={visible} statusBarTranslucent onRequestClose={onSkip}>
       <Pressable style={styles.backdrop} onPress={onSkip}>
+        <View pointerEvents="none" style={styles.skyGlow} />
+        <View pointerEvents="none" style={styles.groundGlow} />
         <View style={styles.header}>
-          <Text style={styles.title}>{t("splat.saved")}</Text>
-          <Text style={styles.meta}>{t("splat.reward")}</Text>
+          <View style={styles.rewardSeal}><Text style={styles.rewardSealText}>+</Text></View>
+          <View style={styles.headerCopy}>
+            <Text style={styles.title}>{t("splat.saved")}</Text>
+            <Text style={styles.meta}>{t("splat.reward")}</Text>
+          </View>
         </View>
         {tracks.map((track, index) => {
           const translateX = track.progress.interpolate({
@@ -134,24 +133,62 @@ export function BugSplatBonusOverlay({ visible, onSkip }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(238,246,237,0.94)",
+    backgroundColor: "rgba(16,19,43,0.97)",
     overflow: "hidden"
+  },
+  skyGlow: {
+    backgroundColor: "#51408b",
+    borderRadius: 280,
+    height: 420,
+    left: -100,
+    opacity: 0.34,
+    position: "absolute",
+    top: -170,
+    width: 560
+  },
+  groundGlow: {
+    backgroundColor: "#e3ad44",
+    borderRadius: 260,
+    bottom: -260,
+    height: 420,
+    opacity: 0.18,
+    position: "absolute",
+    right: -130,
+    width: 520
   },
   header: {
     alignItems: "center",
-    backgroundColor: "#102018",
-    borderColor: "#d7bd57",
-    borderRadius: 8,
+    alignSelf: "center",
+    backgroundColor: "rgba(24,27,58,0.94)",
+    borderColor: "#e1b753",
+    borderRadius: 20,
     borderWidth: 1,
     flexDirection: "row",
-    justifyContent: "space-between",
-    left: 18,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    justifyContent: "center",
+    maxWidth: 520,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     position: "absolute",
-    right: 18,
     top: 54,
+    width: "90%",
     zIndex: 4
+  },
+  rewardSeal: {
+    alignItems: "center",
+    backgroundColor: "#e1b753",
+    borderRadius: 22,
+    height: 44,
+    justifyContent: "center",
+    marginRight: 12,
+    width: 44
+  },
+  rewardSealText: {
+    color: "#171a35",
+    fontSize: 25,
+    fontWeight: "900"
+  },
+  headerCopy: {
+    flex: 1
   },
   title: {
     color: "#ffffff",
@@ -159,8 +196,8 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   meta: {
-    color: "#d7bd57",
-    fontSize: 14,
+    color: "#e1b753",
+    fontSize: 13,
     fontWeight: "900"
   },
   bug: {
@@ -172,8 +209,10 @@ const styles = StyleSheet.create({
   },
   skipButton: {
     alignSelf: "center",
-    backgroundColor: "rgba(16,32,24,0.78)",
-    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.2)",
+    borderRadius: 15,
+    borderWidth: 1,
     bottom: 26,
     paddingHorizontal: 18,
     paddingVertical: 9,

@@ -310,12 +310,13 @@ export function BugDetailScreen({ bug, user, onBack, onBugChanged, onCommentAdde
 
 const styles = StyleSheet.create({
   content: {
+    backgroundColor: "#f5f0e4",
     paddingBottom: 160
   },
   editCard: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 18,
     borderWidth: 1,
     marginBottom: 14,
     padding: 12
@@ -324,9 +325,9 @@ const styles = StyleSheet.create({
     minHeight: 90
   },
   commentsCard: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 18,
     borderWidth: 1,
     marginBottom: 14,
     padding: 12
@@ -350,9 +351,9 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   organizationPanel: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 18,
     borderWidth: 1,
     marginBottom: 14,
     padding: 12
@@ -386,8 +387,8 @@ const styles = StyleSheet.create({
   },
   upvoteStat: {
     alignItems: "center",
-    backgroundColor: "#eef4ed",
-    borderRadius: 8,
+    backgroundColor: "#efe7d4",
+    borderRadius: 14,
     minWidth: 74,
     paddingHorizontal: 10,
     paddingVertical: 8
@@ -419,8 +420,8 @@ const styles = StyleSheet.create({
   },
   plusButton: {
     alignItems: "center",
-    backgroundColor: "#15724f",
-    borderRadius: 8,
+    backgroundColor: "#174f43",
+    borderRadius: 14,
     height: 52,
     justifyContent: "center",
     minWidth: 70,
@@ -428,8 +429,8 @@ const styles = StyleSheet.create({
   },
   votedButton: {
     alignItems: "center",
-    backgroundColor: "#102018",
-    borderRadius: 8,
+    backgroundColor: "#143f36",
+    borderRadius: 14,
     height: 52,
     justifyContent: "center",
     minWidth: 82,
@@ -454,17 +455,17 @@ const styles = StyleSheet.create({
   },
   reactionButton: {
     alignItems: "center",
-    backgroundColor: "#eef4ed",
-    borderColor: "#c6d3cc",
-    borderRadius: 8,
+    backgroundColor: "#efe7d4",
+    borderColor: "#d9cbaa",
+    borderRadius: 14,
     borderWidth: 1,
     height: 42,
     justifyContent: "center",
     width: 42
   },
   reactionButtonActive: {
-    backgroundColor: "#102018",
-    borderColor: "#d7bd57"
+    backgroundColor: "#143f36",
+    borderColor: "#d2a43b"
   },
   reactionText: {
     fontSize: 20
@@ -479,8 +480,8 @@ const styles = StyleSheet.create({
   },
   commentItem: {
     alignItems: "flex-start",
-    backgroundColor: "#eef4ed",
-    borderRadius: 8,
+    backgroundColor: "#f3ecdc",
+    borderRadius: 14,
     flexDirection: "row",
     gap: 8,
     padding: 10

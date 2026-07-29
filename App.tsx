@@ -1,35 +1,49 @@
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Application from "expo-application";
-import * as Notifications from "expo-notifications";
+import type { NotificationResponse } from "expo-notifications";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, AppState, Image, ImageSourcePropType, Linking, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, AppState, BackHandler, Image, ImageSourcePropType, Linking, Modal, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppNotification, BugComment, BugReport, NotificationSettings, User } from "./src/types";
+import { AppLoadingScreen } from "./src/components/AppLoadingScreen";
 import { activateBugLamp, applyUserPoints, createOrganizationForUser, ensureUserDocument, getUserById, login, loginWithGoogle, logout, markHelpSeen, recordBugSplat, register, subscribeAuth, syncEngagementPoints, syncMovementKilometers, touchUserActivity, updateUserCharacter, updateUserDisplayName } from "./src/services/userService";
 import { activeBugSquadBonuses } from "./src/services/bugSquadService";
 import { movementBoostWithBugLamp } from "./src/services/bugLampService";
 import { LoginScreen } from "./src/screens/LoginScreen";
 import { HomeScreen } from "./src/screens/HomeScreen";
+import { WorldScreen } from "./src/screens/WorldScreen";
 import { BugListScreen } from "./src/screens/BugListScreen";
 import { BugDetailScreen } from "./src/screens/BugDetailScreen";
 import { NewBugScreen } from "./src/screens/NewBugScreen";
-import { LeaderboardScreen } from "./src/screens/LeaderboardScreen";
+import { PlayScreen } from "./src/screens/PlayScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
-import { BugDexScreen } from "./src/screens/BugDexScreen";
+import { CollectionScreen } from "./src/screens/CollectionScreen";
 import { SettingsScreen } from "./src/screens/SettingsScreen";
 import { RealBugScanScreen } from "./src/screens/RealBugScanScreen";
-import { BugSmashDuelScreen } from "./src/screens/BugSmashDuelScreen";
+import { ReleaseBossScreen } from "./src/screens/ReleaseBossScreen";
+import { TeamHuntScreen } from "./src/screens/TeamHuntScreen";
+import { SwarmSiegeScreen } from "./src/screens/SwarmSiegeScreen";
 import { AppBackground } from "./src/components/AppBackground";
 import { BottomNav } from "./src/components/BottomNav";
+import { AppHud } from "./src/components/AppHud";
+import { AppOverlayHost } from "./src/components/AppOverlayHost";
+import { BuddyOverlay } from "./src/components/BuddyOverlay";
+import { ViewportScreen } from "./src/components/ViewportScreen";
+import { useResponsiveLayout } from "./src/theme/useResponsiveLayout";
+import type { ScreenTone } from "./src/theme/screenTheme";
+import { closeOverlay, initialAppNavigationState, navigateTo, openOverlay, type MainDestination } from "./src/navigation/appNavigation";
+import { parentRouteForHardwareBack } from "./src/navigation/hardwareBackNavigation";
 import { WalkingBugsLayer } from "./src/components/WalkingBugsLayer";
 import { BugDexUnlockModal } from "./src/components/BugDexUnlockModal";
 import { RankUpModal } from "./src/components/RankUpModal";
+import { RewardSpinModal } from "./src/components/RewardSpinModal";
 import { BadgeUnlockModal } from "./src/components/BadgeUnlockModal";
 import { BugSplatBonusOverlay } from "./src/components/BugSplatBonusOverlay";
 import { ForegroundCatchBug } from "./src/components/ForegroundCatchBug";
 import { DisplayNameModal } from "./src/components/DisplayNameModal";
 import { InAppNotificationToast } from "./src/components/InAppNotificationToast";
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
+import { DailyMissionCompletionController } from "./src/components/DailyMissionCompletionController";
 import { allBugArtIds, BugArtId } from "./src/services/bugArt";
 import { CharacterId, CharacterUnlockContext } from "./src/services/characterService";
 import { bugDexEntryName, LanguageProvider, rarityLabel, useI18n } from "./src/services/i18n";
@@ -37,7 +51,7 @@ import { listBugs } from "./src/services/bugService";
 import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, entryByBugId, grantBugDexReward, hasBugDexRewardAvailable, pickBugDexRewardEntry, pickQueuedBugDexRewardEntry, prepareDailyLoginBug, rollSpecificBugDexDrop } from "./src/services/bugDexService";
 import { badgeDefinitions, getTierForPoints, userTiers, type BadgeDefinition, type BugDexEntry, type UserTier } from "./src/services/pointsService";
 import { getFitnessSyncerStatus } from "./src/services/fitnessSyncerService";
-import { claimMovementRadarBonuses, claimMovementRadarBonusesForApp, claimQueuedRadarBugs, requestHealthConnectPermissions } from "./src/services/movementRadarService";
+import { claimMovementRadarBonusesForApp, claimQueuedRadarBugs, requestHealthConnectPermissions } from "./src/services/movementRadarService";
 import { canRegisterMovementSource, MovementSyncSource } from "./src/services/movementSyncSource";
 import { movementRadarXpPerBug } from "./src/services/rewardBalanceService";
 import { checkLatestVersion, VersionNotice } from "./src/services/versionService";
@@ -64,12 +78,21 @@ import { subscribeIncomingBugSmashDuelActionCount } from "./src/services/bugSmas
 import { setRadarRequestCounts } from "./src/services/movementRadarService";
 import { getOwnDuelSeasonClaim, previousDuelSeasonId } from "./src/services/duelSeasonService";
 import { installWebUiSounds } from "./src/services/soundService";
-import { shouldPresentBugDexDropImmediately } from "./src/services/rewardPresentation";
+import { shouldPresentBugDexDropImmediately, shouldPresentPointDropAsForegroundCatch, shouldShowRewardSpin } from "./src/services/rewardPresentation";
 import { subscribeIncomingTradeRequestCount } from "./src/services/tradeService";
 
-export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "profile" | "userProfile" | "bugdex" | "realBugScan" | "settings" | "duel";
+export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "profile" | "userProfile" | "bugdex" | "museum" | "realBugScan" | "fieldJournal" | "teamHunt" | "swarmSiege" | "seasonFinale" | "settings" | "duel";
 
-const helpTourVersion = "full-help-v2";
+function routeScreenTone(route: RouteName): ScreenTone {
+  if (route === "realBugScan" || route === "new") return "scan";
+  if (route === "duel" || route === "leaderboard") return "play";
+  if (route === "bugdex" || route === "museum" || route === "fieldJournal" || route === "bugs" || route === "detail") return "collection";
+  if (route === "profile" || route === "userProfile" || route === "settings") return "profile";
+  if (route === "teamHunt" || route === "swarmSiege" || route === "seasonFinale") return "event";
+  return "world";
+}
+
+const helpTourVersion = "visual-help-v3";
 const helpTourVersionKey = (uid: string) => `bugbaas:helpTour:${helpTourVersion}:${uid}`;
 const changelogSeenKey = (uid: string, version: string) => `bugbaas:changelog:${version}:${uid}`;
 const badgeUnlockSeenKey = (uid: string, badgeId: string) => `bugbaas:badgeUnlock:${uid}:${badgeId}`;
@@ -82,12 +105,35 @@ const startupMovementCheckDelayMs = 2500;
 const startupNotificationRegistrationDelayMs = 3500;
 const startupVersionCheckDelayMs = 5000;
 const reportActionRewardSources = new Set<BugDexDropSource>(["bug_reported", "comment", "status_update", "bug_fixed", "upvote_given"]);
+const webRouteSessionKey = "bugbaas:active-route:v3";
+const routeNames = new Set<RouteName>(["home", "bugs", "new", "detail", "leaderboard", "profile", "userProfile", "bugdex", "museum", "realBugScan", "fieldJournal", "teamHunt", "swarmSiege", "seasonFinale", "settings", "duel"]);
 
 function initialRoute(): RouteName {
   if (Platform.OS !== "web" || typeof window === "undefined") return "home";
   const normalizedPath = window.location.pathname.replace(/\/+$/, "");
   const search = new URLSearchParams(window.location.search);
-  return normalizedPath === "/real-bug-scan" || search.has("real-bug-scan") ? "realBugScan" : "home";
+  if (normalizedPath === "/real-bug-scan" || search.has("real-bug-scan")) return "realBugScan";
+  try {
+    const storedRoute = window.sessionStorage.getItem(webRouteSessionKey) as RouteName | null;
+    return storedRoute && routeNames.has(storedRoute) ? storedRoute : "home";
+  } catch {
+    return "home";
+  }
+}
+
+function routeDestination(route: RouteName): MainDestination | undefined {
+  if (route === "home" || route === "bugs" || route === "new" || route === "detail" || route === "teamHunt" || route === "swarmSiege" || route === "seasonFinale") return "world";
+  if (route === "realBugScan") return "scan";
+  if (route === "duel" || route === "leaderboard" || route === "userProfile") return "play";
+  if (route === "bugdex" || route === "museum" || route === "fieldJournal") return "collection";
+  return undefined;
+}
+
+function destinationRoute(destination: MainDestination): RouteName {
+  if (destination === "scan") return "realBugScan";
+  if (destination === "play") return "duel";
+  if (destination === "collection") return "bugdex";
+  return "home";
 }
 
 function localDayId(date = new Date()): string {
@@ -132,43 +178,43 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   ],
   "2.10.11": [
     { key: "changelog.2.10.11.nest", image: require("./assets/bugdex/houtmier.png"), tone: "gold" },
-    { key: "changelog.2.10.11.fitness", image: require("./assets/generated/bug-radar-request-signal-hd.png"), tone: "green" },
+    { key: "changelog.2.10.11.fitness", image: require("./assets/generated/bug-radar-request-signal-hd.webp"), tone: "green" },
     { key: "changelog.2.10.11.security", image: require("./assets/badges/kilometer-colony.png"), tone: "purple" }
   ],
   "2.10.10": [
     { key: "changelog.2.10.10.categories", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "green" },
     { key: "changelog.2.10.10.nest", image: require("./assets/bugdex/houtmier.png"), tone: "gold" },
-    { key: "changelog.2.10.10.unlocks", image: require("./assets/badges/badge-overview.png"), tone: "purple" }
+    { key: "changelog.2.10.10.unlocks", image: require("./assets/badges/badge-overview.webp"), tone: "purple" }
   ],
   "2.10.9": [
     { key: "changelog.2.10.9.glide", image: require("./assets/bugdex/honingbij.png"), tone: "gold" },
-    { key: "changelog.2.10.9.tower", image: require("./assets/minigames/bug-tower/bug-tower-background.png"), tone: "purple" },
-    { key: "changelog.2.10.9.bubbles", image: require("./assets/minigames/bubble-swarm/bubble-swarm-background.png"), tone: "green" }
+    { key: "changelog.2.10.9.tower", image: require("./assets/minigames/bug-tower/bug-tower-background.jpg"), tone: "purple" },
+    { key: "changelog.2.10.9.bubbles", image: require("./assets/minigames/bubble-swarm/bubble-swarm-background.jpg"), tone: "green" }
   ],
   "2.10.8": [
-    { key: "changelog.2.10.8.tower", image: require("./assets/minigames/bug-tower/bug-tower-background.png"), tone: "purple" },
-    { key: "changelog.2.10.8.bubbles", image: require("./assets/minigames/bubble-swarm/bubble-swarm-background.png"), tone: "green" },
+    { key: "changelog.2.10.8.tower", image: require("./assets/minigames/bug-tower/bug-tower-background.jpg"), tone: "purple" },
+    { key: "changelog.2.10.8.bubbles", image: require("./assets/minigames/bubble-swarm/bubble-swarm-background.jpg"), tone: "green" },
     { key: "changelog.2.10.8.practice", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "gold" }
   ],
   "2.2.5": [
     { key: "changelog.2.2.5.arena", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
-    { key: "changelog.2.2.5.widget", image: require("./assets/generated/bug-radar-request-signal-hd.png"), tone: "green" },
+    { key: "changelog.2.2.5.widget", image: require("./assets/generated/bug-radar-request-signal-hd.webp"), tone: "green" },
     { key: "changelog.2.2.5.fullscreen", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "gold" }
   ],
   "2.2.4": [
     { key: "changelog.2.2.4.jars", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.2.4.duelStart", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
-    { key: "changelog.2.2.4.weekly", image: require("./assets/generated/bug-radar-request-signal-hd.png"), tone: "gold" }
+    { key: "changelog.2.2.4.weekly", image: require("./assets/generated/bug-radar-request-signal-hd.webp"), tone: "gold" }
   ],
   "2.2.3": [
-    { key: "changelog.2.2.3.bosses", image: require("./assets/generated/solo-boss-atlas-hd.png"), tone: "purple" },
-    { key: "changelog.2.2.3.rewards", image: require("./assets/generated/solo-boss-stag-hd.png"), tone: "gold" },
-    { key: "changelog.2.2.3.widget", image: require("./assets/generated/bug-radar-request-signal-hd.png"), tone: "green" }
+    { key: "changelog.2.2.3.bosses", image: require("./assets/generated/solo-boss-atlas-hd.webp"), tone: "purple" },
+    { key: "changelog.2.2.3.rewards", image: require("./assets/generated/solo-boss-stag-hd.webp"), tone: "gold" },
+    { key: "changelog.2.2.3.widget", image: require("./assets/generated/bug-radar-request-signal-hd.webp"), tone: "green" }
   ],
   "2.2.2": [
     { key: "changelog.2.2.2.jars", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.2.2.targets", image: require("./assets/generated/solo-duel-campaign-hd.jpg"), tone: "purple" },
-    { key: "changelog.2.2.2.size", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "gold" }
+    { key: "changelog.2.2.2.size", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "gold" }
   ],
   "2.2.1": [
     { key: "changelog.2.2.1.powerups", image: require("./assets/generated/solo-powerups-hd.jpg"), tone: "gold" },
@@ -186,24 +232,24 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
     { key: "changelog.2.1.6.settings", image: require("./assets/generated/settings-gear-hd.png"), tone: "gold" }
   ],
   "2.1.4": [
-    { key: "changelog.2.1.4.install", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "green" },
+    { key: "changelog.2.1.4.install", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "green" },
     { key: "changelog.2.1.4.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
     { key: "changelog.2.1.4.clean", image: require("./assets/generated/bug-swatter-hd.png"), tone: "gold" }
   ],
   "2.1.3": [
-    { key: "changelog.2.1.3.clean", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "green" },
+    { key: "changelog.2.1.3.clean", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "green" },
     { key: "changelog.2.1.3.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
     { key: "changelog.2.1.3.install", image: require("./assets/generated/bug-swatter-hd.png"), tone: "gold" }
   ],
   "2.1.2": [
     { key: "changelog.2.1.2.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
     { key: "changelog.2.1.2.xp", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "gold" },
-    { key: "changelog.2.1.2.android", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "green" }
+    { key: "changelog.2.1.2.android", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "green" }
   ],
   "2.1.1": [
     { key: "changelog.2.1.1.balance", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
     { key: "changelog.2.1.1.hitbox", image: require("./assets/generated/bug-swatter-hd.png"), tone: "gold" },
-    { key: "changelog.2.1.1.safety", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "green" }
+    { key: "changelog.2.1.1.safety", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "green" }
   ],
   "2.1.0": [
     { key: "changelog.2.1.0.duel", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "purple" },
@@ -212,8 +258,8 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   ],
   "2.0.6": [
     { key: "changelog.2.0.6.movement", image: require("./assets/generated/release-2.0.6-hero.jpg"), tone: "green" },
-    { key: "changelog.2.0.6.trade", image: require("./assets/generated/bugdex-workshop-shortcut.png"), tone: "gold" },
-    { key: "changelog.2.0.6.expo", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "purple" }
+    { key: "changelog.2.0.6.trade", image: require("./assets/generated/bugdex-workshop-shortcut.webp"), tone: "gold" },
+    { key: "changelog.2.0.6.expo", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "purple" }
   ],
   "2.0.5": [
     { key: "changelog.2.0.5.profileButtons", image: require("./assets/characters/character-rookie-bug-catcher.png"), tone: "green" },
@@ -229,21 +275,21 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   "2.0.2": [
     { key: "changelog.2.0.1.movement", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "green" },
     { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
-    { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
+    { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.webp"), tone: "gold" },
     { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
     { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
-    { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "purple" }
+    { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "purple" }
   ],
   "2.0.1": [
     { key: "changelog.2.0.1.movement", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "green" },
     { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
-    { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
+    { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.webp"), tone: "gold" },
     { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
     { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
-    { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.png"), tone: "purple" }
+    { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "purple" }
   ],
   "2.0.0": [
-    { key: "changelog.2.0.0.badges", image: require("./assets/badges/badge-overview.png"), tone: "gold" },
+    { key: "changelog.2.0.0.badges", image: require("./assets/badges/badge-overview.webp"), tone: "gold" },
     { key: "changelog.2.0.0.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.0.0.rank", image: require("./assets/bugdex/atlaskever.png"), tone: "purple" }
   ],
@@ -275,13 +321,19 @@ export default function App() {
 
 function AppContent() {
   const { t } = useI18n();
+  const responsiveLayout = useResponsiveLayout();
+  const responsiveShellStyle = Platform.OS === "web" ? { maxWidth: responsiveLayout.shellMaxWidth } : undefined;
   const [route, setRoute] = useState<RouteName>(initialRoute);
+  const [appNavigation, setAppNavigation] = useState(initialAppNavigationState);
+  const [fieldJournalBackRoute, setFieldJournalBackRoute] = useState<RouteName>("realBugScan");
   const [user, setUser] = useState<User | null>(null);
   const [selectedBug, setSelectedBug] = useState<BugReport | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [duelOpponent, setDuelOpponent] = useState<User | null>(null);
   const [openDuelId, setOpenDuelId] = useState("");
   const [bugDexDrop, setBugDexDrop] = useState<BugDexDropResult | null>(null);
+  const [rewardSpinDrop, setRewardSpinDrop] = useState<BugDexDropResult | null>(null);
+  const [rewardSpinQueue, setRewardSpinQueue] = useState<BugDexDropResult[]>([]);
   const [bugDexClaiming, setBugDexClaiming] = useState(false);
   const [rankUpTier, setRankUpTier] = useState<UserTier | null>(null);
   const [badgeUnlock, setBadgeUnlock] = useState<BadgeDefinition | null>(null);
@@ -300,6 +352,7 @@ function AppContent() {
   const [duelFullscreen, setDuelFullscreen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
+  const [walkingBugsReady, setWalkingBugsReady] = useState(false);
   const appState = useRef(AppState.currentState);
   const movementCheckInProgress = useRef(false);
   const versionCheckInProgress = useRef(false);
@@ -318,6 +371,29 @@ function AppContent() {
 
   useEffect(() => installWebUiSounds(), []);
 
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(webRouteSessionKey, route);
+    } catch {
+      // Safari private mode can disable session storage.
+    }
+  }, [route]);
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (appNavigation.overlay) {
+        setAppNavigation((current) => closeOverlay(current));
+        return true;
+      }
+      const backRoute = parentRouteForHardwareBack(route, fieldJournalBackRoute);
+      if (backRoute !== null) setRoute(backRoute);
+      return backRoute !== null;
+    });
+    return () => subscription.remove();
+  }, [appNavigation.overlay, fieldJournalBackRoute, route]);
+
   const foregroundUiClear = Boolean(
     user
     && user.nameSet === true
@@ -331,8 +407,8 @@ function AppContent() {
     && !versionNotice
   );
   const foregroundRewardPending = pendingForegroundRewards.length > 0;
-  const foregroundBugEnabled = foregroundUiClear && ["home", "bugs", "new", "bugdex", "leaderboard"].includes(route);
-  const forcedForegroundRewardEnabled = foregroundUiClear && foregroundRewardPending && !(route === "duel" && duelFullscreen);
+  const foregroundBugEnabled = foregroundUiClear;
+  const forcedForegroundRewardEnabled = foregroundUiClear && foregroundRewardPending;
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof document === "undefined") return;
@@ -410,6 +486,13 @@ function AppContent() {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  useEffect(() => {
+    setWalkingBugsReady(false);
+    if (!user) return;
+    const timer = setTimeout(() => setWalkingBugsReady(true), 2500);
+    return () => clearTimeout(timer);
+  }, [user?.uid]);
 
   useEffect(() => {
     pendingForegroundRewardsRef.current = pendingForegroundRewards;
@@ -539,7 +622,13 @@ function AppContent() {
   }, [notificationSettings]);
 
   useEffect(() => {
-    return subscribeAuth(async (nextUser) => {
+    let settled = false;
+    const authTimeout = setTimeout(() => {
+      if (settled) return;
+      setAuthError("Authenticatie duurt langer dan verwacht. Je kunt opnieuw inloggen.");
+      setAuthLoading(false);
+    }, 8000);
+    const unsubscribe = subscribeAuth(async (nextUser) => {
       try {
         if (nextUser) {
           const appUser = await ensureUserDocument(nextUser);
@@ -552,9 +641,15 @@ function AppContent() {
         setAuthError(error instanceof Error ? error.message : "Authenticatie laden mislukt.");
         setUser(null);
       } finally {
+        settled = true;
+        clearTimeout(authTimeout);
         setAuthLoading(false);
       }
     });
+    return () => {
+      clearTimeout(authTimeout);
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -719,7 +814,11 @@ function AppContent() {
   }, [user]);
 
   useEffect(() => {
-    function handleResponse(response: Notifications.NotificationResponse) {
+    if (Platform.OS === "web") return () => undefined;
+    let active = true;
+    let subscription: { remove: () => void } | null = null;
+
+    function handleResponse(response: NotificationResponse) {
       const request = response.notification.request;
       const contentData = request.content.data as { bugId?: string; duelId?: string; notificationId?: string; type?: string };
       const responseKey = `${request.identifier}:${response.actionIdentifier}`;
@@ -729,11 +828,18 @@ function AppContent() {
       void openNotificationTarget(contentData.type, contentData.bugId, contentData.notificationId, contentData.duelId);
     }
 
-    const subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
-    void Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (response) handleResponse(response);
-    }).catch(() => undefined);
-    return () => subscription.remove();
+    void (async () => {
+      const Notifications = await import("expo-notifications");
+      if (!active) return;
+      subscription = Notifications.addNotificationResponseReceivedListener(handleResponse);
+      const response = await Notifications.getLastNotificationResponseAsync();
+      if (active && response) handleResponse(response);
+    })().catch(() => undefined);
+
+    return () => {
+      active = false;
+      subscription?.remove();
+    };
   }, []);
 
   async function handleLogin(email: string, password: string, createAccount: boolean, displayName?: string) {
@@ -858,10 +964,34 @@ function AppContent() {
       });
       return;
     }
+    if (shouldPresentPointDropAsForegroundCatch(drop.source)) {
+      const currentUser = drop.updatedUser ?? userRef.current;
+      if (currentUser) {
+        const entry = pickBugDexRewardEntry(currentUser, drop.source);
+        queueForegroundReward({
+          bugId: entry.id as BugArtId,
+          entry,
+          id: `daily-foreground-${entry.id}-${Date.now()}-${Math.random()}`,
+          preGrantedDrop: drop,
+          source: drop.source
+        });
+        return;
+      }
+    }
     presentBugDexDrop(drop);
   }
 
-  function presentBugDexDrop(drop: BugDexDropResult, forceImmediate = false) {
+  function presentBugDexDrop(drop: BugDexDropResult, forceImmediate = false, skipSpin = false) {
+    if (!skipSpin && drop.rewardType === "bug" && shouldShowRewardSpin(drop.source)) {
+      setRewardSpinDrop((current) => {
+        if (current) {
+          setRewardSpinQueue((queue) => [...queue, drop]);
+          return current;
+        }
+        return drop;
+      });
+      return;
+    }
     if (drop.rewardType === "bug" && drop.isNew && notificationSettingsRef.current.bugdex) {
       void showBugDexUnlockNotification(bugDexEntryName(drop.entry, t), rarityLabel(drop.entry.rarity, t)).catch(() => undefined);
     }
@@ -1062,7 +1192,9 @@ function AppContent() {
       if (pendingReward) {
         if (pendingReward.preGrantedDrop) {
           presentBugDexDrop(pendingReward.preGrantedDrop);
-          if (!pendingReward.starterBoostBonus) queueStarterBoostBugRoll(pendingReward.preGrantedDrop.source, rewardUser, bugDropEntryId(pendingReward.preGrantedDrop));
+          if (pendingReward.preGrantedDrop.rewardType === "bug" && !pendingReward.starterBoostBonus) {
+            queueStarterBoostBugRoll(pendingReward.preGrantedDrop.source, rewardUser, bugDropEntryId(pendingReward.preGrantedDrop));
+          }
           return;
         }
         if (pendingReward.preparedDrop?.source === "daily_login") {
@@ -1099,11 +1231,9 @@ function AppContent() {
     if (!currentUser || currentUser.nameSet !== true || movementCheckInProgress.current) return;
     movementCheckInProgress.current = true;
     try {
-      const result = await claimMovementRadarBonuses(currentUser.uid, movementBoostForUser(currentUser));
+      const result = await claimMovementRadarBonusesForApp(currentUser.uid, movementBoostForUser(currentUser));
       await registerMovementKilometers(result.estimatedKm, result.estimatedWeekKm);
-      if (result.awarded > 0 && notificationSettingsRef.current.movement) {
-        await showMovementRewardNotification(result.awarded);
-      }
+      if (result.bugIds.length > 0) await showClaimedRadarBugs(result.bugIds);
     } catch {
       // Movement radar bonuses are optional and must never interrupt the app.
     } finally {
@@ -1220,21 +1350,22 @@ function AppContent() {
     setRoute("duel");
   }
 
-  function navigateMain(nextRoute: "home" | "realBugScan" | "duel" | "bugdex" | "leaderboard") {
+  function navigateMain(destination: MainDestination) {
     if (duelFullscreen) return;
     setSelectedBug(null);
     setSelectedUser(null);
     setDuelOpponent(null);
     setOpenDuelId("");
     setDuelFullscreen(false);
-    setRoute(nextRoute);
+    setAppNavigation((current) => navigateTo(current, destination));
+    setRoute(destinationRoute(destination));
   }
 
   function showHelpTour() {
     setHelpVisible(true);
   }
 
-  function navigateHelp(routeName: "home" | "realBugScan" | "duel" | "bugdex" | "leaderboard" | "settings") {
+  function navigateHelp(routeName: "home" | "realBugScan" | "duel" | "bugdex" | "museum") {
     setSelectedBug(null);
     setSelectedUser(null);
     setRoute(routeName);
@@ -1264,9 +1395,9 @@ function AppContent() {
     return (
       <View style={styles.webStage}>
         <AppBackground />
-        <SafeAreaView style={styles.shell}>
+        <SafeAreaView style={[styles.shell, responsiveShellStyle]}>
           <View style={styles.loadingScreen}>
-            <ActivityIndicator color="#15724f" size="large" />
+            <AppLoadingScreen />
           </View>
           <VersionToast notice={versionNotice} onDismiss={() => setVersionNotice(null)} />
         </SafeAreaView>
@@ -1277,8 +1408,7 @@ function AppContent() {
   if (!user) {
     return (
       <View style={styles.webStage}>
-        <AppBackground />
-        <View style={[styles.fullScreen, styles.shell]}>
+        <View style={[styles.fullScreen, styles.shell, responsiveShellStyle]}>
           <LoginScreen error={authError} loading={authLoading} onGoogleSubmit={handleGoogleLogin} onSubmit={handleLogin} />
           <VersionToast notice={versionNotice} onDismiss={() => setVersionNotice(null)} />
         </View>
@@ -1288,26 +1418,39 @@ function AppContent() {
 
   const duelRouteActive = route === "duel";
   const realBugScanRouteActive = route === "realBugScan";
+  const swarmSiegeRouteActive = route === "swarmSiege";
+  const fullWidthRouteActive = duelRouteActive || realBugScanRouteActive || swarmSiegeRouteActive || route === "museum";
 
   return (
-    <View style={styles.webStage}>
-      <AppBackground />
-      <SafeAreaView style={[styles.shell, duelFullscreen && styles.gameShell]}>
-        {!duelRouteActive && !realBugScanRouteActive && <WalkingBugsLayer onSplat={() => void handleBugSplat()} />}
+    <View style={[styles.webStage, duelFullscreen && styles.gameStage]}>
+      {!duelFullscreen && <AppBackground tone={routeScreenTone(route)} />}
+      <SafeAreaView style={[styles.shell, !duelFullscreen && responsiveShellStyle, duelFullscreen && styles.gameShell]}>
+        {walkingBugsReady && route === "home" && <WalkingBugsLayer onSplat={() => void handleBugSplat()} />}
+        <ViewportScreen
+          fullWidth={fullWidthRouteActive}
+          immersive={duelFullscreen}
+          header={!duelRouteActive && !realBugScanRouteActive && !swarmSiegeRouteActive ? (
+            <AppHud
+              notificationCount={requestTabBadges.duel + requestTabBadges.trade}
+              onOpenPlayer={() => setRoute("profile")}
+              user={user}
+            />
+          ) : undefined}
+          testID="app-viewport"
+        >
         <View style={styles.content}>
         {route === "home" && (
-          <HomeScreen
-            movementBoost={movementBoostForUser()}
+          <WorldScreen
             user={user}
-            onActivateBugLamp={handleActivateBugLamp}
-            onMovementRadarClaimed={(bugIds) => void showClaimedRadarBugs(bugIds)}
-            onNavigate={setRoute}
-            onOpenBugDexWorkshop={openBugDexTrades}
-            onMovementRegistered={registerMovementKilometers}
-            onRewardDrop={(drop) => {
-              if (drop.updatedUser) setUser(drop.updatedUser);
-              showBugDexDrop(drop);
-            }}
+            onStartScan={() => navigateMain("scan")}
+            onOpenCollection={() => setRoute("bugdex")}
+            onOpenPlay={() => navigateMain("play")}
+            onOpenBuddy={() => setAppNavigation((current) => openOverlay(current, { type: "buddy" }))}
+            onOpenTeamHunt={() => setRoute("teamHunt")}
+            onOpenSwarmSiege={() => setRoute("swarmSiege")}
+            onOpenSeasonFinale={() => setRoute("seasonFinale")}
+            onSyncMovement={() => { void checkMovementRadarBonuses(); }}
+            onRewardDrop={showBugDexDrop}
             onUserUpdated={setUser}
           />
         )}
@@ -1372,12 +1515,22 @@ function AppContent() {
             }}
           />
         )}
-        {route === "leaderboard" && <LeaderboardScreen currentUser={user} onBack={() => setRoute("home")} onSelectUser={openUserProfile} />}
+        {route === "leaderboard" && (
+          <PlayScreen
+            initialTab="ranking"
+            onBack={() => setRoute("home")}
+            onOpenCollection={() => setRoute("bugdex")}
+            onSelectUser={openUserProfile}
+            user={user}
+          />
+        )}
         {route === "profile" && (
           <ProfileScreen
             user={user}
             onBack={() => setRoute("home")}
             onLogout={handleLogout}
+            onOpenReports={() => setRoute("bugs")}
+            onOpenSettings={() => setRoute("settings")}
             onUpdateCharacter={handleCharacterSave}
             onUpdateDisplayName={handleDisplayNameSave}
             onCreateOrganization={handleCreateOrganization}
@@ -1400,17 +1553,25 @@ function AppContent() {
             onChallengeDuel={(opponent) => openBugSmashDuel(opponent)}
           />
         )}
-        {route === "bugdex" && <BugDexScreen openTradeRequest={openBugDexTradeRequest} user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
-        {route === "realBugScan" && <RealBugScanScreen user={user} onBack={() => setRoute("home")} />}
+        {route === "bugdex" && <CollectionScreen openTradeRequest={openBugDexTradeRequest} user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
+        {route === "museum" && <CollectionScreen initialTab="museum" user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
+        {route === "realBugScan" && <RealBugScanScreen user={user} onBack={() => setRoute("home")} onOpenCollection={() => setRoute("bugdex")} onOpenJournal={() => { setFieldJournalBackRoute("realBugScan"); setRoute("fieldJournal"); }} onOpenWorld={() => setRoute("home")} onRewardDrop={showBugDexDrop} />}
+        {route === "fieldJournal" && <CollectionScreen initialTab="journal" user={user} onBack={() => setRoute(fieldJournalBackRoute)} onUserUpdated={setUser} />}
+        {route === "teamHunt" && <TeamHuntScreen user={user} onBack={() => setRoute("home")} />}
+        {route === "swarmSiege" && <SwarmSiegeScreen user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
+        {route === "seasonFinale" && <ReleaseBossScreen user={user} onBack={() => setRoute("home")} onOpenJournal={() => { setFieldJournalBackRoute("seasonFinale"); setRoute("fieldJournal"); }} onRewardAwarded={() => { void refreshUser(); }} />}
         {route === "duel" && (
-          <BugSmashDuelScreen
+          <PlayScreen
             initialDuelId={openDuelId}
             initialOpponent={duelOpponent}
+            initialTab="arcade"
             user={user}
             onBack={() => setRoute("home")}
             onDuelAccepted={(requesterId, duelId) => notifyBugSmashDuelAccepted(requesterId, user, duelId)}
             onDuelRequest={(recipientId, duelId) => notifyBugSmashDuelRequest(recipientId, user, duelId)}
             onFullscreenChange={setDuelFullscreen}
+            onOpenCollection={() => setRoute("bugdex")}
+            onSelectUser={openUserProfile}
             onUserUpdated={setUser}
             onRewardDrop={(drop) => {
               if (drop.updatedUser) setUser(drop.updatedUser);
@@ -1421,7 +1582,7 @@ function AppContent() {
         {route === "settings" && (
           <SettingsScreen
             settings={notificationSettings}
-            onBack={() => setRoute("home")}
+            onBack={() => setRoute("profile")}
             onChange={updateNotificationSettings}
             onHealthPermissionOpen={async () => { await requestHealthConnectPermissions(user.uid); }}
             onMovementRegistered={registerMovementKilometers}
@@ -1429,8 +1590,21 @@ function AppContent() {
           />
         )}
         </View>
-        {!(duelRouteActive && duelFullscreen) && <BottomNav activeRoute={route} badges={{ bugdex: requestTabBadges.trade, duel: requestTabBadges.duel }} onNavigate={navigateMain} />}
-        {!duelRouteActive && <InAppNotificationToast notification={notification && !isRequestNotification(notification) ? notification : null} onClose={closeNotification} onOpen={openNotification} />}
+        </ViewportScreen>
+        {!swarmSiegeRouteActive && !(duelRouteActive && duelFullscreen) && (
+          <BottomNav
+            activeDestination={routeDestination(route)}
+            badges={{ play: requestTabBadges.duel, collection: requestTabBadges.trade }}
+            onNavigate={navigateMain}
+          />
+        )}
+        {!duelRouteActive && !swarmSiegeRouteActive && <InAppNotificationToast notification={notification && !isRequestNotification(notification) ? notification : null} onClose={closeNotification} onOpen={openNotification} />}
+        <DailyMissionCompletionController
+          enabled={foregroundUiClear && !duelFullscreen}
+          onRewardDrop={showBugDexDrop}
+          onUserUpdated={setUser}
+          user={user}
+        />
         <ForegroundCatchBug
         catchAssist={squadBonuses().catch_assist}
         catchTimeBonus={squadBonuses().catch_time}
@@ -1453,11 +1627,39 @@ function AppContent() {
         />
         <RankUpModal tier={rankUpTier} onClose={() => setRankUpTier(null)} />
         <BadgeUnlockModal badge={badgeUnlock} onClose={closeBadgeUnlock} />
+        <RewardSpinModal drop={rewardSpinDrop} onComplete={(drop) => {
+          setRewardSpinDrop(null);
+          setRewardSpinQueue((queue) => {
+            const [next, ...remaining] = queue;
+            if (next) setTimeout(() => setRewardSpinDrop(next), 0);
+            return remaining;
+          });
+          presentBugDexDrop(drop, true, true);
+        }} />
         <BugDexUnlockModal drop={bugDexDrop} busy={bugDexClaiming} onClose={closeBugDexDrop} />
         <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
         <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
         <ChangelogModal version={changelogVersion} onClose={closeChangelog} />
         <BugSplatBonusOverlay visible={splatBonusVisible} onSkip={() => setSplatBonusVisible(false)} />
+        <AppOverlayHost
+          overlay={appNavigation.overlay}
+          onClose={() => setAppNavigation((current) => closeOverlay(current))}
+          renderOverlay={(overlay) => overlay.type === "buddy" ? (
+            <BuddyOverlay
+              user={user}
+              onClose={() => setAppNavigation((current) => closeOverlay(current))}
+              onOpenCollection={() => {
+                setAppNavigation((current) => closeOverlay(current));
+                setRoute("bugdex");
+              }}
+              onRewardDrop={(drop) => {
+                setAppNavigation((current) => closeOverlay(current));
+                presentBugDexDrop(drop, true, true);
+              }}
+              onUserUpdated={setUser}
+            />
+          ) : null}
+        />
         <VersionToast notice={versionNotice} onDismiss={() => setVersionNotice(null)} />
       </SafeAreaView>
     </View>
@@ -1470,11 +1672,12 @@ function currentAppVersion(): string {
 
 function ChangelogModal({ version, onClose }: { version: string; onClose: () => void }) {
   const { t } = useI18n();
+  const layout = useResponsiveLayout();
   const features = usefulChangelogByVersion[version] ?? [];
   return (
     <Modal transparent animationType="fade" visible={Boolean(version && features.length)} onRequestClose={onClose}>
       <View style={styles.changelogBackdrop}>
-        <View style={styles.changelogCard}>
+        <View style={[styles.changelogCard, { maxWidth: layout.modalMaxWidth, padding: layout.isCompact ? 14 : 20 }]}>
           <Text style={styles.changelogKicker}>{t("changelog.kicker", { version })}</Text>
           <Text style={styles.changelogTitle}>{t("changelog.title")}</Text>
           <ScrollView style={styles.changelogScroll} contentContainerStyle={styles.changelogList} showsVerticalScrollIndicator={false}>
@@ -1504,12 +1707,13 @@ function capitalizeTone(tone: ChangelogFeature["tone"]): "Gold" | "Green" | "Pur
 
 function VersionToast({ notice, onDismiss }: { notice: VersionNotice | null; onDismiss: () => void }) {
   const { t } = useI18n();
+  const layout = useResponsiveLayout();
   if (!notice) return null;
   const openUpdate = () => {
     void Linking.openURL(notice.releaseUrl).then(onDismiss).catch(() => undefined);
   };
   return (
-    <View accessibilityLabel={t("a11y.openLatestRelease")} style={styles.versionToast}>
+    <View accessibilityLabel={t("a11y.openLatestRelease")} style={[styles.versionToast, { left: layout.gutter, right: layout.gutter }]}>
       <Text style={styles.versionToastTitle}>{t("version.available")}</Text>
       <Text style={styles.versionToastText}>{t("version.tap", { version: notice.latestVersion })}</Text>
       <View style={styles.versionToastActions}>
@@ -1545,20 +1749,25 @@ function radarBugIdFromUrl(url: string | null): BugArtId | null {
 const styles = StyleSheet.create({
   webStage: {
     alignItems: "center",
-    backgroundColor: "#dfe9df",
+    backgroundColor: "#0d1118",
     flex: 1,
     minHeight: 0,
     width: "100%"
   },
   shell: {
-    backgroundColor: "#eef4ed",
+    backgroundColor: "transparent",
     flex: 1,
-    maxWidth: Platform.OS === "web" ? 460 : undefined,
     minHeight: 0,
     overflow: "hidden",
     width: "100%"
   },
-  gameShell: { overflow: "hidden" },
+  gameStage: {
+    alignItems: "stretch"
+  },
+  gameShell: {
+    maxWidth: "100%",
+    overflow: "hidden"
+  },
   fullScreen: {
     flex: 1,
     minHeight: 0
@@ -1577,14 +1786,14 @@ const styles = StyleSheet.create({
   changelogBackdrop: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
-    backgroundColor: "rgba(16,32,24,0.62)",
+    backgroundColor: "rgba(8,10,24,0.76)",
     justifyContent: "center",
     padding: 24
   },
   changelogCard: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7bd57",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#c897ff",
+    borderRadius: 24,
     borderWidth: 2,
     maxHeight: "86%",
     maxWidth: 460,
@@ -1592,13 +1801,13 @@ const styles = StyleSheet.create({
     width: "100%"
   },
   changelogKicker: {
-    color: "#15724f",
+    color: "#8058ad",
     fontSize: 12,
     fontWeight: "900",
     marginBottom: 6
   },
   changelogTitle: {
-    color: "#102018",
+    color: "#2b2140",
     fontSize: 24,
     fontWeight: "900"
   },
@@ -1612,7 +1821,7 @@ const styles = StyleSheet.create({
   },
   changelogItem: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 16,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -1635,7 +1844,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     borderColor: "rgba(16,32,24,0.12)",
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
     height: 68,
     justifyContent: "center",
@@ -1654,20 +1863,23 @@ const styles = StyleSheet.create({
   },
   changelogButton: {
     alignItems: "center",
-    backgroundColor: "#15724f",
-    borderRadius: 8,
+    backgroundColor: "#ffbd4a",
+    borderColor: "#b5791d",
+    borderRadius: 14,
+    borderWidth: 1,
     justifyContent: "center",
     marginTop: 18,
     minHeight: 44
   },
   changelogButtonText: {
-    color: "#ffffff",
+    color: "#2b2140",
     fontWeight: "900"
   },
   versionToast: {
-    backgroundColor: "#102018",
-    borderColor: "#d7bd57",
-    borderRadius: 8,
+    alignSelf: "center",
+    backgroundColor: "#211936",
+    borderColor: "#c897ff",
+    borderRadius: 18,
     borderWidth: 1,
     left: 18,
     paddingHorizontal: 14,
@@ -1695,8 +1907,8 @@ const styles = StyleSheet.create({
     marginTop: 10
   },
   versionToastPrimaryButton: {
-    backgroundColor: "#d7bd57",
-    borderRadius: 8,
+    backgroundColor: "#ffbd4a",
+    borderRadius: 11,
     paddingHorizontal: 12,
     paddingVertical: 7
   },

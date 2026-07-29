@@ -1,9 +1,9 @@
 export const minigameAssets = {
   webRunner: {
-    sheet: require("../../assets/minigames/unknown/ChatGPT Image 18 jun 2026, 12_17_33.png")
+    sheet: require("../../assets/minigames/unknown/ChatGPT Image 18 jun 2026, 12_17_33.webp")
   },
   arcade: {
-    sheet: require("../../assets/minigames/unknown/ChatGPT Image 18 jun 2026, 12_18_21.png")
+    sheet: require("../../assets/minigames/unknown/ChatGPT Image 18 jun 2026, 12_18_21.webp")
   }
 } as const;
 

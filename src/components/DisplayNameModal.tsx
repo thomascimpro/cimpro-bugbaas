@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Animated, Image, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { nativeDriver } from "../services/animationPlatform";
 import { useI18n } from "../services/i18n";
 import { User } from "../types";
 
@@ -15,12 +16,26 @@ export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
   const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const entrance = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!visible) return;
     setDisplayName(user?.displayName ?? "");
     setError("");
   }, [user?.displayName, visible]);
+
+  useEffect(() => {
+    if (!visible) return;
+    entrance.setValue(0);
+    const animation = Animated.spring(entrance, {
+      friction: 7,
+      tension: 82,
+      toValue: 1,
+      useNativeDriver: nativeDriver
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [entrance, visible]);
 
   async function submit() {
     setBusy(true);
@@ -43,7 +58,13 @@ export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
   return (
     <Modal transparent animationType="fade" visible={visible} onRequestClose={onCancel ? cancel : (() => undefined)}>
       <View style={styles.backdrop}>
-        <View style={styles.card}>
+        <Animated.View style={[styles.card, {
+          opacity: entrance,
+          transform: [{ scale: entrance.interpolate({ inputRange: [0, 1], outputRange: [0.94, 1] }) }]
+        }]}>
+          <View style={styles.identityBadge}>
+            <Image accessibilityIgnoresInvertColors source={require("../../assets/generated/bugbaas-field-emblem-v3.png")} style={styles.identityImage} />
+          </View>
           <Text style={styles.title}>{t("modal.nameTitle")}</Text>
           <Text style={styles.subtitle}>{t("modal.nameSubtitle")}</Text>
           <TextInput
@@ -63,7 +84,7 @@ export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
             </Pressable>
           )}
           {!!error && <Text style={styles.error}>{tr(error)}</Text>}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -72,26 +93,49 @@ export function DisplayNameModal({ user, visible, onSave, onCancel }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     alignItems: "center",
-    backgroundColor: "rgba(16,32,24,0.58)",
+    backgroundColor: "rgba(8,12,28,0.76)",
     flex: 1,
     justifyContent: "center",
     padding: 24
   },
   card: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fff9e9",
+    borderColor: "#e4c06b",
+    borderRadius: 26,
     borderWidth: 1,
-    padding: 18,
+    elevation: 16,
+    maxWidth: 460,
+    padding: 22,
+    shadowColor: "#050817",
+    shadowOffset: { height: 14, width: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 22,
     width: "100%"
   },
+  identityBadge: {
+    alignItems: "center",
+    alignSelf: "center",
+    backgroundColor: "#161a35",
+    borderColor: "#e4c06b",
+    borderRadius: 38,
+    borderWidth: 2,
+    height: 76,
+    justifyContent: "center",
+    marginBottom: 12,
+    marginTop: -5,
+    width: 76
+  },
+  identityImage: {
+    height: 62,
+    width: 62
+  },
   title: {
-    color: "#102018",
+    color: "#17182b",
     fontSize: 24,
     fontWeight: "900"
   },
   subtitle: {
-    color: "#53645d",
+    color: "#706658",
     fontSize: 14,
     fontWeight: "800",
     marginBottom: 14,
@@ -100,7 +144,7 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: "#ffffff",
     borderColor: "#cfd8d3",
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
     color: "#17211c",
     fontSize: 16,
@@ -109,8 +153,8 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: "#15724f",
-    borderRadius: 8,
+    backgroundColor: "#6b3fc6",
+    borderRadius: 15,
     minHeight: 52,
     justifyContent: "center"
   },
@@ -120,16 +164,16 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     alignItems: "center",
-    backgroundColor: "#eef4ed",
-    borderColor: "#cfd8d3",
-    borderRadius: 8,
+    backgroundColor: "#f2ead8",
+    borderColor: "#d6c7a6",
+    borderRadius: 15,
     borderWidth: 1,
     justifyContent: "center",
     marginTop: 10,
     minHeight: 48
   },
   cancelButtonText: {
-    color: "#102018",
+    color: "#2b2940",
     fontWeight: "900"
   },
   error: {

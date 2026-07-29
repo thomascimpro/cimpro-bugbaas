@@ -1,5 +1,428 @@
 # Test Results
 
+## 2026-07-29 BugBaas 3.0.5 Android-release
+
+- `npm run typecheck`: **passed**.
+- TypeScript-tests die in de bestaande Node-runner passen: **408/408 passed**; Museum reward-model afzonderlijk: **4/4 passed**.
+- JavaScript/MJS-tests buiten dependency-mappen: **136/136 passed**; gerichte BugScan-, deployment- en source-scopecontroles: **22/22 passed**.
+- `npm run apk:release -- --no-daemon` met verplichte productie-envcontrole: **BUILD SUCCESSFUL**; de ingebouwde BugDex-artvalidatie is geslaagd.
+- APK-badging: package `nl.cimpro.bugbaas`, `versionCode 314`, `versionName 3.0.5`, minSdk 26, targetSdk 36, alleen ARM64.
+- `apksigner verify`: **passed**, APK Signature Scheme v2; certificaat SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`, gelijk aan de openbare 3.0.4-APK.
+- APK: `dist/BugBaas-3.0.5.apk`, 111.939.274 bytes, SHA-256 `29B570E08FAA9917043AA0A6E0482FFF9174DCB53D7C5B1F752081B257946BFF`.
+- Pakketanalyse bevestigt de productie-URL, Firebase-project en Functions-route; geen van de lokaal aanwezige serversecrets is in de APK gevonden.
+- Er was geen ADB-device of emulator aangesloten; installatie en fysieke camera-/gameplaycontrole konden daarom niet worden uitgevoerd.
+- De losse Daily-/Weekly-runners blijven onder kale Node geblokkeerd door React Native/Firebase-module-resolutie; typecheck, de overige suites en de productiebuild zijn wel groen.
+
+## 2026-07-29 BugBaas 3.0.4 productiecorrecties
+
+- `npx tsc --noEmit`: **passed**.
+- Expo web-export: **passed**, 1.370 modules en een AppEntry-bundle van circa 3,12 MB.
+- Zoekzone-API plus Vleugeljacht-prototypetests: **12/12 passed**; unlock-, Safari-timing- en structuurtests: **11/11 passed**.
+- Gerichte BugScan-classificatie- en prompttests: **passed**. De volledige classificatiesuite eindigt nog rood op de al bestaande 500/249-catalogussynchronisatiecontrole.
+- Localhost met het opgegeven testaccount op 390x844 en iPhone-Safari user-agent: login, camerainput met `capture=environment`, trading, ontgrendelde Vleugeljacht en route/workspacebehoud na 390x844 -> 844x390 zijn gecontroleerd; 0 browserconsolefouten.
+- Een echte WebKit-/fysieke-iPhone-run was niet beschikbaar; de browsertest gebruikte Chrome met mobiele touch- en Safari-user-agentemulatie.
+- Vercel remote build `dpl_Ayvp4aHox6r2bNxEcBL4cKXFHe1E`: **READY**. `https://bugbaas.vercel.app` geeft HTTP 200 voor app en Vleugeljacht; de nieuwe vangzone, verborgen knop, tik-op-speelveld en netslag staan aantoonbaar in de productie-assets.
+- Productie-API: zoekzones HTTP 200 met 24 resultaten rond Utrecht; BugScan zonder login HTTP 401; CORS-preflight HTTP 204 voor `https://bugbaas.vercel.app`; AppEntry bevat Firebase-project `thomascimpro-6266f`.
+- Vercel-runtimecontrole na de smoke toont 200/204/401 en geen 5xx. Alleen een Node `url.parse()`-deprecationwaarschuwing vanuit de zoekzone-afhankelijkheid is zichtbaar.
+- De losse weekly-unitrunner start onder Node 24 niet door bestaande extensionless TypeScript-module-resolutie; typecheck en productie-export zijn wel groen.
+
+## 2026-07-29 Vleugeljacht 3D exact in-app Android-integratie
+
+- `npm run typecheck`: **passed**.
+- Gerichte structuur- en prototype-tests: **passed**.
+- Android `:app:syncButterflyCatchAssets`: **passed**.
+- Gegenereerde APK-assets bevatten `index.html`, key-art, `prototype.js` en Three.js `0.180.0`; er staan geen HTTP(S)-URL's in deze gamebundle.
+- Na normalisatie van regeleinden en herstel van uitsluitend de lokale importregel is de gegenereerde `prototype.js` gelijk aan de Vercel-bron: **sameGameLogic=true**.
+- Geen APK-build, emulatorinstallatie of fysieke Android-test uitgevoerd, conform het verzoek van de gebruiker.
+
+## 2026-07-29 officiële release 3.0.1
+
+- `npm run typecheck`: **passed**.
+- `npm run validate:bug-art`: **1/1 passed**.
+- Gerichte Vlindervangst-, arcade-, Museum-, Daily- en foregroundtests: **32/32 passed**.
+- `git diff --check`: **passed**; alleen bestaande LF/CRLF-waarschuwingen.
+- Android `assembleRelease` met `bugbaasLegacyDebugSigning=false`: nieuwe APK aangemaakt op 29-07-2026 13:06:03.
+- APK-badging: package `nl.cimpro.bugbaas`, versionCode `309`, versionName `3.0.1`, minSdk 26, targetSdk 36.
+- `apksigner verify`: **passed**, één signer, APK Signature Scheme v2, CimPro-uploadcertificaat SHA-256 `c83a95d344b2068c09fd1e9d921b102b248857dbeca330122f2c9e756dacceff`.
+- APK: `dist/BugBaas-3.0.1.apk`, 113.944.518 bytes, SHA-256 `A548081F0266A053A047C87DA6A64CCF45C6D0A4DC750EFB596D08E332797D13`.
+- Vercel `dpl_F6TftPPj35JeQyEs8dAySD5sEoSF`: **READY**, productionalias `https://bugbaasv3.vercel.app`.
+- Aliascontrole: root, 3D-game en actuele AppEntry-bundle geven HTTP 200; bundle bevat zowel Vlindervangst als versie 3.0.1. Vercel rapporteert geen runtimefouten in het gecontroleerde halfuur.
+- Geen fysieke Android-installatie uitgevoerd; signing, metadata en bestand zijn wel rechtstreeks op de gebouwde APK gevalideerd.
+
+## 2026-07-29 360° HD-vlindervangst prototype
+
+- TDD-redfase: **0/4 passed** omdat de nieuwe `prototype.js`, sensorbesturing, wereldbouwers en HD-netcontracten nog ontbraken.
+- `node --check prototypes/butterfly-catch-3d/prototype.js`: **passed**.
+- `node --test prototypes/butterfly-catch-3d/prototype.test.mjs`: **4/4 passed**.
+- Headless Chrome met Three.js r180, WebGL en SwiftShader heeft `index.html` rechtstreeks geladen; de module initialiseerde en het canvas rapporteerde `data-engine="three.js r180"`.
+- Gecontroleerd: 360°-UI, Device Orientation-permissiepad, herkalibratie, dragfallback, volledige wereldbouwers, instanced begroeiing, geavanceerde vlinderdelen, fullscreen, staged netanimatie en maximaal één vangst per slag.
+- Niet bewezen in deze omgeving: echte gyroscoopwaarden, haptiek, telefoon-FPS en visuele kwaliteit op fysiek Android-apparaat.
+- Geen Expo-build, APK-build, Firebase-test of deployment uitgevoerd; de bestaande app is niet gewijzigd.
+
+## 2026-07-28 Bug Brain vragenbank-audit
+
+- Voor de wijziging gedetecteerd: **20** NL-, **19** EN- en **6** FR-expertvragen met taxonomisch woordstam-verraad; **393** Nederlandse vragen met foutieve werkwoordvolgorde; **1000** uitlegteksten per taal met een kleine letter na de eerste punt.
+- Na de wijziging: **1000/1000 unieke vragen per taal**, 0 exacte antwoordlekken, 0 gedetecteerde kromme Nederlandse bijzinnen en 0 uitlegteksten met kleine-letterstart.
+- De voorbeeldvraag over de bidsprinkhaan geeft nu `Mantodea` als antwoord en formuleert de aanwijzing als een aparte correcte zin.
+- `node --experimental-strip-types --test src/services/bugQuizService.test.ts`: **11/11 passed**.
+- Geen APK-, emulator- of deploymenttest uitgevoerd; alleen de vragenbank en bijbehorende services zijn gewijzigd.
+
+## 2026-07-28 3.0.0-beta.8 Journaal-scroll en Weekvondst
+
+- TDD-redfase bevestigde de volledige `Animated.View` rond het Veldjournaal, ontbrekende overscrollbeveiliging en de nog ontbrekende wekelijkse soortselectie/reward-core.
+- `npm run typecheck`: **passed**. Hiervoor zijn vijf dubbele, al bestaande BugArt-objectregels verwijderd; de eerste mappings en assets zijn ongewijzigd gebleven.
+- Gerichte scherm-, collectie- en weekrotatietests: **32/32 passed**.
+- Gerichte Firebase reward-, milestone- en researchtests: **10/10 passed**; `node --check firebase/functions/index.js`: **passed**.
+- Android releasebuild: **BUILD SUCCESSFUL in 4m 43s**. APK `3.0.0-beta.8`, versionCode `307`, ABI `x86_64`, SHA-256 `DD04EE59C713B945EF2886A9DE7651EB9362DBC1A13B161ACE3072F3B107D464`.
+- Small Phone 720×1280: APK-installatie geslaagd; Wereld toont Weekvondst met Oorworm, Meikever en Bladluis, `+50 XP + Episch`, en `Maak een foto` opent BugScan zonder een scan te verbruiken.
+- Journaaltestaccount had geen veldnotities. Zes opeenvolgende neerwaartse scroll/overscrollframes zijn vastgelegd; in ieder inhoudsvlak was de puur-witte pixelratio **0%** en bleef circa **57,5%** de ingestelde papierkleur.
+- Screenshots lokaal: `%TEMP%\bugbaas-beta8-world-weekvondst-full.png`, `%TEMP%\bugbaas-beta8-journal-top.png` en `%TEMP%\bugbaas-beta8-journal-scroll\frame-00.png` t/m `frame-06.png`.
+- Geen Firebase Functions-deployment of APK-publicatie uitgevoerd. De UI en pure/idempotente serverlogica zijn getest; een echte reward-uitbetaling is nog niet live of end-to-end uitgevoerd.
+
+## 2026-07-28 BugDex 500 en Crown-rangen
+
+- Runtime/cataloguspariteit: **500/500 entries**, 500 unieke IDs; rarity-verdeling is gelijk in app en shared catalogus.
+- Assetaudit: **269 PNG’s**, 0 WebP’s en 0 dubbele stems in `assets/bugdex`; `aardhommel.png` en `weidehommel.png` zijn 768×768 RGBA met volledig transparante hoeken.
+- `node --no-warnings --experimental-strip-types --test src/services/bugCrownService.test.ts src/screens/BugSmashDuelScreen.structure.test.ts`: **16/16 passed**.
+- `node --no-warnings --experimental-strip-types --test src/services/bugDexCatalog.test.ts src/services/generatedBugArt.test.ts`: **14/14 passed**.
+- Geselecteerde progression-tests: **6/6 passed**; Firebase deployment-package tests: **5/5 passed**.
+- `npm run typecheck`: **passed**. `git diff --check`: **passed** met alleen bestaande LF/CRLF-waarschuwingen.
+- Volledige `bugProgressionCatalog.test.ts` blijft **1 test rood** omdat de al aanwezige `bug_brain_daily`-unionwaarde ontbreekt in `legacyRewardSourcePolicies`; dit is niet door deze wijziging geïntroduceerd.
+- Geen browser/device/deployment-validatie uitgevoerd.
+
+## 2026-07-27 Arcade fullscreen launch
+
+- Browser-redfase op 390×844: Tap Duel Practice sloot de game-modal direct en keerde terug naar de Play-hub zodra `onFullscreenChange(true)` werd uitgevoerd.
+- Root cause test: `App.tsx` wisselde de app-shell van `SafeAreaView` naar `View`, waardoor React de volledige Play-subtree remountte.
+- `node --experimental-strip-types --test src/screens/AppDuelFullscreen.structure.test.ts src/screens/PlayScreen.test.ts src/screens/BugSmashDuelScreen.structure.test.ts`: **18/18 passed**.
+- `npm run typecheck`: passed.
+- `git diff --check -- App.tsx src/screens/AppDuelFullscreen.structure.test.ts`: passed; alleen de bestaande LF/CRLF-waarschuwing werd gemeld.
+- Mobiele Playwright-groenfase: Practice bleef open met Training-HUD en timer; Ranked bleef open met Random-HUD, timer en speelbare targets.
+- Browserconsole: 0 errors. Alleen de bekende React Native Web `useNativeDriver` fallback-waarschuwing.
+- Nog niet naar Vercel gedeployed.
+
+## 2026-07-27 Field-note receipt verification
+
+- Red phase: the cross-runtime test reproduced the defect; a v2 receipt signed from the configured secret was rejected by both verifier paths because verification used only a stale hardcoded public key.
+- `node --test scripts/realBugScanReceiptIntegration.test.mjs`: **4/4 passed** after the fix.
+- Coverage confirms same-secret acceptance, different-secret rejection, UID binding and ten-minute expiry in both shared/Vercel and Firebase receipt modules.
+- `npm --prefix firebase/functions test`: **63/63 passed**.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed; only existing LF/CRLF warnings were reported.
+- No authenticated production field-note save has been executed because production secret rotation and deployment require explicit release approval.
+
+
+## 2026-07-27 BugDex unlock popup rarity styling
+
+- TDD-redfase bevestigde dat de 3.0-popup nog archive-components en vaste paarse/beige accenten gebruikte.
+- `node --experimental-strip-types --test src/components/BugDexUnlockModal.structure.test.ts`: **3/3 passed**.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed; alleen bestaande LF/CRLF-waarschuwingen werden gemeld.
+- De tests bewaken rarity-kleuren, de ronde achtergrond en het verwijderen van `JournalStamp`, `SpecimenFrame`, `RarityMarks` en plinth-elementen.
+- Nog geen fysieke mobiele browsertest uitgevoerd.
+
+
+## 2026-07-27 Arcade ranked/practice launch
+
+- Added regression coverage proving Ranked and Practice clear stale duel state before launch.
+- Verified the new Practice launcher is wired for Web Runner and Bubble Swarm; the remaining non-tap modes use the same function.
+- `node --experimental-strip-types --test src/screens/BugSmashDuelScreen.structure.test.ts src/screens/PlayScreen.test.ts`: **17/17 passed**.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed; only existing LF/CRLF warnings were reported.
+- No authenticated physical-mobile browser run was performed.
+
+
+## 2026-07-27 Zwermbeleg boss-art mobile
+
+- Regressietest eerst rood gemaakt voor expliciete afbeeldingsafmetingen en grotere compacte hero.
+- `node --experimental-strip-types --test src/screens/WorldScreen.structure.test.ts`: **14/14 passed**.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed; alleen bestaande LF/CRLF-waarschuwingen.
+- Nog niet gedeployed; releasegrens vereist expliciete toestemming.
+
+
+## 2026-07-27 Persistent mobile Play workspace
+
+- TDD-redfase bevestigde dat Play geen ingeklapte activiteitensecties had en `PLAY NOW` geen schone Arcade-workspace afdwong.
+- `node --experimental-strip-types --test src/screens/PlayScreen.test.ts src/screens/BugSmashDuelScreen.structure.test.ts`: **16/16 passed**.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed; alleen bestaande LF/CRLF-waarschuwingen werden gemeld.
+- De fix ontkoppelt de modale workspace bij sluiten en wist het duel-ID wanneer `PLAY NOW` wordt gebruikt.
+- Nog geen fysieke mobiele browsertest uitgevoerd.
+
+
+## 2026-07-27 Foreground rewards and field-note authentication
+
+- Focused foreground and field-journal tests: **4/4 passed**.
+- Firebase Functions package tests: **63/63 passed**.
+- `npm run typecheck`: passed.
+- `node --check firebase/functions/index.js`: passed.
+- `git diff --check`: passed with only existing LF/CRLF notices.
+- Expo web export completed with 405 assets.
+- Firebase deployment succeeded for `recordVerifiedObservation` and `listVerifiedObservations`.
+- Vercel deployment `dpl_5db4npGo9MYbTpj6Nm2JGbtwFerU` is Ready; production `/` and `AppEntry-2af6a32affb92ea52ba65823707b79b7.js` return HTTP 200.
+- Authenticated field-note saving and an actual foreground spawn on every route remain unverified manually.
+
+## 2026-07-26 Museum mobile scrolling
+
+- `node --experimental-strip-types --test src/screens/MuseumStageRail.structure.test.ts src/screens/MuseumScreenLayoutModel.test.ts`: **8/8 passed**.
+- Nieuwe structuurtest bevestigt één verticale Museum-paginascroll, geen opgesloten panelscroll en BottomNav/safe-area onderruimte.
+- Eerste testpoging met `--import tsx` faalde omdat `tsx` niet als dependency is geïnstalleerd; opnieuw uitgevoerd met de bestaande Node type-strip workflow.
+- Volledige `npm run typecheck` overschreed de tool-time-out en is daarom niet als geslaagd gelabeld.
+- Geen deployment of fysieke telefoontest uitgevoerd.
+
+## 2026-07-26 Duel navigation consolidation
+
+- TDD red phase confirmed the old three-tab model and missing BugDex helper detail.
+- `node --experimental-strip-types --test src/screens/PlayScreen.test.ts src/screens/BugDexScreen.structure.test.ts src/screens/BugSmashDuelScreen.structure.test.ts`: **13/13 passed**.
+- `npm run typecheck`: passed.
+- Targeted `git diff --check`: passed; only the existing LF/CRLF notice for `App.tsx` was reported.
+- No deployment or authenticated device/browser gameplay test was performed.
+
+## 2026-07-26 Mobile arcade grid
+
+- TDD red phase: existing horizontal arcade rail failed the new six-game grid and compact Solo Campaign assertions.
+- `node --experimental-strip-types --test src/screens/BugSmashDuelScreen.structure.test.ts`: **6/6 passed**.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir dist-arcade-grid-check --clear`: passed with 405 assets.
+- Authenticated Playwright QA on localhost: all six game titles, locked states and Solo Campaign rendered at 360x800, 412x915 and 800x1280.
+- Measured document widths matched every viewport exactly: 360/360, 412/412 and 800/800; no horizontal overflow.
+- At 360x800 the last game row starts at y=556, Solo Campaign at y=656.5 and Active Bug Squad at y=754. This keeps all game choices visible while allowing later content to scroll.
+- Existing localhost CORS failures for remote status functions and Firestore 403 writes remained visible; they were unrelated to this layout change. No deployment performed.
+
+## 2026-07-26 Draggable Bug World map
+
+- TDD red phase confirmed missing map-movement helpers, independent viewport state, debounce/reload behavior and insufficient two-decimal zone-cache precision.
+- Targeted projection, map structure and OSM search-zone regressions: **19/19 passed**.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir %TEMP%\bugbaas-map-drag-check --clear`: passed with 405 assets.
+- Authenticated headless Chrome check: the map loaded with its responder attached; a 240 px drag shifted tile positions and requested `/api/nearby-search-zones` for the new viewed center; zoom changed OSM tiles from level 13 to 14; the zone legend hid and restored; no runtime exception occurred.
+- The browser test account had zero stored findings, so selectable finding-marker preservation is covered by source regression rather than a live marker click. No physical Android test or deployment was performed.
+
+## 2026-07-26 BugScan unlock confirmation
+
+- TDD red phase confirmed failures for missing immediate scan presentation, missing granted-drop handoff and missing screen callback.
+- Focused reward/presentation/screen regressions: **12/12 passed**.
+- `npm run test:real-bug-scan`: **70/70 passed**.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir dist-scan-unlock-check --clear`: passed with 405 assets.
+- `http://localhost:8085` was not running, so no authenticated browser screenshot or real camera/API scan was performed. No deployment was performed.
+
+## 2026-07-26 BugDex checkerboard asset cleanup
+
+- Pixel audit: **249/249 active BugDex mappings inspected**, **0 checkerboard suspects remain** after replacing 11 mappings.
+- `node --experimental-strip-types --test src/services/bugDexCatalog.test.ts`: **10/10 passed**, including the checkerboard-path regression.
+- `npm run typecheck`: passed.
+- Expo web export: passed and resolved the replacement artwork files.
+- The clean Mosquito asset was visually inspected directly. No physical Android or deployed Vercel rendering was performed.
+
+## 2026-07-26 Museum rewards and endgame
+
+- Museum reward/model and existing Museum regressions: **17/17 passed**.
+- Firebase Museum reward core and deployment-package regressions: **11/11 passed**, including duplicate-observation and Water-habitat checks.
+- `node --check firebase/functions/index.js`: passed.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir dist-museum-rewards-check --clear`: passed with 408 bundled assets.
+- No authenticated Firebase transaction, browser screenshot, physical device or deployed-function result is claimed.
+
+## 2026-07-26 Duel launch and Play hero framing
+
+- Targeted Duel/Play regressions: **6/6 passed**, including the visible Duel launch actions and landscape-friendly Duel/Ranking hero frame.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir dist-duel-check --clear`: passed with the V3 bundle and 407 assets.
+- No device, Vercel or Firebase result is claimed; physical Android rendering still needs a phone/emulator retest.
+
+## 2026-07-26 BugDex ranking and back navigation
+
+- Targeted ranking/Play regressions: **7/7 passed**, including the unlocked-bugs mode, `bugDexCount` metric and Ranking back action.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir dist-ranking-check`: passed with the V3 bundle and 407 assets.
+- No device, Vercel or Firebase result is claimed; physical Android rendering still needs a phone/emulator retest.
+
+## 2026-07-26 BugScan review safe area
+
+- Targeted review/layout regressions: **6/6 passed**, including explicit review-stage scrolling and compact phone action styles.
+- `npm run typecheck`: passed.
+- `npm run test:real-bug-scan`: **69/69 passed**.
+- `npx expo export --platform web --output-dir dist-review-check`: passed with the V3 bundle and 407 assets.
+- No device, Vercel or Firebase result is claimed; physical Android rendering still needs a phone/emulator retest.
+
+## 2026-07-26 2.10.20 mission parity
+
+- Mission regression tests: **4/4 passed** (daily/weekly template contents, progress values, completion rules and absence of tier fields). The tests were run with a temporary Node shim for the app's React Native Firebase imports.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir dist-missions-check`: passed with the V3 bundle and 407 assets.
+- No physical device, Firebase write, Vercel deployment or production mission-flow result is claimed.
+
+## 2026-07-26 Vercel v3 audio parity
+
+- `node --experimental-strip-types --test src/services/webSoundProfile.test.ts`: **4/4 passed**, including byte-for-byte Android/web asset comparison.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web`: passed; Expo included all 12 WAV files as hashed web assets.
+- Production deployment `dpl_5XnpKCQkSdtxVuPVdFPadEYw2Wbm` is READY at `https://bugbaasv3.vercel.app`.
+- Live verification: all 12 hashed WAV URLs returned HTTP 200 and matched the exported file hashes.
+
+## 2026-07-26 Mobile viewport corrections
+
+- Added structural regressions for BugScan camera width/gallery reachability, Swarm boss bounds, Play Arcade art and the Museum editor overlay; targeted UI suite: **22/22 passed**.
+- `npm run typecheck`: passed.
+- `npm run test:real-bug-scan`: **69/69 passed**.
+- `npx expo export --platform web --output-dir %TEMP%/bugbaas-3-layout-check`: passed with 1069 modules and 395 assets.
+- No device, Vercel or Firebase result is claimed; physical rendering still needs a phone/emulator retest.
+
+## 2026-07-26 V3 compact Android beta APK
+
+- `npm run typecheck`: passed.
+- Complete project-owned source suite: **265/265 passed**.
+- `:app:assembleRelease`: passed after a clean release build.
+- APK metadata: package `nl.cimpro.bugbaas`, version code `300`, version `3.0.0-beta.1`, minimum SDK 26, target SDK 36 and ABI `arm64-v8a`.
+- APK signing: v2 verified; certificate SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- Artifact: `dist/BugBaas-3.0.0-beta.1.apk`, 78,846,105 bytes / 75.19 MiB, SHA-256 `80BDDC938F15F871F2985A58AE83D2F53C676251FD1B5AA93143701186BC4248`.
+- Size comparison: 28.84 MiB / 27.7% smaller than the previous 104.04 MiB release APK.
+- `adb devices -l`: no connected device or emulator. Installation, camera, Google Sign-In and physical image rendering were not run.
+- Firebase and Vercel were not changed.
+
+## 2026-07-25 Commercial game refactor slice 1
+
+- `npm run typecheck`: passed.
+- Targeted shell, World, survival-game, quiz and Firestore checks: **43/43 passed**.
+- `npm run test:real-bug-scan`: **65/65 passed**.
+- `node --test firebase/functions/*.test.js api/nearby-search-zones.test.js`: **55/55 passed**.
+- `npx expo export --platform web --output-dir output/web-export-redesign-v3 --clear`: passed with 1042 modules and 371 assets.
+- Authenticated localhost browser: World rendered at 390x844, 768x1024 and 1440x900 with no horizontal overflow at 390 px.
+- Popup coverage: all five onboarding steps and the auto-opened Museum editor were opened and captured.
+- Bubble Swarm practice opened, started and rendered its live playfield. Bug Tower runtime remains progression-locked for this account; its endless contract is covered by source and balance tests.
+- Browser exposed CORS failures from currently deployed Functions for `127.0.0.1`. The source allowlist fix and regression test pass, but the deployed behavior remains unchanged because no deployment was authorized.
+- Screenshots: `screenshots/redesign-v3/`.
+- Physical Android camera, touch, Back, text scaling and launcher-icon rendering remain unverified.
+
+## 2026-07-25 V3 World biome visual implementation
+
+- `node --experimental-strip-types --test --test-force-exit src/screens/WorldScreen.test.ts src/screens/WorldScreen.structure.test.ts src/screens/world/WorldTodayModel.test.ts src/screens/world/WorldBiomeHero.structure.test.ts`: **22/22 passed**.
+- The new regression proves World marker visuals no longer use the `⌖`, `⌁`, `◎` or `?` placeholder text symbols.
+- Targeted TypeScript program check for `WorldScreen.tsx`, `WorldBiomeHero.tsx` and `ResearchProgressCard.tsx`: **0 diagnostics**.
+- Full `npm run typecheck` and direct `npx tsc --noEmit` each exceeded the DevSpace command window without producing diagnostics; this is not recorded as a passing full-project typecheck.
+- Two fresh Expo web-export attempts timed out through DevSpace before creating the temporary output directory, so no new browser screenshot is claimed for this pass.
+- Physical Android small-screen, large-text, touch and Back QA remains open. No deployment was performed.
+
+## 2026-07-24 V3 authenticated production corrections (local source)
+
+- `node --test api/nearby-search-zones.test.js`: **3/3 passed**, including verification that the Overpass request receives an abort signal.
+- Complete project-owned source suite: **231/231 passed**.
+- New regressions cover stalled client requests, retryable map failure, permanent Daily/Weekly access, Profile Settings navigation, Swarm preview state and localized Map/Journal/Museum copy.
+- `npm run typecheck`: passed.
+- No deployment or authenticated production retest was performed after these source changes.
+
+## 2026-07-24 V3 authenticated full production test
+
+- Email login with the supplied synthetic QA account: passed; credentials were not stored in repository files.
+- Mobile production viewport: 390x844 with no horizontal overflow.
+- World Today: Next Action, Research and movement loaded without runtime errors.
+- Daily/Weekly missions: failed discoverability; both were absent because movement won the contextual module priority and no permanent Missions entry exists.
+- Events: Swarm Siege opened and preview detail loaded. Events card incorrectly showed `UPCOMING` and said preview opens Friday at 12:00 after that time had already passed.
+- Map: base map, synthetic browser geolocation and recenter passed. Nearby search zones remained on `Zoekzones laden…` after more than 20 seconds.
+- Direct production search-zone request: timed out after 35 seconds with 0 bytes received. `api/nearby-search-zones.js` currently has no upstream abort timeout.
+- BugScan: gallery upload, image review, production AI request and result passed. Composite multi-bug illustration was correctly rejected as `NO BUG IDENTIFIED`; allowance remained 3/3 and no reward was created.
+- Play: Tap Duel Training and Bubble Swarm Training launched; both showed no-reward/training behavior. Duel and Ranking were correctly locked for an account with 4/10 species; Web Runner and Solo Campaign remained locked by progression.
+- Collection: BugDex, Museum, Journal, squad editor, Trade and Upgrades opened without runtime or HTTP errors. No trade or upgrade transaction was confirmed.
+- Profile: profile and complete badge overview opened. Settings has no normal in-app entry; the existing Settings route is only reached from the FitnessSyncer callback path.
+- Language: selected English still contains Dutch Map, Expedition, Journal and Museum/editor copy.
+- Browser diagnostics: no app console errors, page errors or HTTP 4xx/5xx responses during tested flows. Chrome emitted one semantic warning because the password field is not inside an HTML form.
+- Not executed: Google login, logout/session restore, successful legitimate single-bug reward, physical Android camera/location/touch/Back, tablet, multi-user trade/duel/event, and locked modes after unlock.
+- Detailed review: `docs/reviews/2026-07-24-bugbaas-v3-authenticated-production-test.md`.
+- Updated correction plan: `docs/plans/2026-07-24-bugbaas-v3-production-qa-plan.md`.
+
+## 2026-07-24 V3 live functional review
+
+- Production root `https://bugbaasv3.vercel.app/`: HTTP 200.
+- Fresh 390x844 browser context: login shell rendered without horizontal overflow, console errors, page errors, failed requests or HTTP errors.
+- Email login panel opened and exposed two inputs; full email and Google authentication were not completed.
+- Production-origin CORS preflights for `swarmSiegeStatus`, `researchTargetStatus` and `teamHuntStatus`: HTTP 204 with the expected origin.
+- Unauthenticated `POST /api/real-bug-identify`: HTTP 401 with a clear re-login response.
+- Project-owned automated suite: **317/317 passed** across 93 test files. Dependency tests under `firebase/functions/node_modules` were explicitly excluded.
+- Direct TypeScript check: passed with exit code 0.
+- Current Expo web export attempt remained at Metro 0%; no local-versus-production bundle comparison was produced in this review.
+- Authenticated production, Google OAuth completion, physical Android camera/location/touch and multi-user event flows remain unverified.
+- Review: `docs/reviews/2026-07-24-bugbaas-v3-live-functional-review.md`.
+- Plan: `docs/plans/2026-07-24-bugbaas-v3-production-qa-plan.md`.
+
+## 2026-07-24 Hybrid progression master production release
+
+- Complete TypeScript suite: **228/228 passed** across services, screens, components, navigation, responsive layout and five progression personas.
+- Complete Firebase Functions suite: **51/51 passed**, including deploy-package integrity, Research retry/idempotency, Momentum verification, fixed Solo Campaign milestones, monthly Team Hunt categories, eight-week seasons, Swarm target scaling for 1/5/25/100 active players and boss-run reconnect.
+- `npm run typecheck`: passed.
+- `node --check firebase/functions/index.js`: passed.
+- `git diff --check`: passed; only existing CRLF normalization warnings were emitted.
+- `npx expo export --platform web --output-dir tmp/progression-master-production`: passed with 1026 modules and 359 assets.
+- `./gradlew :app:processDebugResources`: `BUILD SUCCESSFUL`.
+- `NODE_ENV=production ./gradlew :app:assembleDebug --console=plain`: `BUILD SUCCESSFUL`; APK `android/app/build/outputs/apk/debug/app-debug.apk`, SHA-256 `5d66c1bca900b18561a9c0331c0bbe2a6ec1fff723bfc825418454552ad473db`.
+- Firestore Rules deployed successfully to `bugbaas-3`.
+- All Functions deployed successfully to `thomascimpro-6266f`; the new `claimSoloCampaignBossMilestone` endpoint returns HTTP 401 without authentication, proving it is live and protected.
+- Vercel production deployment `dpl_DerYgX6Np594ZVYP94XumQnb5g4L` is `READY`; `https://bugbaasv3.vercel.app` returns HTTP 200 and serves `AppEntry-56b852cb319589ec4e6044fbc6b2d7ab.js`.
+- Physical Android camera, touch, text-scaling and tablet checks remain unverified because `adb devices` returned no connected target.
+
+## 2026-07-24 Hybrid progression catalog Phase 0
+
+- `node --experimental-strip-types --test src/services/bugProgressionCatalog.test.ts`: 6/6 passed.
+- Coverage proves all 231 current BugDex IDs appear exactly once and no definition uses the legacy parking profile.
+- Tests validate starter IDs, Dutch field routes, all Mythic routes, campaign milestones, Swarm Siege/Team Hunt/season pools, habitats, Museum wings and exact verified-scan eligibility.
+- The legacy reward policy is checked against every current `BugDexDropSource` literal in `bugDexService.ts`.
+- `npx tsc --noEmit --pretty false`: passed after aligning the Node URL type in the structural test.
+- No gameplay screen, Firebase data, Function, rule, deployment, APK or production behavior was changed or tested in this phase.
+
+## 2026-07-23 Swarm Siege (localhost only)
+
+- `npm --prefix firebase/functions test`: 28/28 passed.
+- `node --test firebase/functions/swarmSiegeCore.test.js`: 9/9 passed, including the hard event-end run expiry.
+- `node --experimental-strip-types --test src/screens/WorldScreen.test.ts src/services/swarmSiegeGameBalance.test.ts`: 6/6 passed.
+- `node --test scripts/tsconfigSourceScope.test.mjs`: 1/1 passed.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir tmp/swarm-siege-web`: passed with 974 modules and 359 assets.
+- Headless Chromium at 412x915 rendered the exported BugBaas login shell with zero console errors and zero page errors.
+- No authenticated event run, Firebase deployment, Android resource build, APK or physical-device test was performed.
+
+## 2026-07-22 Private sightings map foundation (localhost only)
+
+- `node --test firebase/functions/privateSightingMapCore.test.js`: 2/2 passed (rounding and malformed-location rejection).
+- `node --experimental-strip-types --test src/services/privateSightingLocation.test.ts`: 1/1 passed (safe opt-out without browser geolocation).
+- Targeted TypeScript transpile for Field Journal, Scan and the location service: 0 errors; `git diff --check` passed.
+- No Firebase deployment, map provider, public map, APK validation or authenticated location permission test was performed.
+
+## 2026-07-22 Discovery UX pass
+
+- `HomeScreen.tsx`, `ExpeditionWorldScreen.tsx` and `App.tsx` transpile cleanly with TypeScript `transpileModule`.
+- `git diff --check` passes for the working tree.
+- Full `npx tsc --noEmit` did not complete inside the 64-second local command limit; this is not a passing full-project typecheck.
+- Local `http://localhost:8085/` did not respond within the 10-second smoke-check limit, so this pass has no new browser screenshot evidence.
+
+## 2026-07-22 Core-loop rework
+
+- `HomeScreen.tsx`, `MuseumScreen.tsx`, `RealBugScanScreen.tsx` and `App.tsx` transpile cleanly with TypeScript `transpileModule`.
+- `git diff --check` passes. No Firebase, Android, Vercel or 2.10.19 files were changed for this slice.
+
+## 2026-07-22 Catalog readiness
+
+- `node --experimental-strip-types --test src/services/bugDexCatalog.test.ts src/services/generatedBugArt.test.ts`: 9/9 passed.
+- Existing BugDex fact coverage gaps were filled. The first generated batch asset was chroma-keyed, resized to 512x512 and validated with an RGBA transparent corner.
+
+## 2026-07-21 3.0 Team Hunt Weekend (localhost only)
+
+- `firebase/functions/npm test`: 16/16 passed, including Team Hunt's Friday–Monday boundary, unsafe-observation rejection and unique-species identity normalization.
+- `node --check firebase/functions/index.js`: passed.
+- `git diff --check`: passed.
+- The Team Hunt endpoints and additive Firestore rules are source-validated only in this slice; no 3.0 Function/rules deploy, authenticated team event or production UI test was performed.
+
+## 2026-07-21 BugBaas 3.0 verified observations
+
+- Local receipt signer/verifier smoke passed; `npm run test:real-bug-scan` passed 65/65.
+- `http://localhost:8085` returns HTTP 200; the local scan API preflight and Firebase journal preflight both return 204 for this origin.
+- Firestore rules compiled and were released; `recordVerifiedObservation` is ACTIVE with its receipt secret attached.
+- An invalid Firebase token is rejected with HTTP 401; no unauthenticated client can create a field note.
+- New 3.0 pure-service tests passed 4/4: Bug Professor and recognition-confidence medals. Daily Spotlight was intentionally removed because it duplicated the existing daily mission loop.
+- Metro bundled the current web beta successfully (977 modules); no Metro errors were emitted. Authenticated UI interaction remains open because no test-account credentials were used.
+- The authenticated scan-to-field-note flow and Museum/expedition clicks still require a logged-in test account; no user photo or account data was used.
+- Conservatory Guardian pure backend tests passed 3/3. They cover capped aggregate progress, contributor eligibility and malformed counters; Functions syntax and `git diff --check` passed. Full TypeScript checking exceeded the 60-second local validation budget without diagnostics, so an authenticated screen flow remains open.
+
 ## 2026-07-21 BugScan recognition release 2.10.19
 
 - `npm run test:real-bug-scan`: 65/65 passed, including the 0.70 acceptance boundary, exact-name protection, 2048 px primary input and two payload fallbacks.
@@ -824,3 +1247,194 @@ Datum: 2026-06-02
 - Local and production web bundle SHA-256 match: `0467CFA717D7F3154DDF2FDD347294DBA5E4E409B66860A59CD90EA809D32A62`.
 - GitHub latest release: `v2.10.11`; APK asset present with exact size 83,890,957 bytes.
 - `adb devices -l`: no connected device; physical install and native touch-feel remain unverified.
+
+## 2026-07-21 BugBaas 3.0 visual world slice (localhost only)
+
+- Removed the duplicate Daily Spotlight card; it added no distinct gameplay beyond existing daily missions.
+- Generated and bundled two text-free BugBaas visual assets: Museum Gallery v2 and Expedition World v2.
+- `node --experimental-strip-types --test src/services/bugProfessorService.test.ts src/services/photoQualityService.test.ts`: 4/4 passed.
+- `npm run test:real-bug-scan`: 65/65 passed.
+- `git diff --check`: passed.
+- Expo web bundle request on `http://localhost:8085`: HTTP 200, 6,987,890 bytes; it includes the current Museum v2 and Expedition World screens.
+- Authenticated browser/device interaction was not run in this slice; this is source/bundle proof only, not APK or production proof.
+
+## 2026-07-21 3.0 Conservatory Path (localhost only)
+
+- `firebase/functions/npm test`: 10/10 passed, including fixed field-milestone thresholds and malformed-count rejection.
+- `node --experimental-strip-types --test src/services/bugProfessorService.test.ts src/services/photoQualityService.test.ts src/services/expeditionWorldProgress.test.ts`: 6/6 passed.
+- `npm run test:real-bug-scan`: 65/65 passed.
+- `git diff --check`: passed.
+- Expo web bundle request on `http://localhost:8085`: HTTP 200, 7,004,748 bytes after the Museum, Expedition and milestone-reveal changes.
+- No Vercel deployment, APK build or authenticated device test was performed. The 3.0 UI remains localhost-only.
+- Firebase beta backend rollout was requested for only `recordVerifiedObservation`, `claimFieldMilestones` and Firestore rules. The CLI did not return a final summary before the local timeout, but the new `claimFieldMilestones` endpoint subsequently returned HTTP 401 without a token, proving that it is active and authentication-protected. An authenticated milestone claim still requires a test-account observation.
+
+## 2026-07-21 Field Photo Stamps (localhost only)
+
+- `node --experimental-strip-types --test src/services/bugProfessorService.test.ts src/services/fieldPhotoStampService.test.ts src/services/expeditionWorldProgress.test.ts`: 6/6 passed.
+- `npm run test:real-bug-scan`: 65/65 passed.
+- The two touched TSX screens transpiled successfully with the installed TypeScript compiler; `git diff --check` passed.
+- The reveal is source-validated only. It still needs an authenticated field-note save on a device or browser to prove the live animation and private journal persistence.
+
+## 2026-07-21 3.0 event completion (localhost UI)
+
+- Functions unit suite: 16/16 passed, covering milestones, Team Hunt weekend/species safety and Release Boss eligibility.
+- 3.0 service tests: 6/6 passed; BugScan regression suite: 65/65 passed.
+- Expo web bundle on `http://localhost:8085`: HTTP 200, 7,068,514 bytes after all event routes and visuals were added.
+- Firestore rules compiled and deployed. `recordVerifiedObservation` and `claimFieldMilestones` were updated; Team Hunt and Release Boss endpoints were created successfully.
+- Unauthenticated endpoint checks: `teamHuntStatus`, `releaseBossStatus` and `claimReleaseBossReward` each returned HTTP 401, proving authentication is required.
+- An authenticated end-to-end event contribution, reward claim and mobile animation remain the final manual beta checks. No Vercel or APK deployment was made.
+
+## 2026-07-21 Conservatory visual refresh (localhost only)
+
+- `git diff --check`: passed.
+- Expo web bundle on `http://localhost:8085`: HTTP 200, 7,075,878 bytes after the shared-shell and all-screen visual refresh.
+- Browser smoke before the refresh: login page rendered at 390x844 without visible overflow and with no console errors. Authenticated screen rendering remains a manual test-account check.
+- No Vercel deployment, APK build, gameplay change or Firebase schema/rule change was made for this visual slice.
+
+## 2026-07-21 3.0 browser regression pass (localhost only)
+
+- Mobile browser test at 390x844 with the authenticated `test2` account: Expedition World, Conservatory Guardian status, BugDex, Museum and BugScan each rendered and navigated without console errors.
+- Guardian status was read-only tested at 0/100 verified observations. No reward claim, Team Hunt contribution, photo upload or other Firebase write was submitted.
+- Corrected the local beta identity from `2.10.19` to `3.0.0-beta.1` in `package.json` and `app.json`; the live bundle contains `BugBaas 3.0 beta`.
+- Corrected startup resilience: if Firebase auth does not settle within eight seconds, the user is shown the normal login screen with an actionable message instead of an infinite loading spinner. Browser verification reached that login state with zero console errors.
+- `git diff --check`: passed. Expo bundle: HTTP 200, 7,075,872 bytes.
+- This remains a localhost beta result; no APK/Vercel release was made and a full authenticated photo-to-Firebase persistence test remains manual.
+
+## 2026-07-22 v3 visual screen pass (localhost only)
+
+- Audited all 16 screen modules. The discovery, collection, event and arena screens already use generated visual assets and/or native animation; reports and new-report now use the shared Field Operations hero.
+- `HomeScreen.tsx`, `BugListScreen.tsx` and `NewBugScreen.tsx` transpile with 0 diagnostics; `git diff --check` passed.
+- The browser tool could not attach to the ambient local tab in this session, so no new authenticated screenshots were captured. No claim, upload or Firebase write was submitted.
+
+## 2026-07-22 Buddy and minigame visual polish (localhost only)
+
+- `HomeScreen.tsx` and shared `ArcadeSquadAssist.tsx` transpile with 0 diagnostics; `git diff --check` passed.
+- Buddy status and minigame squad jars receive native animated visual layers only. Input handlers, score/timer code, rewards, Firestore and game results were not changed.
+
+## 2026-07-22 Daily Field Signal (localhost only)
+
+- `dailyFieldSignalService.test.ts`: 2/2 passed for stable local-day selection and same-day matching verified notes.
+- `HomeScreen.tsx` transpiles with 0 diagnostics; `git diff --check` passed.
+- The Signal reads existing private observations only, adds no Firebase write, GPS, AI call, daily-mission reward or extra XP.
+
+## 2026-07-23 Museum redesign (localhost only)
+
+- `node --experimental-strip-types --test src/screens/MuseumScreenModel.test.ts`: 5/5 passed.
+- `npm run typecheck`: passed.
+- `git diff --check`: passed; only existing Windows LF/CRLF conversion warnings were printed.
+- `npx expo export --platform web --output-dir .chatgpt/museum-preview`: passed; web bundle exported with the redesigned Museum and existing local artwork.
+- `MuseumScreen.tsx` contains no `activeBugSquad`, `BugJarArt`, `Arena-reservaat` or old `slice(-3)` recent-selection path.
+- Authenticated viewport screenshots at 360x800 and 412x915 remain manual visual checks.
+
+## 2026-07-24 V3 World home and Buddy expeditions (localhost only)
+
+- World/Buddy model and structure tests: 20/20 passed after final responsive cleanup.
+- `npm run typecheck`: passed.
+- `npx expo export --platform web --output-dir dist-world-home-check --clear`: passed; 992 modules bundled.
+- Authenticated Playwright check with the existing `test2` session passed at 390x844 and 920x1180. At phone size the primary scan action ends at y=716 and the bottom navigation starts at y=756; the Today view no longer scrolls or overlaps the navigation.
+- Daily and Weekly buttons opened the correct mission tab with the real 0/6 totals. Events and Map remained separate working tabs. The compact active-event card no longer repeats `Team Hunt` as kicker, title and status.
+- The Buddy reward-ready sheet fitted within 438 px at phone size. Source/model tests verify that all five expeditions remain visible when selectable, while one active task blocks starting another.
+- No reward was claimed and no scan, movement sync, Team Hunt contribution, location write or other Firebase write was submitted during browser QA.
+- Localhost still logs the known `swarmSiegeStatus` CORS failure against the deployed Cloud Function; the screen handles it and this is separate from the World layout work.
+- No Android device was connected, so native Buddy notification delivery remains unverified. No Vercel deployment, APK build or Firebase schema change was made.
+
+## 2026-07-25 BugBaas 3.0 preview release
+
+- `npm run typecheck`: passed.
+- Expo web export to `output/visual-validation/dist`: passed.
+- Firebase Functions `npm test`: 52/52 passed.
+- Real Bug Scan client/server contract suites: 65/65 passed.
+- Targeted Firestore ranked and movement rules: 3/3 passed.
+- Firebase rules/index dry run: passed.
+- All 15 selected BugBaas 3.0 Functions deployed successfully; the seven existing FitnessSyncer Functions were excluded.
+- Exact-origin CORS preflights for `researchTargetStatus`, `swarmSiegeStatus`, `releaseBossStatus` and `recordVerifiedObservation`: 204 for both staged and fixed preview origins.
+- Vercel deployment `dpl_3jp51KsDYq9aioxtWBQdrSw26C3q`: READY and promoted to `https://bugbaasv3.vercel.app`.
+- Existing `test2` account login passed on the fixed preview. World, Scan, Play and Collection opened successfully.
+- Authenticated status requests for Research, Swarm Siege and Release Boss returned 200 with zero browser console errors.
+- Main document dimensions matched the viewport at 390x844 and 1280x720; no page-level scrolling or horizontal overflow was present.
+- The preview bundle contains `thomascimpro-6266f` and does not contain the old `bugbaas-3` project ID.
+- Vercel reported no preview runtime errors in the final 30-minute validation window.
+- `bugbaas.vercel.app` still resolves to separate READY deployment `dpl_2Fw7GBpvw16jqyL9j3HNuzSdQVfC`; its HTML does not reference the 3.0 preview bundle.
+
+## 2026-07-26 local premium and gameplay pass
+
+- `npm.cmd run typecheck`: passed after the final report-sheet and World-scene changes.
+- Firebase Functions `npm.cmd test`: 52/52 passed.
+- Targeted navigation, endless arcade, BugDex catalog, duel season, reward presentation and Web Runner tests: 20/20 passed.
+- Real Bug Scan client/server suites: 69/69 passed in this source pass.
+- Expo web export to `dist-v3-current`: passed with 242 unique BugDex entries.
+- Authenticated browser checks passed at 390x844, 768x1024 and 1440x900; document dimensions matched every viewport with no page-level overflow.
+- The report sheet, Settings/FitnessSyncer dialog, Museum dialog, help tour, game picker and Bubble Swarm ready/running states were opened during browser QA.
+- The five new BugDex species are source/catalog validated. They were not granted to `test2`, so locked-card art was not exposed by mutating user data.
+- Localhost still receives CORS failures from the currently deployed older Research, Swarm and Release Boss Functions. The current source tests accept the intended preview origins; deployment remains deliberately pending.
+- No Firebase rules, Functions, Vercel project, APK or live 2.10.20 deployment was changed.
+
+## 2026-07-26 Google login repair
+
+- Reproduced `Firebase: Error (auth/unauthorized-domain)` on `https://bugbaasv3.vercel.app`.
+- Added only `bugbaasv3.vercel.app` to the existing Firebase Auth authorized-domain list.
+- Browser retest reached the official Google account chooser using the existing OAuth client and Firebase handler.
+- Existing `test2` email login passed on the same preview after the configuration change.
+
+## 2026-07-26 responsive game and World correction
+
+- `npm run typecheck`: passed.
+- Targeted Play, World, duel workspace and endless-arcade tests: 26/26 passed.
+- Expo web export to `dist-v3-current`: passed.
+- Authenticated Chrome checks passed at 390x844, 768x1024 and 1440x900.
+- Play, World, the game picker and Bubble Swarm ready/running states stayed within the viewport with no document overflow.
+- Vercel deployment `dpl_FUJ4RbRBe8V8zL1Hi5sm8HUJaXsS`: READY and aliased to `https://bugbaasv3.vercel.app`.
+- Authenticated alias recheck passed for World, Play and Bubble Swarm at 390x844; no full-page white World block was detected.
+
+## 2026-07-26 complete local QA and European BugDex pass
+
+- `npm run typecheck`: passed.
+- All source, screen, navigation, progression, reward, scan and game tests: 265/265 passed.
+- All Real Bug Scan server, API and Firebase Function tests: 95/95 passed.
+- Final catalog, generated-art and localization subset: 14/14 passed.
+- `npx expo export --platform web --output-dir dist-v3-current`: passed with 395 bundled assets.
+- Authenticated browser dimensions for World, Scan, Play and Collection exactly matched 390x844, 768x1024 and 1440x900; no horizontal or document overflow was found.
+- Browser console and page-error checks across all four main destinations returned zero errors.
+- Collection rendered `5/249`; the seven European bumblebees resolve to localized catalog entries and transparent raster art.
+- Bubble Swarm accepted a real drag shot and changed its safe-shot state. Web Runner started, scored, took damage and rendered the new three-lane tunnel. Tap Duel and its moving targets were opened in the same browser QA cycle; source tests cover the complete scoring path.
+- Reproduced Firebase `auth/unauthorized-domain` for Google login on localhost. The login screen now shows a child-friendly explanation; authorized-domain configuration remains an external release step.
+- No scan reward, mission reward, trade, Firebase deployment, Vercel deployment, APK publish or 2.10.20 live change was performed.
+
+## 2026-07-26 BugBaas 3.0 production-alias QA
+
+- Vercel deployment `dpl_AGrnxuJ1B2r9aosBUG7tYDixK3zk`: READY.
+- `https://bugbaasv3.vercel.app`: HTTP 200 and assigned to the new deployment.
+- Existing `test2` email login: passed.
+- Google login button: opened the official Firebase/Google authentication popup without `auth/unauthorized-domain`.
+- Authenticated World, Scan, Play and Collection navigation: passed at 390x844 and 1440x900.
+- Collection rendered `6/249`; no document overflow was found on any main destination.
+- Bubble Swarm production run started and a drag-to-shoot action changed safe shots from 5 to 4.
+- `releaseBossStatus`, `swarmSiegeStatus` and `researchTargetStatus`: HTTP 200.
+- Browser console errors: 0. Page errors: 0. Vercel runtime errors in the release window: 0.
+- Firebase long-poll requests aborted during deliberate route changes only; no user-visible or console error resulted.
+- No Firebase rule/Function deployment, APK publish or `bugbaas.vercel.app` change was made.
+
+## 2026-07-28 FitnessSyncer repair
+
+- `node --test firebase/functions/fitnessSyncerCore.test.js`: 10/10 passed.
+- Regression tests confirm BugBaas 3.0 OAuth return URLs remain on approved v3 hosts.
+- Regression tests confirm Activity type and kilometer field casing variants are parsed.
+- Live OAuth/token exchange was not executed because that requires a configured personal FitnessSyncer account and deployed Function revision.
+
+## 2026-07-29 Vlindervangst gameplay rework
+
+- `npm run typecheck`: passed.
+- Targeted game model, Arcade navigation, ranked wiring and unlock tests: 26/26 passed.
+- 3D prototype structure and mechanic tests: 7/7 passed; `node --check` passed.
+- Production web export to `dist-butterfly-catch-local`: passed and includes the 240,264-byte WebP key art.
+- Localhost root, game HTML, game script and key art: HTTP 200.
+- Headless Chrome at 390x844 completed a real focus-release capture: Atlasmot at 74% focus, `PERFECT`, +248 points; browser and page errors: 0.
+- Physical-device gyroscope, haptics and native rendering remain for owner testing; no device claim is made from the localhost check.
+
+## 2026-07-29 arcade-, Museum- en Daily-hotfix
+
+- Gerichte arcade-, Museum-, Daily- en foreground-regressietests: 28/28 passed.
+- `npm run typecheck`: passed.
+- Productie-webexport naar `dist-butterfly-catch-local`: passed.
+- Localhost root: HTTP 200.
+- Gevoel van native controls en frame pacing blijft een fysieke-devicecontrole; er is geen APK of productiebackend gewijzigd.

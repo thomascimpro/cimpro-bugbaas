@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { Animated, Easing, StyleSheet, View } from "react-native";
+import { Animated, Easing, Platform, StyleSheet, View } from "react-native";
 import { InsectVariant } from "../services/pointsService";
 
 type Props = {
@@ -29,13 +29,13 @@ export function WalkingBug({ size = 34, variant = "beetle", direction = "right" 
           toValue: 1,
           duration: 420,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true
+          useNativeDriver: Platform.OS !== "web"
         }),
         Animated.timing(step, {
           toValue: 0,
           duration: 420,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true
+          useNativeDriver: Platform.OS !== "web"
         })
       ])
     );

@@ -1,10 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, DimensionValue, Easing, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Animated, DimensionValue, Easing, Image, ImageBackground, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { RouteName } from "../../App";
+import { nativeDriver } from "../services/animationPlatform";
 import { BugArtImage } from "../components/BugArtImage";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
+import { dailyFieldSignal, dailyFieldSignalBody } from "../services/dailyFieldSignalService";
+import { listFieldJournalEntries, type FieldJournalEntry } from "../services/fieldJournalService";
 import { BugArtId } from "../services/bugArt";
 import { BugDexDropResult, BugDexDropSource, entryByBugId, listBugDexInventory, listBugDexUnlocks } from "../services/bugDexService";
 import { bugLampStatus } from "../services/bugLampService";
@@ -68,10 +71,10 @@ const buddyStatColors: Record<BuddyStatKind, string> = {
 };
 
 const buddyFeatureVisible = true;
-const buddyHappyImage = require("../../assets/buddy/kenney/stats/stat_happy.png");
-const buddyEnergyImage = require("../../assets/buddy/kenney/stats/stat_energy.png");
+const buddyHappyImage = require("../../assets/buddy/kenney/stats/stat_happy.webp");
+const buddyEnergyImage = require("../../assets/buddy/kenney/stats/stat_energy.webp");
 const buddyLoveImage = require("../../assets/buddy/kenney/emotes/buddy_love.png");
-const buddyBondImage = require("../../assets/buddy/kenney/stats/stat_bond.png");
+const buddyBondImage = require("../../assets/buddy/kenney/stats/stat_bond.webp");
 const buddySleepyImage = require("../../assets/buddy/kenney/emotes/buddy_sleepy.png");
 const buddyPetImage = require("../../assets/buddy/kenney/pets/buddy_bee.png");
 const buddyStateCleanImage = require("../../assets/buddy/kenney/state/buddy_state_clean.png");
@@ -81,7 +84,9 @@ const buddyStateNectarImage = require("../../assets/buddy/kenney/state/buddy_sta
 const buddyStateSleepImage = require("../../assets/buddy/kenney/state/buddy_state_sleep.png");
 const buddyStateSwarmImage = require("../../assets/buddy/kenney/state/buddy_state_swarm.png");
 const settingsGearImage = require("../../assets/generated/settings-gear-hd.png");
-const wikiButtonImage = require("../../assets/generated/bugbaas-wiki-button-hd.png");
+const wikiButtonImage = require("../../assets/generated/bugbaas-wiki-button-hd.jpg");
+const homeHeroImage = require("../../assets/generated/home-conservatory-hero-v1.jpg");
+const conservatoryGoalsImage = require("../../assets/generated/conservatory-goals-board-v1.jpg");
 const bugBaasWikiUrl = "https://bugbaas-wiki.netlify.app";
 
 export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRadarClaimed, onMovementRegistered, onOpenBugDexWorkshop, onRewardDrop, onUserUpdated, user, onNavigate }: Props) {
@@ -89,6 +94,7 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   const tier = getTierForPoints(user.totalPoints);
   const [users, setUsers] = useState<User[]>([]);
   const [bugs, setBugs] = useState<BugReport[]>([]);
+  const [fieldJournalEntries, setFieldJournalEntries] = useState<FieldJournalEntry[]>([]);
   const [duels, setDuels] = useState<BugSmashDuel[]>([]);
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
   const [unlockHistory, setUnlockHistory] = useState<BugDexUnlock[]>([]);
@@ -114,6 +120,7 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   const [weeklyBonusClaiming, setWeeklyBonusClaiming] = useState(false);
   const [weeklyBonusError, setWeeklyBonusError] = useState("");
   const [showAllTiers, setShowAllTiers] = useState(false);
+  const [routineOpen, setRoutineOpen] = useState(false);
   const [languageOpen, setLanguageOpen] = useState(false);
   const [buddyBugId, setBuddyBugId] = useState("");
   const [buddyCareState, setBuddyCareState] = useState<BuddyCareState>(() => emptyBuddyCareState(localDayId()));
@@ -152,6 +159,13 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   const buddyReadyActions = buddyPendingTask ? [] : buddyCareActions.filter((action) => buddyNow - (buddyCareState.actions[action.id] ?? 0) >= action.cooldownMs && buddyHasEnergyForAction(buddyCareState.stats.energy, action.id));
   const buddyReadyCount = buddyReadyActions.length;
   const buddyPrimaryAction = buddyReadyActions[0] ?? null;
+  const buddyCollapsedSignal = buddyActiveTask
+    ? formatBuddyCooldown(buddyTaskRemaining)
+    : buddyFinishedTask
+      ? "BELONING"
+      : buddyReadyCount > 0
+        ? "KLAAR"
+        : "RUST";
   const buddyMood = buddyCareState.stats.happy;
   const buddyEnergy = buddyCareState.stats.energy;
   const buddyBond = buddyCareState.stats.care;
@@ -170,11 +184,13 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   const canClaimMovement = Boolean((movementProgress && movementProgress.claimableRewards > 0) || queuedRadarBugIds.length > 0);
   const selectedLanguage = languages.find((item) => item.value === language) ?? languages[0];
   const lampStatus = bugLampStatus(user);
+  const fieldSignal = dailyFieldSignal(fieldJournalEntries);
   const showBugLamp = lampStatus.active || lampStatus.count > 0;
 
   useEffect(() => {
     listLeaderboardUsers({ complete: true, fresh: true }).then(setUsers);
     listBugs().then(setBugs);
+    listFieldJournalEntries(user).then(setFieldJournalEntries).catch(() => setFieldJournalEntries([]));
     listBugSmashDuels(user).then(setDuels).catch(() => setDuels([]));
     listBugDexInventory(user).then(setInventory);
     listBugDexUnlocks(user).then(setUnlockHistory).catch(() => setUnlockHistory([]));
@@ -197,13 +213,13 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
           duration: buddyActiveTask ? 760 : 1700,
           easing: buddyActiveTask ? Easing.inOut(Easing.quad) : Easing.inOut(Easing.sin),
           toValue: 1,
-          useNativeDriver: true
+          useNativeDriver: nativeDriver
         }),
         Animated.timing(buddyAnim, {
           duration: buddyActiveTask ? 760 : 1700,
           easing: buddyActiveTask ? Easing.inOut(Easing.quad) : Easing.inOut(Easing.sin),
           toValue: 0,
-          useNativeDriver: true
+          useNativeDriver: nativeDriver
         })
       ])
     );
@@ -636,7 +652,8 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
 
   return (
     <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
-      <View style={styles.hero}>
+      <ImageBackground imageStyle={styles.heroImage} resizeMode="cover" source={homeHeroImage} style={styles.hero}>
+        <View style={styles.heroVeil}>
         <View style={styles.heroNameRow}>
           <View style={styles.heroText}>
             <Text adjustsFontSizeToFit ellipsizeMode="tail" minimumFontScale={0.62} numberOfLines={1} style={[sharedStyles.title, styles.heroTitle]}>{user.displayName}</Text>
@@ -673,7 +690,8 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
             </Pressable>
           </View>
         </View>
-      </View>
+        </View>
+      </ImageBackground>
       <View style={styles.statsGrid}>
         <View style={styles.statTile}>
           <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={styles.statValue}>{unlockedDexCount}/{bugDexEntries.length}</Text>
@@ -694,6 +712,24 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
           <Text style={styles.statLabel}>{tr(tier.title)}</Text>
         </View>
       </View>
+      <ImageBackground source={conservatoryGoalsImage} resizeMode="cover" imageStyle={styles.goalsImage} style={styles.goalsCard}>
+        <View style={styles.goalsVeil}>
+          <Text style={styles.goalsKicker}>BUGBAAS 3.0 · TODAY</Text>
+          <Text style={styles.goalsTitle}>{fieldSignal.completed ? "Today's discovery is safe" : "Your next real-world discovery"}</Text>
+          <Text style={styles.goalsBody}>{fieldSignal.completed ? "Your Field Journal now feeds your private world and collection." : dailyFieldSignalBody(fieldSignal)}</Text>
+          <View style={styles.goalContract}>
+            <Text style={styles.goalContractLabel}>DO</Text><Text style={styles.goalContractText}>{fieldSignal.completed ? "Explore your private world" : "Photograph one real insect"}</Text>
+            <Text style={styles.goalContractLabel}>UNLOCK</Text><Text style={styles.goalContractText}>{fieldSignal.completed ? "Your next collection milestone" : "A Field Journal note and biome progress"}</Text>
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel="Start today's field signal" onPress={() => onNavigate(fieldSignal.completed ? "home" : "realBugScan")} style={styles.goalsPrimaryAction}>
+            <Text style={styles.goalsPrimaryText}>{fieldSignal.completed ? "Explore Expedition World" : "Scan a real bug"}</Text><Text style={styles.goalsPrimaryArrow}>→</Text>
+          </Pressable>
+          <View style={styles.goalsShortcuts}>
+            <Pressable accessibilityRole="button" onPress={() => onNavigate("home")} style={styles.goalsShortcut}><Text style={styles.goalsShortcutLabel}>EXPLORE</Text><Text style={styles.goalsShortcutText}>World & teams</Text></Pressable>
+            <Pressable accessibilityRole="button" onPress={() => onNavigate("bugdex")} style={styles.goalsShortcut}><Text style={styles.goalsShortcutLabel}>COLLECT</Text><Text style={styles.goalsShortcutText}>{unlockedDexCount}/{bugDexEntries.length} BugDex</Text></Pressable>
+          </View>
+        </View>
+      </ImageBackground>
       {movementProgress && (
         <View style={styles.movementCard}>
           <View style={styles.movementHeader}>
@@ -875,13 +911,17 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
         </View>
       </Pressable>
       <Pressable style={styles.workshopCard} onPress={onOpenBugDexWorkshop ?? (() => onNavigate("bugdex"))}>
-        <Image source={require("../../assets/generated/bugdex-workshop-shortcut.png")} style={styles.workshopImage} />
+        <Image source={require("../../assets/generated/bugdex-workshop-shortcut.webp")} style={styles.workshopImage} />
         <View style={styles.workshopText}>
           <Text style={styles.workshopTitle}>{t("home.workshopTitle")}</Text>
           <Text style={styles.workshopBody} numberOfLines={2}>{t("home.workshopBody")}</Text>
           <Text style={styles.workshopCta}>{t("home.workshopCta")}</Text>
         </View>
       </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => setRoutineOpen((open) => !open)} style={styles.routineToggle}>
+        <View><Text style={styles.routineKicker}>ROUTINE</Text><Text style={styles.routineTitle}>Daily & weekly missions</Text><Text style={styles.routineBody}>Optional extra rewards — your discovery goal stays above.</Text></View><Text style={styles.routineChevron}>{routineOpen ? "⌃" : "⌄"}</Text>
+      </Pressable>
+      {routineOpen && <>
       <View style={styles.missionCard}>
         <View style={styles.missionHeader}>
           <View>
@@ -972,17 +1012,23 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
           {weeklyBonusError ? <Text style={styles.missionError}>{weeklyBonusError}</Text> : null}
         </View>
       </View>
+      </>}
       {buddyFeatureVisible && buddyEntry && buddyMastery && (
         <View style={styles.buddyCard}>
           <Pressable style={styles.buddyCollapsedHeader} onPress={() => setBuddyCardOpen((open) => !open)}>
             <Image accessibilityIgnoresInvertColors resizeMode="contain" source={buddyPetImage} style={styles.buddyCollapsedBee} />
             <Text style={styles.buddyCollapsedTitle}>{t("buddy.title")}</Text>
+            <View style={[styles.buddyCollapsedSignal, (buddyFinishedTask || buddyReadyCount > 0) && styles.buddyCollapsedSignalReady]}>
+              <Text style={[styles.buddyCollapsedSignalText, (buddyFinishedTask || buddyReadyCount > 0) && styles.buddyCollapsedSignalTextReady]}>{buddyCollapsedSignal}</Text>
+            </View>
             <Text style={styles.buddyCollapsedChevron}>{buddyCardOpen ? "⌃" : "⌄"}</Text>
           </Pressable>
           {buddyCardOpen && (
             <>
           <View style={styles.buddyHeader}>
             <View style={styles.buddyIdleScene}>
+              <Animated.View style={[styles.buddyGlow, styles.buddyGlowWide, { opacity: buddyAnim.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.34] }), transform: [{ scale: buddyAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.16] }) }] }]} />
+              <Animated.View style={[styles.buddySpark, { opacity: buddyAnim.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.88] }), transform: [{ translateY: buddyAnim.interpolate({ inputRange: [0, 1], outputRange: [4, -8] }) }] }]} />
               <View style={[styles.buddyBeePod, buddyActiveTask && styles.buddyBeePodActive]}>
                 <Animated.Image accessibilityIgnoresInvertColors resizeMode="contain" source={buddyPetImage} style={[styles.buddyPetImage, buddyMotionStyle]} />
                 {(buddyActiveTask || buddyFinishedTask) && (
@@ -1455,7 +1501,18 @@ const styles = StyleSheet.create({
     borderColor: "#294338",
     borderRadius: 8,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: 10,
+    minHeight: 94,
+    overflow: "hidden"
+  },
+  heroImage: {
+    opacity: 0.9
+  },
+  heroVeil: {
+    backgroundColor: "rgba(5, 27, 19, 0.38)",
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 94,
     paddingHorizontal: 12,
     paddingVertical: 10
   },
@@ -1559,6 +1616,58 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900"
   },
+  goalsCard: { backgroundColor: "#102018", borderColor: "#d7bd57", borderRadius: 18, borderWidth: 1, marginTop: 12, overflow: "hidden" },
+  goalsImage: { opacity: 0.9 },
+  goalsVeil: { backgroundColor: "rgba(7, 25, 18, 0.56)", minHeight: 306, padding: 16 },
+  goalsKicker: { color: "#f0dc84", fontSize: 10, fontWeight: "900", letterSpacing: 1.15 },
+  goalsTitle: { color: "#ffffff", fontSize: 22, fontWeight: "900", marginTop: 4 },
+  goalsBody: { color: "#e0ece1", fontSize: 13, fontWeight: "700", lineHeight: 18, marginTop: 5, maxWidth: "80%" },
+  goalContract: { backgroundColor: "rgba(6, 21, 15, 0.7)", borderColor: "rgba(240,220,132,0.38)", borderRadius: 12, borderWidth: 1, gap: 3, marginTop: 13, padding: 10 },
+  goalContractLabel: { color: "#e5cc69", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+  goalContractText: { color: "#ffffff", fontSize: 12, fontWeight: "800", marginBottom: 4 },
+  goalsPrimaryAction: { alignItems: "center", backgroundColor: "#e5cc69", borderRadius: 12, flexDirection: "row", justifyContent: "space-between", marginTop: 10, paddingHorizontal: 14, paddingVertical: 13 },
+  goalsPrimaryText: { color: "#173f31", fontSize: 14, fontWeight: "900" },
+  goalsPrimaryArrow: { color: "#173f31", fontSize: 20, fontWeight: "900" },
+  goalsShortcuts: { flexDirection: "row", gap: 8, marginTop: 8 },
+  goalsShortcut: { backgroundColor: "rgba(9, 33, 23, 0.78)", borderColor: "rgba(240,220,132,0.4)", borderRadius: 11, borderWidth: 1, flex: 1, padding: 10 },
+  goalsShortcutLabel: { color: "#e5cc69", fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
+  goalsShortcutText: { color: "#ffffff", fontSize: 12, fontWeight: "900", marginTop: 2 },
+  routineToggle: { alignItems: "center", backgroundColor: "#f5f8f4", borderColor: "#cddfd3", borderRadius: 14, borderWidth: 1, flexDirection: "row", justifyContent: "space-between", marginTop: 12, padding: 13 },
+  routineKicker: { color: "#6a8474", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+  routineTitle: { color: "#173f31", fontSize: 14, fontWeight: "900", marginTop: 2 },
+  routineBody: { color: "#607568", fontSize: 11, marginTop: 2 },
+  routineChevron: { color: "#15724f", fontSize: 21, fontWeight: "900" },
+  expeditionCard: {
+    alignItems: "center", backgroundColor: "#102018", borderColor: "#d7bd57", borderRadius: 8, borderWidth: 1,
+    flexDirection: "row", gap: 12, marginBottom: 8, overflow: "hidden", padding: 14
+  },
+  expeditionGlow: { alignItems: "center", backgroundColor: "#1c4a38", borderRadius: 8, height: 62, justifyContent: "center", width: 62 },
+  expeditionMedallion: { borderRadius: 8, height: 62, width: 62 },
+  expeditionCopy: { flex: 1 },
+  expeditionKicker: { color: "#d7bd57", fontSize: 10, fontWeight: "900", letterSpacing: 1 },
+  expeditionTitle: { color: "#ffffff", fontSize: 16, fontWeight: "900", marginTop: 2 },
+  expeditionBody: { color: "#c9d9cf", fontSize: 12, lineHeight: 16, marginTop: 2 },
+  expeditionCta: { color: "#d7bd57", fontSize: 11, fontWeight: "900", marginTop: 7 },
+  fieldSignalCard: { alignItems: "center", backgroundColor: "#eef5ee", borderColor: "#8bb99b", borderRadius: 14, borderWidth: 1, flexDirection: "row", gap: 10, marginBottom: 8, padding: 12 },
+  fieldSignalCardCompleted: { backgroundColor: "#e5efe4", borderColor: "#d7bd57" },
+  fieldSignalMark: { alignItems: "center", backgroundColor: "#173f31", borderRadius: 16, height: 42, justifyContent: "center", width: 42 },
+  fieldSignalMarkCompleted: { backgroundColor: "#d7bd57" },
+  fieldSignalIcon: { color: "#ffffff", fontSize: 18, fontWeight: "900" },
+  fieldSignalCopy: { flex: 1, minWidth: 0 },
+  fieldSignalKicker: { color: "#15724f", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+  fieldSignalTitle: { color: "#102018", fontSize: 14, fontWeight: "900", marginTop: 1 },
+  fieldSignalBody: { color: "#52665d", fontSize: 11, fontWeight: "800", lineHeight: 15, marginTop: 2 },
+  fieldSignalAction: { color: "#15724f", fontSize: 11, fontWeight: "900" },
+  teamHuntShortcut: { alignItems: "center", backgroundColor: "#173f31", borderColor: "#d7bd57", borderRadius: 14, borderWidth: 1, flexDirection: "row", gap: 10, marginTop: 12, padding: 12 },
+  teamHuntSignal: { alignItems: "center", backgroundColor: "#f1d36b", borderRadius: 18, height: 36, justifyContent: "center", width: 36 },
+  teamHuntSignalText: { color: "#173f31", fontSize: 18, fontWeight: "900" },
+  teamHuntCopy: { flex: 1, minWidth: 0 },
+  teamHuntKicker: { color: "#e5cc69", fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+  teamHuntTitle: { color: "#fff", fontSize: 15, fontWeight: "900", marginTop: 1 },
+  teamHuntBody: { color: "#c9d9cf", fontSize: 11, fontWeight: "800", marginTop: 2 },
+  teamHuntArrow: { color: "#e5cc69", fontSize: 20, fontWeight: "900" },
+  guardianCard: { alignItems: "center", backgroundColor: "#efe6bc", borderColor: "#d7bd57", borderRadius: 8, borderWidth: 1, flexDirection: "row", gap: 11, marginBottom: 8, padding: 12 },
+  guardianOrb: { alignItems: "center", backgroundColor: "#173f31", borderColor: "#d7bd57", borderRadius: 23, borderWidth: 2, height: 46, justifyContent: "center", width: 46 }, guardianGlyph: { color: "#f0dc84", fontSize: 23 }, guardianCopy: { flex: 1 }, guardianKicker: { color: "#9b6716", fontSize: 9, fontWeight: "900", letterSpacing: 0.9 }, guardianTitle: { color: "#102018", fontSize: 15, fontWeight: "900", marginTop: 1 }, guardianBody: { color: "#466052", fontSize: 11, marginTop: 2 }, guardianArrow: { color: "#15724f", fontSize: 22, fontWeight: "900" },
   settingsPill: {
     alignItems: "center",
     backgroundColor: "#fdfefb",
@@ -1961,6 +2070,26 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     minHeight: 48
   },
+  buddyCollapsedSignal: {
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderColor: "rgba(255,255,255,0.18)",
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 5
+  },
+  buddyCollapsedSignalReady: {
+    backgroundColor: "#d7bd57",
+    borderColor: "#f4dc80"
+  },
+  buddyCollapsedSignalText: {
+    color: "#dce9df",
+    fontSize: 9,
+    fontWeight: "900"
+  },
+  buddyCollapsedSignalTextReady: {
+    color: "#102018"
+  },
   buddyCollapsedTitle: {
     color: "#f8fafc",
     flex: 1,
@@ -1973,11 +2102,25 @@ const styles = StyleSheet.create({
     height: "100%"
   },
   buddyGlow: {
+    backgroundColor: "#d7bd57",
     borderRadius: 999,
     height: 66,
     opacity: 0.22,
     position: "absolute",
     width: 66
+  },
+  buddyGlowWide: {
+    height: 90,
+    width: 90
+  },
+  buddySpark: {
+    backgroundColor: "#f6df8a",
+    borderRadius: 999,
+    height: 7,
+    left: 20,
+    position: "absolute",
+    top: 10,
+    width: 7
   },
   buddyFooterRow: {
     alignItems: "center",

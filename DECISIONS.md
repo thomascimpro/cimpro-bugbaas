@@ -1,5 +1,202 @@
 # Decisions
 
+## 2026-07-29 - Android 3.0.5 updatekanaal en Vleugeljacht
+
+- Android Vleugeljacht 3D opent voor deze release bewust `https://bugbaas.vercel.app`; dit vervangt de eerdere lokale WebView-beslissing.
+- De openbare 3.0.4-APK gebruikt de legacy Android-certificaatketen. Versie 3.0.5 gebruikt daarom exact dezelfde keten, zodat 3.0.4-gebruikers zonder verwijderen en dataverlies kunnen bijwerken.
+- De eerdere algemene keuze voor CimPro-uploadsigning geldt niet voor dit bestaande openbare 3.0.4-updatekanaal; wisselen van certificaat zou een incompatibele installatie opleveren.
+- Firebase-clientconfiguratie blijft vast op `thomascimpro-6266f`; lokale serverwachtwoorden en API-secrets worden niet in APK, Git of releasedocumentatie opgenomen.
+
+## 2026-07-29 - Expliciet vrijgegeven 3.0.4-productiepromotie
+
+- Op expliciet verzoek is deze 3.0.4-webrelease eenmalig gepromoveerd van de 3.x-bron naar `bugbaas.vercel.app`; dit vervangt voor deze release de eerdere preview-only grens.
+- `bugbaas` en `bugbaasv3` blijven afzonderlijke Vercel-projecten. Na de productiepromotie is de lokale `.vercel`-koppeling teruggezet naar `bugbaasv3`.
+- De webclient en serverroutes blijven op Firebase-project `thomascimpro-6266f`. Alleen de noodzakelijke productie-env is gesynchroniseerd; geheime waarden blijven buiten Git en documentatie.
+- Vleugeljacht vangt niet automatisch. De speler houdt een bug 1,5 seconde in de vaste vangzone tot 100% en tikt daarna ergens op het speelveld om het net te laten slaan.
+
+## 2026-07-29 - Canonieke 3.x-bron en releasekanaal
+
+- `C:\Users\thoma.THOMAS\Documents\Codex\CimPro BugBaas-3.0` is vanaf 3.0.1 de enige canonieke bronmap voor BugBaas 3.x APK-builds en Vercel-releases.
+- BugBaas 3.x wordt gepubliceerd op `bugbaasv3.vercel.app`; de afzonderlijke productie-alias `bugbaas.vercel.app` blijft buiten deze release.
+- Officiële Android-releases gebruiken de bestaande CimPro-uploadsigning en mogen niet terugvallen op de legacy debugsleutel.
+
+## 2026-07-29 - 3D eerst bewijzen als geïsoleerd 360° prototype
+
+- De eerste BugBaas-3D-proef blijft een los Three.js-browserprototype en wordt nog niet in Expo of Firebase geïntegreerd.
+- De speler staat stil in een volledige 3D-wereld; telefoonoriëntatie of slepen verandert alleen de kijkrichting. Vrij rondlopen, AR, multiplayer en gedeelde vlinders vallen buiten deze fase.
+- De wereld en vlinders worden procedureel opgebouwd zonder GLB’s of externe texturebestanden, zodat spelgevoel, prestaties en besturing eerst afzonderlijk beoordeeld kunnen worden.
+- Het net is first-person en client-side. Eén slag kan maximaal één vlinder vangen; scores hebben geen invloed op bestaande BugBaas-progressie of rewards.
+
+## 2026-07-28 - Vaste productie-Firebase en BugDex WebP-validatie
+
+- De BugBaas-client gebruikt voortaan altijd Firebase Auth en Firestore van het Firebase-project met weergavenaam `BugBaas` en project-ID `thomascimpro-6266f`. Omgevingsvariabelen mogen deze clientidentiteit niet meer overschrijven.
+- De bestaande HTTPS Functions blijven bewust op project `thomascimpro-6266f`; deze scheiding is onderdeel van de productiearchitectuur.
+- Actieve BugDex-artworkverwijzingen lopen via `src/services/bugArt.ts` naar `assets/bugdex-webp/*.webp`.
+- Iedere APK-build voert eerst `validate:bug-art` uit en stopt wanneer een verwijzing geen `.webp` gebruikt, een bestand ontbreekt of geen geldig WebP-bestand is.
+
+## 2026-07-28 - BugDex-artwork en catalogusuitbreiding naar 500
+
+- De centrale `bugDexEntries`-lijst blijft de runtimebron; 251 nieuwe bestaande insectnamen zitten in een aparte expansion-module zodat de bestaande 249 entries en unlockroutes behouden blijven.
+- De verdeling van de nieuwe entries is 80 Gewoon, 85 Zeldzaam, 60 Episch, 21 Legendarisch en 5 Mythisch. De shared catalogus en beide research-cataloguskopieën blijven synchroon.
+- Transparante PNG is de canonieke rasterkeuze voor de actieve BugDex-mapping. Exacte dubbele WebP’s zijn uit de workspace gehaald maar buiten de workspace bewaard voor herstel.
+- Voor de 251 nieuwe catalogussoorten is nog geen species-specifieke imagegen-set gemaakt; `BugArtImage` gebruikt daarom een transparante typefallback en maakt geen verkeerde soortmapping. De twee aantoonbaar foute hommel-assets zijn wel vervangen door soortspecifieke imagegen-PNG’s.
+
+## 2026-07-28 - Mythische Crown-rangen
+
+- Alleen Mythisch kan Bekroond, Kroonelite, Kroonmeester en Kroonlegende bereiken op respectievelijk level 8/11/14/17 en 25/75/150/300 gewonnen PvE-battles; de vaste multipliers zijn 1.025/1.05/1.075/1.10.
+- `battleWins` wordt toegevoegd aan bestaande mastery-documenten en ontbrekende waarden worden als 0 gelezen. Er komt geen nieuwe Firebase-collectie en `crownRank` wordt niet opgeslagen.
+- Battle wins gebruiken de bestaande idempotente `bugMasteryEvents`-subcollectie met stabiele event-ID’s en tellen alleen de werkelijk actieve squad mee. Ranked Duel/PvP en loss/quit-paden tellen niet.
+- `CrownGlow` staat structureel achter `BugArtImage`, gebruikt één centrale kleurenpalet en schakelt pulse uit bij reduced motion. De PvE-multiplier wordt één keer centraal toegepast en nooit boven 1.10.
+
+## 2026-07-27 - Fullscreen changes styles, never the app-shell component type
+
+- The Play route keeps one stable `SafeAreaView` wrapper before, during and after gameplay.
+- Fullscreen mode may change layout styles and visibility, but must not replace a parent component type around stateful screens.
+- This prevents React from remounting `PlayScreen` and losing the active workspace, ranked duel or practice run when gameplay starts.
+
+## 2026-07-27 - Scan receipts verify from the configured shared secret
+
+- V2 BugScan receipts remain Ed25519-signed, UID-bound and valid for ten minutes.
+- The verifier derives the Ed25519 public key from the same configured secret used by the signer. This removes the hidden dependency on a stale hardcoded key.
+- The previous hardcoded public key remains only as a migration fallback for already-issued short-lived receipts; it is not the primary production trust path.
+- Vercel and Firebase must use one synchronized receipt secret. Secret values are never logged, committed or documented.
+- Field observations continue to be written only by the server-authoritative and idempotent `recordVerifiedObservation` function.
+
+
+## 2026-07-26 Duel belongs to Arcade; squad explanation belongs to BugDex
+
+- Play has no separate Duel tab. Tap Duel remains an Arcade game, while direct duel links open the existing duel workspace with Arcade selected.
+- Open duel requests are shown before recent duel history because they require action.
+- BugDex Active Squad is the single explanation surface for helper behavior. It shows helper type, cooldown, hits, AOE targets and mythic specials next to the existing mastery role and squad bonus.
+- Gameplay calculations, duel persistence and reward authority remain unchanged.
+
+## 2026-07-26 Arcade games stay visible while locked
+
+- Arcade discovery uses one stable six-game grid. Locked games are not removed or hidden behind horizontal scrolling.
+- Phone layouts use two columns below 700 px; wider layouts use three columns. Game callbacks, ordering and unlock thresholds remain unchanged.
+- Solo Campaign stays separate from the six ranked/practice game tiles and uses one compact full-width row directly below them.
+
+## 2026-07-26 Map panning keeps sightings separate from viewport
+
+- Player location and stored finding coordinates remain data markers; `viewCenter` is local presentation state used only to render and search the currently viewed field.
+- The existing OSM tile/marker projection remains authoritative. Panning uses its Web Mercator coordinate system rather than introducing a second map library.
+- Search-zone requests are debounced for 600 ms, use a viewport-derived 250-3000 metre radius and retain the previous successful zone set during refresh or failure.
+- Location recentering is explicit after manual panning. Automatic location resolution must not pull the map away after the user has started exploring another field.
+
+## 2026-07-26 Real BugScan reward presentation
+
+- The Firestore BugDex inventory/unlock transaction remains authoritative; the UI must present the exact `RealBugScanRewardResult` returned by that transaction rather than reconstructing a reward from identification text.
+- `real_bug_scan` is an immediate presentation source because the user needs direct confirmation after a successful scan. It skips random rarity spins and roaming foreground catches.
+- Only an actually granted copy opens the unlock modal. Identification without a granted reward cannot claim that the BugDex changed.
+
+## 2026-07-26 BugDex artwork must contain real transparency
+
+- A transparency preview grid baked into RGB pixels is rejected even when the file also contains an alpha channel.
+- Active BugDex mappings use existing clean artwork rather than attempting a runtime mask or CSS cover-up.
+- When no exact clean source exists, a close transparent species fallback is preferred and explicitly documented until replacement art is available.
+- The known contaminated asset paths are guarded by a source regression test.
+
+## 2026-07-26 Museum reward safety and endgame
+
+- Normal Museum XP is awarded only once at Open, Curated and Master. Prestige and Crown Hall tiers award status, badges or fixed bugs without repeatable normal XP.
+- Reward eligibility is recalculated from stored server evidence; the client only requests evaluation and presents the result.
+- Existing collections receive retroactive rewards through the same permanent claim receipts as new progress.
+- Prestige requires a mastered room, six different exhibits, four level-10 exhibits, a Legendary/Mythic exhibit and three verified observations. Museum Legend additionally requires all five Prestige rooms, a filled Crown Hall and a season trophy.
+- Existing artwork is reused; missing optional cosmetics fall back to title/status rather than introducing placeholder assets.
+
+## 2026-07-26 Duel launch and Play hero framing
+
+- Play Now continues to open the Duel workspace, which now presents a primary random-duel action plus an optional direct player challenge. Both actions use the existing backend duel creation/claim contracts.
+- Phone Duel and Ranking heroes retain `cover`, but use a shorter responsive frame because their source art is landscape; this keeps the focal scene visible without adding letterboxing or changing the desktop/tablet layout.
+- Source checks and web export do not replace physical Android rendering approval.
+
+## 2026-07-26 Public unlocked-bugs ranking
+
+- The new Ranking mode uses the existing public `users.bugDexCount` projection, which is synchronized from BugDex unlock history, instead of reading another player's private `bugdexUnlocks` subcollection.
+- Ranking is a mode within the existing Play workspace, so its back action closes the workspace and preserves the Play tab context.
+
+## 2026-07-26 Review controls stay above fixed navigation
+
+- BugScan review remains a vertically scrollable stage on phones because the crop controls and actions cannot be guaranteed to fit beside the fixed bottom navigation at every viewport height.
+- Phone-only compact styles reduce vertical density without changing the photo crop behavior or the desktop/tablet visual treatment.
+- A successful source/export check does not count as physical Android rendering approval; that still requires a device or emulator retest.
+
+## 2026-07-26 Mission parity with 2.10.20
+
+- V3 uses the same six concrete daily missions as 2.10.20: one duel, one real-bug scan, four different games, five duels, three kilometres and one Solo Campaign boss.
+- V3 uses the same six concrete weekly missions: 15, 30, 45 and 60 kilometres, 50 duels and 10 Solo Campaign bosses.
+- Explorer/Trainer/Team Bronze/Silver/Gold tracks are not used for missions; explicit action plus target plus XP is the mission contract. Other non-mission rank or event medals are unaffected.
+- A daily or weekly completion bonus requires all six visible missions, and the legacy date/week claim-ID formats remain stable.
+
+## 2026-07-25 Commercial game foundation
+
+- The BugBaas brand is the green beetle expedition emblem; Scan has its own jumping-spider lens so the main action is recognizable without duplicating the app logo.
+- World keeps four primary destinations: World, Scan, Play and Collection. Scan is the raised central action.
+- A World hero may contain only one primary CTA. Its label is selected by the progression model and must show why it matters and what it rewards.
+- Decorative shell motion is finite on entry. Gameplay timers and frame loops remain lifecycle-bound to active gameplay.
+- Bug Tower and Bubble Swarm use survival contracts. Practical backend bounds remain in place for malformed or abusive submissions, but normal runs are not capped at two minutes or 50,000 points.
+- Local development origins are explicit allowlist entries; production CORS remains closed to unknown origins.
+
+## 2026-07-25 World biome visual direction
+
+- World uses `Field Expedition Atlas`, not the conservatory hero, because six distinct habitats, route progress and scan intent must read as one expedition surface.
+- One shared 3 × 2 atlas provides Tuin, Park, Water, Nacht, Kantoor and Binnen; React Native handles markers, route, locked state and actions so UI remains scalable and text-free.
+- World Today keeps one dominant biome hero and one primary BugScan action. Research follows as the first encounter; passive systems stay compact and conditional.
+- Text symbols are not accepted as final World markers. Location, search, scan, found and lock visuals are built as local React Native glyphs without adding a dependency.
+- Current opaque PNG art remains a temporary runtime source until it can be exported within the style guide's WebP/JPEG size limits.
+
+## 2026-07-24 Production correction boundaries
+
+- OSM search zones are optional enrichment. Their upstream failure may never block the base map, private sightings, location controls or Scan entry.
+- World Today may prioritize contextual cards, but Daily and Weekly mission access is permanent and independent of that priority model.
+- Settings belongs to the user's own Profile; returning from Settings restores that Profile context.
+- Swarm event presentation follows the server state exactly: upcoming, preview, live and result remain separate UI states.
+- Static interface copy in V3 surfaces must use the shared i18n dictionaries; dynamic user or observation data is not rewritten.
+
+## 2026-07-24 Hybrid progression architecture
+
+- BugBaas gebruikt één vaste loop: vinden, onderzoeken, trainen, tentoonstellen en samen vechten.
+- World, Scan, Play en Collection zijn de enige primaire bestemmingen. Museum en Journal zijn Collection-tabs; Expedition Routes horen bij World Map.
+- Iedere BugDex-entry heeft exact één hoofdroute. Bestaande ownership blijft geldig en een exacte verified scan mag altijd dezelfde catalogussoort openen.
+- Research is de gerichte casual route. De server controleert scanreceipts, arcade runs, Daily Route claims, Momentum-cycles en interne contribution events voordat progressie wordt toegekend.
+- Kleine herhaalacties geven account-XP of Research-progress en geen blind random nieuwe soort.
+- Museum-opstellingen worden door de speler gekozen. Podiums verbruiken geen inventory en mogen alleen owned, vleugelpassende soorten bevatten.
+- Play-unlocks worden afgeleid uit owned species; er is geen aparte opgeslagen unlockwallet. Ranked mastery assist is begrensd op 3%.
+- Solo Campaign heeft vijf vaste bosssoorten op waves 4/8/12/16/20. De Function verifieert de opgeslagen hoogste wave en bepaalt zelf soort, rarity en eenmalige claim; de client mag campaignrewards niet schrijven.
+- Swarm Siege gebruikt Europe/Amsterdam en een zesuurvenster op zaterdag. Partial community progress blijft beloonbaar; core species zijn nooit exclusief voor topcontributors.
+- Swarm HP wordt bij preview/live-init server-side één keer gelockt op `clamp(3 + recentActivePlayers * 6, 9, 360)`, met recent actief als `lastActiveAt` binnen veertien dagen. Een queryfout gebruikt veilig de legacy target 120.
+- Team Hunt is collection-only en maandelijks. De Guardian is uitsluitend een season finale en geen tweede permanente bossmeter.
+- Daily completion is twee van drie routes. Weekly progression gebruikt drie tracks en geen gestapelde afstands- of duelgrind.
+- Crown Hall master vereist 90% totale BugDex en alle vijf kernvleugels op master. Seasons resetten nooit collectie, mastery of Museum-placement.
+- Productiedeployment gebruikt één Firebase-project voor client Auth/Firestore en HTTPS Functions: weergavenaam `BugBaas`, project-ID `thomascimpro-6266f`. Web blijft op Vercel-project `bugbaasv3`.
+- Geen fysieke Android-goedkeuring wordt afgeleid uit compiler- of APK-builds; camera, touch en tabletweergave blijven expliciet handmatig zolang geen ADB-target verbonden is.
+
+## 2026-07-24 Hybrid progression foundation
+
+- BugBaas uses the hybrid collector direction: verified real-world discoveries unlock exact species and habitats, while Play, mastery and squads deepen the same collection.
+- Acquisition profiles describe the intended primary route, but never block an exact verified scan from unlocking the photographed catalog species.
+- The starter choice is limited to `zilvervisje`, `lieveheersbeestje` and `springspin`; all existing owners keep their current inventory regardless of the new route classification.
+- Campaign and event pools are explicit and finite. All Mythic entries have a named endgame path instead of relying on blind random drops.
+- Legacy reward sources remain readable and previously granted rewards remain owned. Their future transition is documented as research, targeted reward, exact-species or directed-synthesis behavior.
+
+## 2026-07-23 Swarm Siege
+
+- Swarm Siege is asynchronous. Players do not need to be online together; accepted damage persists on one shared event aggregate.
+- The MVP reuses Nest Defense with server-selected deterministic modifiers instead of introducing another minigame or free-form AI gameplay.
+- The server issues run IDs, seeds, expiry and daily attempt state. The client may submit a score, but damage is bounded to 0–3 and cannot exceed remaining boss HP.
+- Attempts are consumed when a run starts. An unsubmitted active run can be resumed until expiry; this prevents restart farming.
+- Event runs never update normal Arcade high scores or `arcadeGameResults`.
+- Only contributors can claim the fixed 75 XP reward. Claims remain available after the event, are server-written and idempotent.
+- The former Conservatory Guardian remains in source for history but is removed from visible routing to avoid two competing co-op boss systems.
+
+## 2026-07-21 BugBaas 3.0 local beta
+
+- 3.0 blijft localhost-only; 2.10.19 behoudt de bestaande Vercel-alias en APK.
+- Het Museum is een BugDex-weergave, geen tweede inventaris: het leest uitsluitend de bestaande voorraad en actieve squad.
+- Een veldnotitie ontstaat alleen uit een kortlevend, UID-gebonden scanbewijs dat Firebase verifieert. Firestore-clients mogen de notities niet zelf schrijven.
+- Professor en Field Photo Stamps zijn bewust lokale presentatie: ze mogen geen nieuwe reward, claim of AI-kosten veroorzaken. Stempels worden uitsluitend afgeleid uit opgeslagen, geverifieerde veldnotities en zijn geen AI-fotokwaliteitsoordeel. De Spotlight is verwijderd omdat hij bestaande daily missions dupliceerde.
+- Expedition World gebruikt uitsluitend persoonlijke, bevestigde habitatnotities als visuele biome-ontdekkingen; er is geen GPS, publieke kaart, team-score of reward.
+
 ## 2026-07-21 BugScan confidence and image quality
 
 - A 0.70 confidence boundary balances useful acceptance with protection against wrong rewards: it only auto-accepts a model-declared match whose localized name exactly matches the selected BugDex entry.
@@ -105,7 +302,53 @@
 - Bug Radar widget toont request-status als compacte native badges in plaats van extra schermen of notificatiekaarten.
 # 2026-07-19 Nest and FitnessSyncer release 2.10.11
 
+## 2026-07-21 3.0 Conservatory Path
+
+- A field discovery has one durable purpose: it wakes a private biome, may reach a server-owned milestone, and enriches the visual museum.
+- The 1/3/6 field milestones are fixed XP only. Claims use stable server-created documents so retries and concurrent requests cannot award twice.
+- Museum wings are deliberately derived from existing BugDex collection facts; they add no second inventory, currency or client-side reward path.
+- Museum rooms fill by first-discovery order: Vondstenhal contains discoveries 1–5, Wonderkas 6–9, Nachtkabinet 10–14 and Kroonzaal 15 onward. This keeps room ownership deterministic without inventing habitat metadata or storing a second classification.
+- Animation is limited to native-driver light, mote, reveal and beacon motion so the mobile UI does not rely on timers, canvas or new dependencies.
+- Conservatory Guardian is intentionally bounded at 100 aggregate verified observations. The server uses collection counts, never a client score, and a contributor can claim its fixed XP exactly once through a private server-written claim document.
+- The boss status returns aggregate progress only; it has no participant list, location data, global write path or season-management UI in this local beta.
+
 - Nest Defense makes the field itself the manual-attack responder so lower-path taps are not lost behind higher visual layers.
 - FitnessSyncer stays hidden until its server reports complete OAuth configuration; incomplete production setup is never shown as connected.
 - OAuth uses PKCE and read-only activity scopes. Tokens remain encrypted in a private server-only Firestore path.
 - Manual and daily-summary activities are excluded; provider source plus activity ID forms the idempotency key.
+# 2026-07-21 Team Hunt Weekend
+
+- Team Hunt is a Friday-through-Monday social event, not a renamed daily mission: organizations compete only with species their own team has not recorded during that event.
+- `claimTeamHuntContributions` re-derives contributions from server-written `verifiedObservations`; a retry cannot duplicate a species score.
+- The server stores only organization totals and normalized species keys. No exact location, image, individual feed or public scan history is returned to clients.
+- No event XP, currency or BugDex reward is awarded in this beta. A cosmetic reward remains intentionally deferred until a real event can be balanced.
+
+# 2026-07-25 3.0 preview release boundary
+
+- `bugbaasv3.vercel.app` is the user-acceptance preview and may read/write the existing `thomascimpro-6266f` data through backward-compatible rules and additive Functions.
+- `bugbaas.vercel.app` remains the independent 2.10.20 production rollback path until the owner gives explicit approval.
+- New 3.0 HTTP Functions use exact origin allowlists. No wildcard CORS is allowed.
+- The existing FitnessSyncer Functions and OAuth return path remain unchanged during preview validation.
+
+# 2026-07-26 visual and shared-backend boundary
+
+- Main navigation destinations stay limited to World, Scan, Play and Collection; Profile and Settings remain drill-ins.
+- A main route must fit the viewport. Long configuration and creation flows use a bounded sheet whose body may scroll.
+- Roaming catch bugs may appear only on World, BugDex and ranking surfaces, never above forms or gameplay controls.
+- July asset sheets contribute only visually distinct, confidently named species. Variants and uncertain duplicates are not separate BugDex entries.
+- Fixed Buddy, upgrade and direct XP rewards skip casino presentation; only genuinely random species/rarity rolls may spin.
+- Existing 2.10.20 collections and FitnessSyncer endpoints are preserved. New 3.0 rules and Functions stay additive, and production promotion waits for explicit owner approval.
+- Firebase Auth preview access is managed additively: `bugbaasv3.vercel.app` is authorized alongside localhost, Firebase Hosting and `bugbaas.vercel.app`; no existing domain is replaced.
+
+# 2026-07-29 Vlindervangst interaction and asset budget
+
+- Vlindervangst heeft één ingang: de bestaande gedeelde Arcade-selector onder `Choose a game`.
+- Een geldige vangst vereist een naderend insect, centreren, focus vasthouden en loslaten in de timingzone; korte tikken leveren geen vangst op.
+- Om de app licht te houden gebruikt de wereld herbruikbare procedurele geometrie en textures. Alleen de navigatie-/start-keyart is een nieuw rasterbestand van 240 kB.
+- De netslag volgt één continue Catmull-Rom-curve en de gevangen bug beweegt eerst zichtbaar het net in voordat deze respawnt.
+
+# 2026-07-29 korte responsiveness-hotfix
+
+- Realtime arcadegames gebruiken één gedeelde `requestAnimationFrame`-loop met begrensde delta; spelregels en scoremodellen blijven ongewijzigd.
+- Museum-doelen verkiezen actuele Firestore-data boven de normale twee-minuten UI-cache.
+- Daily XP blijft bij claim direct en veilig toegekend; de foreground bug is de herstelde presentatie en kan de reeds verdiende Daily XP niet verliezen.

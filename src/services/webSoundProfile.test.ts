@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { webSoundProfile, webUiSoundTargetSelector, webUiTapProfile } from "./webSoundProfile.ts";
 
 const names = [
@@ -16,6 +19,9 @@ const names = [
   "spray_hit",
   "spray_start"
 ] as const;
+
+const serviceDir = dirname(fileURLToPath(import.meta.url));
+const soundServiceSource = readFileSync(join(serviceDir, "soundService.ts"), "utf8");
 
 test("every existing BugBaas sound has a short safe web audio profile", () => {
   names.forEach((name) => {
@@ -35,4 +41,17 @@ test("generic interface taps stay quieter and shorter than reward sounds", () =>
 test("the global web sound listener includes React Native Web Pressables", () => {
   assert.match(webUiSoundTargetSelector, /tabindex/);
   assert.match(webUiSoundTargetSelector, /role=\"button\"/);
+});
+
+test("web sound assets are byte-identical to the Android APK assets", () => {
+  names.forEach((name) => {
+    const androidAsset = readFileSync(join(serviceDir, "..", "..", "android", "app", "src", "main", "res", "raw", `${name}.wav`));
+    const webAsset = readFileSync(join(serviceDir, "..", "..", "assets", "audio", `${name}.wav`));
+    assert.deepEqual(webAsset, androidAsset, `${name}.wav differs between Android and web`);
+  });
+});
+
+test("iPhone Safari uses the same packaged sounds instead of synthetic tones", () => {
+  assert.match(soundServiceSource, /playWebAsset\(name\)/);
+  assert.doesNotMatch(soundServiceSource, /isIosSafariBrowser/);
 });

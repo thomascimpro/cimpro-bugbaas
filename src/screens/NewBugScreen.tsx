@@ -2,7 +2,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Image, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { GameUiIcon } from "../components/ui/GameUiIcon";
 import { createBug } from "../services/bugService";
 import { severityLabel, useI18n } from "../services/i18n";
 import { defaultOrganizationId, isPublicOrganization, organizationIdsForUser, organizationNamesForUser } from "../services/organizationService";
@@ -20,6 +21,7 @@ const reportTypes: Array<{ value: ReportType; labelKey: string; descriptionKey: 
 const maxScreenshotSize = 640;
 const screenshotQuality = 0.35;
 const draftKey = "bugbaas:new-bug-draft";
+const fieldOperationsBoard = require("../../assets/generated/field-operations-board-v1.jpg");
 
 type BugDraft = {
   reportType?: ReportType;
@@ -39,7 +41,7 @@ type Props = {
   onSaved: (bug: BugReport) => void;
 };
 
-export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
+export function NewBugScreen({ user, onBack, onSaved }: Props) {
   const { t, tr } = useI18n();
   const [reportType, setReportType] = useState<ReportType>("bug");
   const [title, setTitle] = useState("");
@@ -173,8 +175,23 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
-      <Text style={sharedStyles.title}>{t("new.title")}</Text>
+    <View style={[sharedStyles.screen, styles.screen]}>
+      <View style={styles.sheet}>
+        <View style={styles.sheetHeader}>
+          <View style={styles.sheetHeaderText}>
+            <Text style={styles.sheetEyebrow}>{t("new.kicker")}</Text>
+            <Text style={styles.sheetTitle}>{t("new.title")}</Text>
+          </View>
+          <Pressable accessibilityLabel={t("common.back")} style={styles.closeButton} onPress={onBack}>
+            <GameUiIcon name="close" size={22} />
+          </Pressable>
+        </View>
+        <ScrollView contentContainerStyle={styles.content} style={styles.formScroll} showsVerticalScrollIndicator={false}>
+          <ImageBackground imageStyle={styles.heroImage} resizeMode="cover" source={fieldOperationsBoard} style={styles.hero}>
+            <View style={styles.heroVeil}>
+              <Text style={styles.heroSubtitle}>{t("new.subtitle")}</Text>
+            </View>
+          </ImageBackground>
       {pendingDraft && (
         <View style={styles.draftCard}>
           <Text style={styles.draftTitle}>{t("new.draftFound")}</Text>
@@ -254,19 +271,95 @@ export function NewBugScreen({ user, onBack: _onBack, onSaved }: Props) {
       <Pressable accessibilityLabel={t("a11y.saveBug")} style={sharedStyles.button} disabled={busy} onPress={save}>
         {busy ? <ActivityIndicator color="#ffffff" /> : <Text style={sharedStyles.buttonText}>{t("common.save")}</Text>}
       </Pressable>
-      {!!error && <Text style={sharedStyles.error}>{tr(error)}</Text>}
-    </ScrollView>
+          {!!error && <Text style={sharedStyles.error}>{tr(error)}</Text>}
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    paddingBottom: 180
+  screen: {
+    alignItems: "center",
+    backgroundColor: "transparent",
+    justifyContent: "center",
+    paddingBottom: 118,
+    paddingHorizontal: 10,
+    paddingTop: 8
   },
-  draftCard: {
-    backgroundColor: "#fdfefb",
+  sheet: {
+    backgroundColor: "#f7f1e2",
     borderColor: "#d7bd57",
-    borderRadius: 8,
+    borderRadius: 24,
+    borderWidth: 1,
+    flex: 1,
+    maxWidth: 760,
+    overflow: "hidden",
+    shadowColor: "#00150f",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.24,
+    shadowRadius: 22,
+    width: "100%"
+  },
+  sheetHeader: {
+    alignItems: "center",
+    backgroundColor: "#143f36",
+    flexDirection: "row",
+    minHeight: 66,
+    paddingHorizontal: 14,
+    paddingVertical: 10
+  },
+  sheetHeaderText: {
+    flex: 1
+  },
+  sheetEyebrow: {
+    color: "#e8c968",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.3
+  },
+  sheetTitle: {
+    color: "#ffffff",
+    fontSize: 21,
+    fontWeight: "900",
+    marginTop: 1
+  },
+  closeButton: {
+    alignItems: "center",
+    backgroundColor: "#fff8e6",
+    borderRadius: 16,
+    height: 42,
+    justifyContent: "center",
+    width: 42
+  },
+  formScroll: {
+    flex: 1
+  },
+  content: {
+    padding: 12,
+    paddingBottom: 24
+  },
+  hero: {
+    borderColor: "#d7bd57",
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 12,
+    minHeight: 82,
+    overflow: "hidden"
+  },
+  heroImage: { opacity: 0.9 },
+  heroVeil: {
+    backgroundColor: "rgba(6, 30, 21, 0.42)",
+    flex: 1,
+    justifyContent: "flex-end",
+    minHeight: 82,
+    padding: 12
+  },
+  heroSubtitle: { color: "#e4dbc4", fontSize: 12, fontWeight: "800", marginTop: 3 },
+  draftCard: {
+    backgroundColor: "#fffaf0",
+    borderColor: "#d2a43b",
+    borderRadius: 18,
     borderWidth: 1,
     marginBottom: 12,
     padding: 12
@@ -284,9 +377,9 @@ const styles = StyleSheet.create({
     flex: 1
   },
   previewWrap: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 18,
     borderWidth: 1,
     marginBottom: 10,
     overflow: "hidden"
@@ -298,7 +391,7 @@ const styles = StyleSheet.create({
   removeImageButton: {
     alignItems: "center",
     backgroundColor: "#b83227",
-    borderRadius: 8,
+    borderRadius: 12,
     height: 34,
     justifyContent: "center",
     position: "absolute",
@@ -318,9 +411,9 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   typeOption: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#c8d5ce",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 14,
     borderWidth: 1,
     flexBasis: "48%",
     flexGrow: 1,
@@ -329,8 +422,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10
   },
   typeOptionActive: {
-    backgroundColor: "#15724f",
-    borderColor: "#15724f"
+    backgroundColor: "#174f43",
+    borderColor: "#174f43"
   },
   typeOptionText: {
     color: "#17211c",
@@ -352,9 +445,9 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   visibilityOption: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#c8d5ce",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 14,
     borderWidth: 1,
     flex: 1,
     minWidth: "47%",
@@ -362,8 +455,8 @@ const styles = StyleSheet.create({
     padding: 10
   },
   visibilityOptionActive: {
-    backgroundColor: "#15724f",
-    borderColor: "#15724f"
+    backgroundColor: "#174f43",
+    borderColor: "#174f43"
   },
   visibilityTitle: {
     color: "#17211c",

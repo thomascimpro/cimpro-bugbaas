@@ -13,17 +13,18 @@ const seasonId = valueArg("--season") ?? previousSeasonId();
 const nextSeasonId = valueArg("--next-season") ?? currentSeasonId();
 
 const rewardPlan = {
-  1: { count: 1, label: "1 legendarische bug", rarity: "Legendarisch" },
-  2: { count: 2, label: "2 epische bugs", rarity: "Episch" },
-  3: { count: 1, label: "1 epische bug", rarity: "Episch" },
-  4: { count: 1, label: "1 zeldzame bug", rarity: "Zeldzaam" },
-  5: { count: 1, label: "1 zeldzame bug", rarity: "Zeldzaam" }
+  1: { count: 1, label: "1 mythische bug", rarity: "Mythisch" },
+  2: { count: 1, label: "1 legendarische bug", rarity: "Legendarisch" },
+  3: { count: 2, label: "2 epische bugs", rarity: "Episch" },
+  4: { count: 1, label: "1 epische bug", rarity: "Episch" },
+  5: { count: 2, label: "2 zeldzame bugs", rarity: "Zeldzaam" }
 };
 
 const bugPools = {
   Zeldzaam: ["stinkwants", "snuitkever", "lieveheersbeestje", "tapijtkever", "roofwants", "duizendpoot", "sprinkhaan", "wesp", "schildwants", "houtmier", "kniptor", "loopkever", "waterkever", "schaatsenrijder", "goudtor", "tijgerkever", "doodgraver", "waterschorpioen", "rozekever", "vuurwants"],
   Episch: ["boktor", "hoornaar", "vogelspin", "reuzenkakkerlak", "bidsprinkhaan", "wandelend-blad", "libel", "waterjuffer", "gaasvlieg", "doodshoofdvlinder", "kolibrievlinder", "koninginnenpage", "atalanta", "dagpauwoog", "juweelkever", "pauwspin", "juweelwesp", "goudschildkever", "harlekijnwants", "lantaarnvlieg"],
-  Legendarisch: ["schorpioen", "reuzen-duizendpoot", "neushoornkever", "atlaskever", "herculeskever", "goliathkever", "vliegend-hert", "orchidee-bidsprinkhaan", "smaragdlibel", "atlasvlinder", "dobsonvlieg", "spookinsect", "assassin-bug", "dolksteekwesp", "reuzenwaterwants", "zweepschorpioen", "rouwmantelvlinder", "keizersmantel", "olifantskever", "regenboogmestkever"]
+  Legendarisch: ["schorpioen", "reuzen-duizendpoot", "neushoornkever", "atlaskever", "herculeskever", "goliathkever", "vliegend-hert", "orchidee-bidsprinkhaan", "smaragdlibel", "atlasvlinder", "dobsonvlieg", "spookinsect", "assassin-bug", "dolksteekwesp", "reuzenwaterwants", "zweepschorpioen", "rouwmantelvlinder", "keizersmantel", "olifantskever", "regenboogmestkever", "muskusboktor"],
+  Mythisch: ["koningin-alexandravlinder", "zonsondergangsmot", "picasso-wants", "roze-esdoornmot", "giraffekevertje", "doornbloembidsprinkhaan", "lantaarndrager", "glorieuze-scarabee", "blauwe-morpho"]
 };
 
 const stringValue = (value) => ({ stringValue: String(value) });
@@ -188,13 +189,15 @@ async function updateUserCountersAndReset(token, userDoc, newUniqueCounts) {
   const uid = docId(userDoc.name);
   const bugDexCount = fieldNumber(userDoc, "bugDexCount", 0) + newUniqueCounts.total;
   const legendaryBugDexCount = fieldNumber(userDoc, "legendaryBugDexCount", 0) + newUniqueCounts.legendary;
+  const mythicBugDexCount = fieldNumber(userDoc, "mythicBugDexCount", 0) + newUniqueCounts.mythic;
   await patchDocument(`/users/${uid}`, token, {
     bugDexCount: integerValue(bugDexCount),
     duelRating: integerValue(1000),
     duelSeasonId: stringValue(nextSeasonId),
     duelSeasonResetAt: stringValue(nowIso),
-    legendaryBugDexCount: integerValue(legendaryBugDexCount)
-  }, ["bugDexCount", "duelRating", "duelSeasonId", "duelSeasonResetAt", "legendaryBugDexCount"]);
+    legendaryBugDexCount: integerValue(legendaryBugDexCount),
+    mythicBugDexCount: integerValue(mythicBugDexCount)
+  }, ["bugDexCount", "duelRating", "duelSeasonId", "duelSeasonResetAt", "legendaryBugDexCount", "mythicBugDexCount"]);
 }
 
 async function writeClaim(token, userDoc, rank, reward, bugIds) {
@@ -233,7 +236,7 @@ async function main() {
     const reward = rewardPlan[rank];
     const existingClaim = await getDocument(`/users/${uid}/duelSeasonClaims/${seasonId}`, token);
     const bugIds = [];
-    const newUniqueCounts = { legendary: 0, total: 0 };
+    const newUniqueCounts = { legendary: 0, mythic: 0, total: 0 };
 
     if (!existingClaim) {
       for (let rewardIndex = 0; rewardIndex < reward.count; rewardIndex += 1) {
@@ -243,6 +246,7 @@ async function main() {
         if (isNew) {
           newUniqueCounts.total += 1;
           if (reward.rarity === "Legendarisch") newUniqueCounts.legendary += 1;
+          if (reward.rarity === "Mythisch") newUniqueCounts.mythic += 1;
         }
       }
       await writeClaim(token, user, rank, reward, bugIds);
@@ -262,7 +266,7 @@ async function main() {
   }
 
   for (const user of users.filter((user) => !top5.some((winner) => winner.uid === docId(user.name)))) {
-    await updateUserCountersAndReset(token, user, { legendary: 0, total: 0 });
+    await updateUserCountersAndReset(token, user, { legendary: 0, mythic: 0, total: 0 });
   }
 
   await patchDocument(`/duelSeasons/${seasonId}`, token, {

@@ -3,22 +3,36 @@
     "name": "BugBaas",
     "slug": "bugbaas",
     "scheme": "bugbaas",
-    "version": "2.10.19",
+    "version": "3.0.5",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/generated/bugbaas-app-icon-v3.png",
+    "splash": {
+      "image": "./assets/generated/bugbaas-splash-badge-hd.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0b241b"
+    },
+    "web": {
+      "favicon": "./assets/generated/bugbaas-field-emblem-v3.png"
+    },
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
       "assets/*.png",
       "assets/*.jpg",
+      "assets/*.webp",
       "assets/badges/*.png",
-      "assets/bugdex/*.png",
+      "assets/badges/*.webp",
+      "assets/bugdex-webp/**/*.webp",
       "assets/generated/*.png",
       "assets/generated/*.jpg",
+      "assets/generated/*.webp",
       "assets/leaderboard/*.png",
       "assets/minigames/extracted/*.png",
+      "assets/minigames/**/*.webp",
+      "assets/new/*.webp",
       "assets/buddy/kenney/emotes/*.png",
       "assets/buddy/kenney/pets/*.png",
       "assets/buddy/kenney/state/*.png",
+      "assets/buddy/kenney/stats/*.webp",
       "assets/buddy/kenney/ui/*.png",
       "assets/buddy/kenney/extracted/ui-pack/PNG/Yellow/Default/*.png"
     ],
@@ -47,8 +61,8 @@
         "me.everything.badger.permission.BADGE_COUNT_WRITE"
       ],
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#102018"
+        "foregroundImage": "./assets/generated/bugbaas-field-emblem-v3.png",
+        "backgroundColor": "#0b241b"
       }
     },
     "plugins": [
@@ -65,6 +79,12 @@
         {
           "cameraPermission": "BugBaas gebruikt de camera om echte bugs voor de BugDex te fotograferen.",
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "BugBaas gebruikt je locatie alleen na jouw tik om privé-vondsten op je kaart te plaatsen."
         }
       ]
     ]

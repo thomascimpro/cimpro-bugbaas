@@ -112,6 +112,7 @@ service cloud.firestore {
     function validBugMasteryData(bugId) {
       return request.resource.data.keys().hasOnly([
           'activeUses',
+          'battleWins',
           'bugId',
           'dailySourceTotals',
           'duelUses',
@@ -130,6 +131,10 @@ service cloud.firestore {
           'xp'
         ])
         && request.resource.data.bugId == bugId
+        && (!request.resource.data.keys().hasAny(['battleWins'])
+          || (request.resource.data.battleWins is int
+            && request.resource.data.battleWins >= 0
+            && request.resource.data.battleWins <= 1000000))
         && request.resource.data.level is int
         && request.resource.data.level >= 1
         && request.resource.data.level <= 20
@@ -160,13 +165,14 @@ service cloud.firestore {
     }
 
     function validBugMasteryEventData(eventId) {
-      return request.resource.data.keys().hasOnly(['amount', 'bugId', 'createdAt', 'id', 'localDay', 'source'])
+      return request.resource.data.keys().hasOnly(['amount', 'bugId', 'createdAt', 'id', 'kind', 'localDay', 'source'])
         && request.resource.data.id == eventId
         && request.resource.data.amount is int
         && request.resource.data.amount >= 0
         && request.resource.data.bugId is string
         && request.resource.data.createdAt is string
         && request.resource.data.localDay is string
+        && (!request.resource.data.keys().hasAny(['kind']) || request.resource.data.kind == 'battle_win')
         && request.resource.data.source in [
           'active_squad_duel',
           'active_squad_solo',
@@ -192,7 +198,7 @@ service cloud.firestore {
     }
 
     function validArcadeMode(mode) {
-      return mode in ['web_runner', 'nest_defense', 'bug_glide', 'bug_tower', 'bubble_swarm'];
+      return mode in ['web_runner', 'nest_defense', 'bug_glide', 'butterfly_catch', 'bug_tower', 'bubble_swarm'];
     }
 
     function validArcadeResultMode(mode) {
@@ -200,7 +206,7 @@ service cloud.firestore {
     }
 
     function validDuelMode(mode) {
-      return mode in ['tap_duel', 'web_runner', 'nest_defense', 'bug_glide', 'bug_tower', 'bubble_swarm'];
+      return mode in ['tap_duel', 'web_runner', 'nest_defense', 'bug_glide', 'butterfly_catch', 'bug_tower', 'bubble_swarm'];
     }
 
     function isTaggedTapDuel(data) {
@@ -239,10 +245,14 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.score is int
         && request.resource.data.score >= 0
-        && request.resource.data.score <= 50000
+        && request.resource.data.score <= 100000000
         && request.resource.data.durationMs is int
         && request.resource.data.durationMs >= 0
-        && request.resource.data.durationMs <= 90000
+        && request.resource.data.durationMs <= 21600000
+        && (request.resource.data.score <= 50000
+          || (mode in ['bug_tower', 'bubble_swarm'] && request.resource.data.durationMs > 90000))
+        && (request.resource.data.durationMs <= 90000
+          || mode in ['bug_tower', 'bubble_swarm', 'nest_defense'])
         && request.resource.data.pickups is int
         && request.resource.data.pickups >= 0
         && request.resource.data.hits is int
@@ -253,6 +263,7 @@ service cloud.firestore {
         && request.resource.data.streak >= 0
         && request.resource.data.localHighScore is int
         && request.resource.data.localHighScore >= 0
+        && request.resource.data.localHighScore >= request.resource.data.score
         && request.resource.data.timestamp is string;
     }
 
@@ -409,8 +420,10 @@ service cloud.firestore {
         )
         && request.resource.data.totalPoints is int
         && request.resource.data.totalPoints >= 0
-        && request.resource.data.bugCount is int
-        && request.resource.data.bugCount >= 0
+        && (
+          !request.resource.data.keys().hasAny(['bugCount'])
+          || (request.resource.data.bugCount is int && request.resource.data.bugCount >= 0)
+        )
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'active',
           'activeBugSquad',
@@ -431,6 +444,9 @@ service cloud.firestore {
           'movementRegisteredDayKm',
           'movementRegisteredWeek',
           'movementRegisteredWeekKm',
+          'momentumCycle',
+          'momentumLastActiveDay',
+          'momentumSegments',
           'mythicBugDexCount',
           'nameSet',
           'notificationPushToken',
@@ -450,6 +466,9 @@ service cloud.firestore {
         ])
         && (!request.resource.data.keys().hasAny(['lastActiveAt']) || request.resource.data.lastActiveAt is string)
         && (!request.resource.data.keys().hasAny(['lastReportRewardDay']) || request.resource.data.lastReportRewardDay is string)
+        && (!request.resource.data.keys().hasAny(['momentumCycle']) || (request.resource.data.momentumCycle is int && request.resource.data.momentumCycle >= 0))
+        && (!request.resource.data.keys().hasAny(['momentumLastActiveDay']) || request.resource.data.momentumLastActiveDay.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        && (!request.resource.data.keys().hasAny(['momentumSegments']) || (request.resource.data.momentumSegments is int && request.resource.data.momentumSegments >= 0 && request.resource.data.momentumSegments <= 5))
         && (!request.resource.data.keys().hasAny(['notificationPushToken']) || request.resource.data.notificationPushToken is string)
         && (!request.resource.data.keys().hasAny(['starterBoostActiveUntil']) || request.resource.data.starterBoostActiveUntil is string)
         && (!request.resource.data.keys().hasAny(['starterBoostGrantedAt']) || request.resource.data.starterBoostGrantedAt is string)
@@ -630,7 +649,14 @@ service cloud.firestore {
         && request.resource.data.createdAt is string
         && request.resource.data.updatedAt is string
         && request.resource.data.durationMs is int
-        && request.resource.data.durationMs == 30000
+        && (
+          (request.resource.data.keys().hasAny(['arcadeMode'])
+            && request.resource.data.arcadeMode == 'butterfly_catch'
+            && request.resource.data.durationMs == 60000)
+          || ((!request.resource.data.keys().hasAny(['arcadeMode'])
+              || request.resource.data.arcadeMode != 'butterfly_catch')
+            && request.resource.data.durationMs == 30000)
+        )
         && request.resource.data.scores is map
         && request.resource.data.scores.size() == 0
         && request.resource.data.rewardClaimedBy is list
@@ -727,7 +753,7 @@ service cloud.firestore {
         && (!resource.data.scores.keys().hasAny([otherUserId]) || request.resource.data.scores[otherUserId] == resource.data.scores[otherUserId])
         && ownScore.score is int
         && ownScore.score >= 0
-        && ownScore.score <= (resource.data.keys().hasAny(['arcadeMode']) && validArcadeMode(resource.data.arcadeMode) ? 50000 : 1200)
+        && ownScore.score <= (resource.data.keys().hasAny(['arcadeMode']) && validArcadeMode(resource.data.arcadeMode) ? 100000000 : 1200)
         && ownScore.caughtBugIds is list
         && ownScore.caughtBugIds.size() <= duelBugCount()
         && ownScore.bonusScore is int
@@ -930,6 +956,79 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      match /bugBrainDailyAttempts/{dayId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && dayId.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          && request.resource.data.keys().hasOnly(['day', 'seed', 'startedAt', 'status'])
+          && request.resource.data.day == dayId
+          && request.resource.data.seed is int
+          && request.resource.data.seed >= 0
+          && request.resource.data.startedAt is string
+          && request.resource.data.status == 'active';
+        allow update: if signedIn()
+          && request.auth.uid == userId
+          && resource.data.status == 'active'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['completedAt', 'correctAnswers', 'status'])
+          && request.resource.data.completedAt is string
+          && request.resource.data.correctAnswers is int
+          && request.resource.data.correctAnswers >= 0
+          && request.resource.data.correctAnswers <= 10
+          && request.resource.data.status == 'completed';
+        allow delete: if false;
+      }
+
+      match /bugBrainDailyClaims/{dayId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create: if signedIn()
+          && request.auth.uid == userId
+          && dayId.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+          && request.resource.data.keys().hasOnly(['awardedXp', 'claimedAt', 'correctAnswers', 'day', 'rewardBugId', 'rewardTier'])
+          && request.resource.data.day == dayId
+          && request.resource.data.claimedAt is string
+          && request.resource.data.correctAnswers is int
+          && request.resource.data.correctAnswers >= 0
+          && request.resource.data.correctAnswers <= 10
+          && request.resource.data.awardedXp == request.resource.data.correctAnswers
+          && get(/databases/$(database)/documents/users/$(userId)/bugBrainDailyAttempts/$(dayId)).data.status == 'active'
+          && getAfter(/databases/$(database)/documents/users/$(userId)/bugBrainDailyAttempts/$(dayId)).data.status == 'completed'
+          && getAfter(/databases/$(database)/documents/users/$(userId)/bugBrainDailyAttempts/$(dayId)).data.correctAnswers == request.resource.data.correctAnswers
+          && getAfter(/databases/$(database)/documents/users/$(userId)).data.totalPoints == get(/databases/$(database)/documents/users/$(userId)).data.totalPoints + request.resource.data.awardedXp
+          && (
+            (
+              request.resource.data.correctAnswers < 5
+              && !request.resource.data.keys().hasAny(['rewardBugId', 'rewardTier'])
+            )
+            || (
+              request.resource.data.correctAnswers >= 5
+              && request.resource.data.correctAnswers <= 7
+              && request.resource.data.keys().hasAll(['rewardBugId', 'rewardTier'])
+              && request.resource.data.rewardTier == 'Zeldzaam'
+            )
+            || (
+              request.resource.data.correctAnswers >= 8
+              && request.resource.data.correctAnswers <= 9
+              && request.resource.data.keys().hasAll(['rewardBugId', 'rewardTier'])
+              && request.resource.data.rewardTier == 'Episch'
+            )
+            || (
+              request.resource.data.correctAnswers == 10
+              && request.resource.data.keys().hasAll(['rewardBugId', 'rewardTier'])
+              && request.resource.data.rewardTier == 'Legendarisch'
+            )
+          )
+          && (
+            !request.resource.data.keys().hasAny(['rewardBugId'])
+            || (
+              request.resource.data.rewardBugId is string
+              && getAfter(/databases/$(database)/documents/users/$(userId)/bugdex/$(request.resource.data.rewardBugId)).data.rarity == request.resource.data.rewardTier
+              && getAfter(/databases/$(database)/documents/users/$(userId)/bugdex/$(request.resource.data.rewardBugId)).data.sources.hasAny(['bug_brain_daily'])
+            )
+          );
+        allow update, delete: if false;
+      }
+
       match /realBugScanUsage/{dayId} {
         allow read: if signedIn() && request.auth.uid == userId;
         allow create, update, delete: if false;
@@ -979,6 +1078,63 @@ service cloud.firestore {
           && request.resource.data.status in ['matched', 'already_spotted', 'not_in_catalog', 'pending_review']
           && request.resource.data.userId == request.auth.uid;
         allow update, delete: if false;
+      }
+
+      match /fieldJournal/{entryId} {
+        allow read: if false;
+        allow create, update, delete: if false;
+      }
+
+      match /verifiedObservations/{entryId} {
+        // Includes an optional server-written, rounded private map cell. Only its owner can read it.
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /museumPlacements/{wingId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update: if signedIn()
+          && request.auth.uid == userId
+          && wingId in ["beetles", "wings", "water", "night", "crawlers", "crown"]
+          && request.resource.data.keys().hasOnly(["wingId", "placements", "updatedAt"])
+          && request.resource.data.wingId == wingId
+          && request.resource.data.placements is list
+          && request.resource.data.placements.size() <= 6
+          && request.resource.data.updatedAt is string;
+        allow delete: if signedIn() && request.auth.uid == userId;
+      }
+
+      match /research/{researchDocId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /researchEvidence/{evidenceId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /rewardReceipts/{receiptId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /fieldMilestoneClaims/{milestoneId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /releaseBossClaims/{bossId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /swarmSiegeClaims/{eventId} {
+        allow read, create, update, delete: if false;
+      }
+
+      match /teamHuntContributions/{eventId} {
+        allow read, create, update, delete: if false;
       }
 
       match /duelRewardEvents/{eventId} {
@@ -1043,6 +1199,8 @@ service cloud.firestore {
           && request.auth.uid == userId
           && request.resource.data.id == claimId
           && request.resource.data.claimedAt is string
+          && request.resource.data.rewardXp is int
+          && request.resource.data.rewardXp >= 0
           && request.resource.data.keys().hasOnly([
             'claimedAt',
             'id',
@@ -1167,6 +1325,31 @@ service cloud.firestore {
         allow delete: if signedIn()
           && get(/databases/$(database)/documents/bugs/$(bugId)).data.reporterId == request.auth.uid;
       }
+    }
+
+    // Team Hunt data is written and aggregated only by authenticated Functions.
+    // Clients use the status endpoint, so personal observations and the board cannot be forged or scraped.
+    match /teamHunts/{eventId} {
+      allow read, write: if false;
+      match /teams/{organizationId} {
+        allow read, write: if false;
+        match /species/{speciesId} {
+          allow read, write: if false;
+        }
+      }
+    }
+
+    // Swarm Siege is exposed only through authenticated Functions.
+    // Clients cannot forge runs, damage, participant state or reward claims.
+    match /swarmSieges/{eventId} {
+      allow read, write: if false;
+      match /participants/{userId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /swarmSiegeRuns/{runId} {
+      allow read, write: if false;
     }
 
     match /organizationBugs/{bugId} {

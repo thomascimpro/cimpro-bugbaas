@@ -27,6 +27,7 @@ assets/buddy/kenney/extracted/ui-audio
 assets/buddy/kenney/extracted/ui-pack-rpg-expansion
 dist
 dist-*
+api/*.test.js
 *.apk
 *.aab
 *.7z

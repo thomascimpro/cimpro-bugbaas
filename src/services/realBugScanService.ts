@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db, isFirebaseConfigured } from "../firebase";
 import { User } from "../types";
-import { entryByBugId, grantRealBugScanRewardOnce, listBugDexInventory } from "./bugDexService";
+import { entryByBugId, grantRealBugScanRewardOnce, listBugDexInventory, type RealBugScanRewardResult } from "./bugDexService";
 import { recordPendingBugDexDiscovery } from "./pendingBugDexDiscovery";
 import {
   parseRealBugIdentifyApiResponse,
@@ -25,6 +25,11 @@ export class RealBugScanLimitError extends Error {
   }
 }
 
+export type RealBugScanSubmission = {
+  result: RealBugScanResponse;
+  drop: RealBugScanRewardResult | null;
+};
+
 function usageCount(data: unknown): number {
   if (!data || typeof data !== "object") return 0;
   const used = Number((data as { used?: unknown }).used);
@@ -34,6 +39,7 @@ function usageCount(data: unknown): number {
 function apiBaseUrl(): string {
   if (Platform.OS === "web" && typeof window !== "undefined") {
     if (["localhost", "127.0.0.1"].includes(window.location.hostname)) return "http://localhost:8787";
+    if (window.location.hostname.endsWith(".vercel.app") && window.location.hostname !== "bugbaas.vercel.app") return window.location.origin;
   }
   const extra = Constants.expoConfig?.extra ?? {};
   const configured = String((extra as { realBugScanApiBaseUrl?: unknown }).realBugScanApiBaseUrl ?? "").trim();
@@ -67,7 +73,7 @@ export async function submitRealBugScan(
   user: User,
   imageDataUrl: string,
   reviewThumbnailDataUrl: string
-): Promise<RealBugScanResponse> {
+): Promise<RealBugScanSubmission> {
   const scanId = createScanId();
   const dayKey = realBugScanDayKey();
   const fingerprint = realBugScanFingerprint(imageDataUrl);
@@ -105,6 +111,7 @@ export async function submitRealBugScan(
     const identified = parseRealBugIdentifyApiResponse(rawIdentification, fallbackRemainingScans);
     let status: RealBugScanResponse["status"] = identified.status;
     let reward: RealBugScanResponse["reward"];
+    let drop: RealBugScanRewardResult | null = null;
 
     if (identified.status === "not_in_catalog") {
       await recordPendingBugDexDiscovery({
@@ -122,6 +129,7 @@ export async function submitRealBugScan(
       const eventId = `real-bug-scan-${scanId}`;
       const granted = await grantRealBugScanRewardOnce(user, bugId, eventId);
       if (granted) {
+        drop = granted;
         reward = {
           granted: granted.awardedCopy,
           isNew: granted.isNew,
@@ -153,7 +161,7 @@ export async function submitRealBugScan(
     });
     await rememberRealBugScanFingerprint(user.uid, dayKey, fingerprint);
     await recordDailyRealBugScanProgress(user, result);
-    return result;
+    return { result, drop };
   } catch (error) {
     throw error;
   }

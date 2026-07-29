@@ -1,11 +1,14 @@
 const appConfig = require("./app.json");
 
+const canonicalFirebaseExtra = {
+  firebaseApiKey: "AIzaSyDSoTGqmjFMIzlVBjgNt55gCqpr4bsM9R4",
+  firebaseAuthDomain: "thomascimpro-6266f.firebaseapp.com",
+  firebaseProjectId: "thomascimpro-6266f",
+  firebaseMessagingSenderId: "508370199825",
+  firebaseAppId: "1:508370199825:android:469f30507a5623e281d8b0"
+};
+
 const requiredExtraEnv = {
-  firebaseApiKey: "FIREBASE_API_KEY",
-  firebaseAuthDomain: "FIREBASE_AUTH_DOMAIN",
-  firebaseProjectId: "FIREBASE_PROJECT_ID",
-  firebaseMessagingSenderId: "FIREBASE_MESSAGING_SENDER_ID",
-  firebaseAppId: "FIREBASE_APP_ID",
   googleClientId: "GOOGLE_CLIENT_ID",
   googleAndroidClientId: "GOOGLE_ANDROID_CLIENT_ID"
 };
@@ -27,10 +30,14 @@ function readExtra() {
 
 module.exports = () => ({
   ...appConfig.expo,
+  plugins: Array.from(new Set([...(appConfig.expo.plugins ?? []), "expo-asset"])),
   extra: {
     ...(appConfig.expo.extra ?? {}),
     ...readExtra(),
+    ...canonicalFirebaseExtra,
+    bugBrainApiBaseUrl: process.env.BUG_BRAIN_API_BASE_URL ?? "https://us-central1-thomascimpro-6266f.cloudfunctions.net",
     fitnessSyncerApiBaseUrl: process.env.FITNESSSYNCER_API_BASE_URL ?? "https://us-central1-thomascimpro-6266f.cloudfunctions.net",
+    swarmSiegeApiBaseUrl: process.env.SWARM_SIEGE_API_BASE_URL ?? "https://us-central1-thomascimpro-6266f.cloudfunctions.net",
     realBugScanApiBaseUrl: process.env.REAL_BUG_SCAN_API_BASE_URL ?? "https://bugbaas.vercel.app"
   }
 });

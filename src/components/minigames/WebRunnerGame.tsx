@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, BackHandler, DimensionValue, Image, LayoutChangeEvent, PanResponder, Pressable, StyleSheet, Text, View } from "react-native";
 import { createArcadeSeed, loadArcadeHighScore, saveArcadeHighScore, seededLane } from "../../services/arcadeResultService";
 import { arcadeSquadAssistForUser } from "../../services/bugSquadGameBalance";
+import { frameScaleForTick, startArcadeFrameLoop } from "../../services/gameLoopTiming";
 import { useI18n } from "../../services/i18n";
 import { playBugSound } from "../../services/soundService";
+import { classifyWebRunnerGesture } from "../../services/webRunnerGesture";
 import { ArcadeRunResult, User } from "../../types";
 import { BugArtImage } from "../BugArtImage";
+import { GameUiIcon } from "../ui/GameUiIcon";
 import { ArcadeSquadAssist } from "./ArcadeSquadAssist";
-import { SpriteCrop } from "./SpriteCrop";
 
 type Props = { onBack: () => void; onResult?: (result: ArcadeRunResult) => void; practice?: boolean; ranked?: boolean; seed?: string; user: User };
 type RunnerState = "ready" | "result" | "running";
@@ -15,7 +17,8 @@ type EntityKind = "boost" | "flyer" | "magnet" | "nectar" | "shield" | "web";
 type RunnerEntity = { id: string; kind: EntityKind; lane: 0 | 1 | 2; y: number };
 type RunnerStats = { combo: number; hitCount: number; maxCombo: number; pickups: number; scoreBonus: number; startAt: number };
 
-const tickMs = 50;
+const simulationStepMs = 75;
+const tickMs = 16;
 const playerY = 84;
 const maxHits = 3;
 const maxEntities = 42;
@@ -24,7 +27,7 @@ const difficultyRampMs = 52000;
 const referencePlayfieldWidth = 360;
 const maxPlayfieldScale = 2;
 const gameZoomScale = 0.82;
-const arcadeShowcaseImage = require("../../../assets/generated/ChatGPT Image 18 jun 2026, 22_34_06.png");
+const webRunnerTunnelImage = require("../../../assets/generated/web-runner-tunnel-v1.jpg");
 const shieldEffectImage = require("../../../assets/generated/duel_effect_shield_hd.png");
 const speedEffectImage = require("../../../assets/generated/duel_effect_lightning_hd.png");
 const webEffectImage = require("../../../assets/generated/duel_effect_goo_hd.png");
@@ -57,6 +60,7 @@ export function WebRunnerGame({ onBack, onResult, practice = false, ranked = fal
   const boostUntilRef = useRef(0);
   const seedRef = useRef(createArcadeSeed("web_runner", user.uid));
   const statsRef = useRef<RunnerStats>(emptyStats());
+  const lastFrameAtRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -66,8 +70,7 @@ export function WebRunnerGame({ onBack, onResult, practice = false, ranked = fal
 
   useEffect(() => {
     if (state !== "running") return;
-    const id = setInterval(tick, tickMs);
-    return () => clearInterval(id);
+    return startArcadeFrameLoop(tick);
   }, [state, squadAssist.webRunner.collisionWindowBonus, squadAssist.webRunner.magnetBonusMs]);
 
   useEffect(() => {
@@ -77,21 +80,22 @@ export function WebRunnerGame({ onBack, onResult, practice = false, ranked = fal
   }, [practice, state]);
 
   const panResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 14 || Math.abs(gesture.dy) > 14,
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
     onPanResponderRelease: (_, gesture) => {
-      if (gesture.dy < -24 && Math.abs(gesture.dy) > Math.abs(gesture.dx)) {
-        jump();
-        return;
-      }
-      if (gesture.dx > 20) moveLane(1);
-      if (gesture.dx < -20) moveLane(-1);
+      const action = classifyWebRunnerGesture(gesture.dx, gesture.dy);
+      if (action === "jump") jump();
+      if (action === "left") moveLane(-1);
+      if (action === "right") moveLane(1);
     }
-  }), []);
+  }), [state]);
 
   function startRun() {
     finishingRef.current = false;
-    seedRef.current = seed ?? createArcadeSeed("web_runner", `${user.uid}:${Date.now()}`);
-    statsRef.current = { ...emptyStats(), startAt: Date.now() };
+    const startedAt = Date.now();
+    seedRef.current = seed ?? createArcadeSeed("web_runner", `${user.uid}:${startedAt}`);
+    statsRef.current = { ...emptyStats(), startAt: startedAt };
+    lastFrameAtRef.current = startedAt;
     laneRef.current = 1;
     jumpUntilRef.current = 0;
     jumpUntilRef.current = 0;
@@ -121,11 +125,13 @@ export function WebRunnerGame({ onBack, onResult, practice = false, ranked = fal
 
   function tick() {
     const now = Date.now();
+    const frameScale = frameScaleForTick(now, lastFrameAtRef.current, simulationStepMs);
+    lastFrameAtRef.current = now;
     const elapsed = now - statsRef.current.startAt;
     setEntities((current) => {
       const speedBoost = now < boostUntilRef.current ? 0.18 : 0;
       const difficulty = runnerDifficulty(elapsed);
-      const speed = difficulty.speed + speedBoost;
+      const speed = (difficulty.speed + speedBoost) * frameScale;
       const moved = current.map((item) => ({ ...item, y: item.y + speed })).filter((item) => item.y < 112);
       const spawned = spawnPattern(moved, elapsed);
       const survivors: RunnerEntity[] = [];
@@ -268,14 +274,14 @@ export function WebRunnerGame({ onBack, onResult, practice = false, ranked = fal
     <View style={styles.shell}>
       <View style={styles.header}>
         <View><Text style={styles.title}>{t("arcade.webRunner.title")}</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>
-        {(practice || state === "result") && <Pressable style={styles.closeButton} onPress={back}><Text style={styles.closeText}>x</Text></Pressable>}
+        {(practice || state === "result") && <Pressable accessibilityLabel="Back to games" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}
       </View>
       {state === "ready" && <Ready onStart={startRun} />}
       {state === "running" && (
         <View style={styles.game} {...panResponder.panHandlers}>
           <View style={styles.hud}><Text style={styles.hudText}>{score}</Text><Text style={styles.hudText}>{maxHits - hits}/{maxHits} HP</Text><Text style={styles.hudText}>{status}</Text></View>
           <Pressable style={styles.playfield} onLayout={updatePlayfieldLayout} onPress={jump}>
-            <SpriteCrop rect={{ x: 20, y: 20, width: 724, height: 724 }} sheetHeight={1536} sheetWidth={1536} source={arcadeShowcaseImage} style={styles.backgroundArt} />
+            <Image source={webRunnerTunnelImage} resizeMode="cover" style={styles.backgroundArt} />
             <View style={styles.distanceShade} />
             <View style={styles.squadOverlay}><ArcadeSquadAssist compact label={`Squad ${squadAssist.activeCount}/3`} user={user} /></View>
             {[0, 1, 2].map((item) => (
@@ -310,6 +316,11 @@ export function WebRunnerGame({ onBack, onResult, practice = false, ranked = fal
 function Ready({ onStart }: { onStart: () => void }) {
   return (
     <View style={styles.panel}>
+      <View style={styles.readyVisual}>
+        <Image source={webRunnerTunnelImage} resizeMode="cover" style={styles.backgroundArt} />
+        <View style={styles.readyVisualShade} />
+        <View style={styles.readyVisualBug}><BugArtImage bugId="fruitvlieg" fallbackVariant="dragonfly" size={76} /></View>
+      </View>
       <Text style={styles.panelTitle}>Run the web tunnel</Text>
       <Text style={styles.body}>Swipe left/right to dodge. Jump over sticky webs. Pick up nectar, shields, magnets, and boost.</Text>
       <Pressable style={styles.primaryButton} onPress={onStart}><Text style={styles.primaryText}>Start</Text></Pressable>
@@ -419,6 +430,9 @@ const styles = StyleSheet.create({
   meta: { color: "#a9b8ae", fontSize: 12, fontWeight: "800" },
   panel: { alignItems: "center", backgroundColor: "rgba(16,32,24,0.94)", borderColor: "#d7bd57", borderRadius: 10, borderWidth: 1, gap: 14, margin: 16, padding: 18 },
   panelTitle: { color: "#f9fbf7", fontSize: 26, fontWeight: "900", textAlign: "center" },
+  readyVisual: { alignItems: "center", borderColor: "rgba(215,189,87,0.72)", borderRadius: 16, borderWidth: 1, height: 150, justifyContent: "center", overflow: "hidden", position: "relative", width: "100%" },
+  readyVisualShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(4,18,12,0.28)" },
+  readyVisualBug: { alignItems: "center", backgroundColor: "rgba(249,251,247,0.90)", borderColor: "#d7bd57", borderRadius: 48, borderWidth: 3, height: 96, justifyContent: "center", width: 96 },
   pickupArt: { height: 58, width: 58 },
   pickupEntity: { backgroundColor: "rgba(215,189,87,0.18)", borderColor: "rgba(215,189,87,0.75)", borderRadius: 999, borderWidth: 2 },
   player: { alignItems: "center", backgroundColor: "rgba(249,251,247,0.9)", borderColor: "#d7bd57", borderRadius: 18, borderWidth: 3, bottom: 24, height: 74, justifyContent: "center", marginLeft: -37, position: "absolute", width: 74, zIndex: 6 },

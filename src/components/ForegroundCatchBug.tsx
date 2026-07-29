@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, AppState, Easing, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { nativeDriver } from "../services/animationPlatform";
 import { allBugArtIds, BugArtId } from "../services/bugArt";
 import { bugDexEntries } from "../services/pointsService";
 import { resolveForegroundCatchViewport } from "../services/foregroundCatchLayout";
@@ -49,11 +50,19 @@ const movementInput = [0, 0.055, 0.1, 0.16, 0.22, 0.3, 0.37, 0.45, 0.53, 0.61, 0
 const timerSegments = Array.from({ length: 24 }, (_, index) => index);
 
 const raritySettings: Record<SpawnRarity, { motionCycleMs: number; rewardXp: number; requiredTaps: number; size: number; stepBob: number; turn: number; verticalDrift: number; wiggle: number }> = {
-  common: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.common, requiredTaps: 3, size: 68, stepBob: 4, turn: 12, verticalDrift: 0.1, wiggle: 0.015 },
-  rare: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.rare, requiredTaps: 5, size: 74, stepBob: 5, turn: 17, verticalDrift: 0.16, wiggle: 0.028 },
-  epic: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.epic, requiredTaps: 7, size: 82, stepBob: 6, turn: 22, verticalDrift: 0.24, wiggle: 0.04 },
-  legendary: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.legendary, requiredTaps: 9, size: 90, stepBob: 7, turn: 28, verticalDrift: 0.3, wiggle: 0.055 },
-  mythic: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.mythic, requiredTaps: 11, size: 96, stepBob: 8, turn: 32, verticalDrift: 0.34, wiggle: 0.065 }
+  common: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.common, requiredTaps: 3, size: 82, stepBob: 4, turn: 12, verticalDrift: 0.1, wiggle: 0.015 },
+  rare: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.rare, requiredTaps: 5, size: 90, stepBob: 5, turn: 17, verticalDrift: 0.16, wiggle: 0.028 },
+  epic: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.epic, requiredTaps: 7, size: 100, stepBob: 6, turn: 22, verticalDrift: 0.24, wiggle: 0.04 },
+  legendary: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.legendary, requiredTaps: 9, size: 110, stepBob: 7, turn: 28, verticalDrift: 0.3, wiggle: 0.055 },
+  mythic: { motionCycleMs: catchDurationMs, rewardXp: foregroundCatchXpByRarity.mythic, requiredTaps: 11, size: 118, stepBob: 8, turn: 32, verticalDrift: 0.34, wiggle: 0.065 }
+};
+
+const rarityAccents: Record<SpawnRarity, string> = {
+  common: "#8fd67a",
+  rare: "#69b8ff",
+  epic: "#b587ff",
+  legendary: "#f4c75d",
+  mythic: "#ff6e67"
 };
 
 const rarityLabels: Record<SpawnRarity, "Gewoon" | "Zeldzaam" | "Episch" | "Legendarisch" | "Mythisch"> = {
@@ -202,7 +211,8 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
     if (!activeBug) return 0;
     const hitboxHeight = hitboxSize;
     const minTop = Math.max(24, height * 0.1);
-    const maxTop = Math.max(minTop, height - hitboxHeight - 96);
+    const bottomUiClearance = Math.min(180, height * 0.24);
+    const maxTop = Math.max(minTop, height - hitboxHeight - bottomUiClearance);
     const range = maxTop - minTop;
     return progress.interpolate({
       inputRange: movementInput,
@@ -249,7 +259,7 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
     const rarity = forcedId ? rarityByBugId[forcedId] ?? "common" : pickRarity();
     const bugId = forcedId ?? pickBugId(rarity);
     const settings = raritySettings[rarity];
-    const hitboxMultiplier = 1.06 + clamp(catchAssist, 0, 0.22);
+    const hitboxMultiplier = 1 + clamp(catchAssist, 0, 0.22);
     const requiredTaps = settings.requiredTaps;
     const durationMs = Math.round(catchDurationMs * (1 + clamp(catchTimeBonus, 0, 0.2)));
     const direction = Math.random() > 0.5 ? "right" : "left";
@@ -270,7 +280,7 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
       size: settings.size,
       stepBob: settings.stepBob
     });
-    setHitboxSize(Math.round(settings.size * hitboxMultiplier));
+    setHitboxSize(Math.round((settings.size + 28) * hitboxMultiplier));
   }
 
   function clearActiveBug() {
@@ -316,7 +326,7 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
       duration: 220,
       easing: Easing.out(Easing.quad),
       toValue: 1,
-      useNativeDriver: true
+      useNativeDriver: nativeDriver
     }).start();
 
     if (expireTimer.current) {
@@ -350,7 +360,7 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
         duration: remainingMotionMs,
         easing: Easing.linear,
         toValue: 1,
-        useNativeDriver: true
+        useNativeDriver: nativeDriver
       });
       moveAnimation.current = animation;
       animation.start(({ finished }) => {
@@ -377,7 +387,8 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
   }
 
   if (!enabled || !activeBug) return null;
-  const timerSize = 24;
+  const timerSize = Math.round(clamp(activeBug.size * 0.28, 24, 32));
+  const rarityAccent = rarityAccents[activeBug.rarity];
 
   return (
     <View
@@ -400,7 +411,20 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
           }
         ]}
       >
-        <Pressable hitSlop={8} onPress={tapBug} style={[styles.hitbox, { minHeight: hitboxSize, minWidth: hitboxSize }]}>
+        <Pressable hitSlop={10} onPress={tapBug} style={[styles.hitbox, { minHeight: hitboxSize, minWidth: hitboxSize }]}>
+          <View
+            pointerEvents="none"
+            style={[
+              styles.bugAura,
+              {
+                backgroundColor: `${rarityAccent}26`,
+                borderColor: rarityAccent,
+                height: activeBug.size + 24,
+                shadowColor: rarityAccent,
+                width: activeBug.size + 24
+              }
+            ]}
+          />
           <BugSwatterHit bugSize={activeBug.size} feedback={hitFeedback} />
           {!caught && (
             <View pointerEvents="none" style={[styles.timerBadge, { height: timerSize, width: timerSize }]}>
@@ -431,7 +455,7 @@ export function ForegroundCatchBug({ catchAssist = 0, catchTimeBonus = 0, enable
           )}
           {caught ? (
             <View style={[styles.poof, { height: activeBug.size + 26, width: activeBug.size + 26 }]}>
-              <Text style={styles.poofText}>+{activeBug.rewardXp} XP</Text>
+              <Text style={styles.poofText}>GEVANGEN!</Text>
             </View>
           ) : (
             <>
@@ -538,10 +562,21 @@ const styles = StyleSheet.create({
   },
   hitbox: {
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    position: "relative"
+  },
+  bugAura: {
+    borderRadius: 999,
+    borderWidth: 2,
+    elevation: 8,
+    opacity: 0.96,
+    position: "absolute",
+    shadowOffset: { height: 0, width: 0 },
+    shadowOpacity: 0.72,
+    shadowRadius: 12
   },
   hpBar: {
-    bottom: 20,
+    bottom: 6,
     flexDirection: "row",
     gap: 3,
     height: 8,
@@ -560,12 +595,14 @@ const styles = StyleSheet.create({
   },
   timerBadge: {
     alignItems: "center",
-    backgroundColor: "rgba(16,32,24,0.74)",
+    backgroundColor: "rgba(16,32,24,0.86)",
+    borderColor: "rgba(255,255,255,0.64)",
     borderRadius: 999,
+    borderWidth: 1,
     justifyContent: "center",
     position: "absolute",
-    right: 56,
-    top: 36,
+    right: 4,
+    top: 4,
     zIndex: 2
   },
   timerSegment: {

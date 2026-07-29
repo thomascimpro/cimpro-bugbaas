@@ -1,12 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { collection, doc, getDoc, getDocs, runTransaction, type Transaction } from "firebase/firestore";
-import { db, isFirebaseConfigured } from "../firebase";
-import { BugMastery, BugMasteryRank, BugMasteryRole, BugMasterySkill, BugMasteryXpEvent, BugMasteryXpSource, User } from "../types";
-import { BugDexEntry, BugDexRarity, bugDexEntries, InsectVariant } from "./pointsService";
+import { db, isFirebaseConfigured } from "../firebase.ts";
+import { BugMastery, BugMasteryRank, BugMasteryRole, BugMasterySkill, BugMasteryXpEvent, BugMasteryXpSource, User } from "../types.ts";
+import { BugDexEntry, BugDexRarity, bugDexEntries, InsectVariant } from "./pointsService.ts";
 
 export const bugMasteryLevelCap = 20;
 
 export type BugMasteryAwardResult = {
+  awarded: boolean;
+  eventId: string;
+  mastery: BugMastery;
+};
+
+export type BugMasteryBattleWinResult = {
   awarded: boolean;
   eventId: string;
   mastery: BugMastery;
@@ -129,6 +135,7 @@ export function normalizeBugMastery(bugId: string, value: Partial<BugMastery> = 
   const level = clampLevel(value.level ?? levelState.level);
   const mastery: BugMastery = {
     bugId,
+    battleWins: Math.max(0, Math.floor(Number(value.battleWins ?? 0) || 0)),
     level,
     xp: Math.max(0, Math.floor(value.xp ?? levelState.xp)),
     lifetimeXp,
@@ -250,6 +257,44 @@ export async function awardBugMasteryXp(user: Pick<User, "uid">, bugId: string, 
   return result;
 }
 
+export async function awardBugMasteryBattleWin(user: Pick<User, "uid">, bugId: string, eventId: string, now = new Date().toISOString()): Promise<BugMasteryBattleWinResult> {
+  if (!bugDexEntryById.has(bugId)) {
+    return { awarded: false, eventId, mastery: await getBugMastery(user, bugId) };
+  }
+  if (!isFirebaseConfigured) return awardDemoBugMasteryBattleWin(user.uid, bugId, eventId, now);
+
+  const result = await runTransaction(db, (transaction) => awardBugMasteryBattleWinInTransaction(transaction, user, bugId, eventId, now));
+  clearBugMasteryCache(user.uid);
+  return result;
+}
+
+export async function awardBugMasteryBattleWinInTransaction(transaction: Transaction, user: Pick<User, "uid">, bugId: string, eventId: string, now = new Date().toISOString()): Promise<BugMasteryBattleWinResult> {
+  const masteryRef = doc(db, "users", user.uid, "bugMastery", bugId);
+  const eventRef = doc(db, "users", user.uid, "bugMasteryEvents", eventId);
+  const [masterySnapshot, eventSnapshot] = await Promise.all([
+    transaction.get(masteryRef),
+    transaction.get(eventRef)
+  ]);
+  const current = normalizeBugMastery(bugId, masterySnapshot.exists() ? masterySnapshot.data() as Partial<BugMastery> : undefined, now);
+  if (!bugDexEntryById.has(bugId) || eventSnapshot.exists()) return { awarded: false, eventId, mastery: current };
+  const mastery = normalizeBugMastery(bugId, {
+    ...current,
+    battleWins: current.battleWins + 1,
+    updatedAt: now
+  }, now);
+  transaction.set(masteryRef, mastery);
+  transaction.set(eventRef, {
+    amount: 0,
+    bugId,
+    createdAt: now,
+    id: eventId,
+    kind: "battle_win",
+    localDay: localDayId(new Date(now)),
+    source: "active_squad_solo"
+  });
+  return { awarded: true, eventId, mastery };
+}
+
 export async function awardBugMasteryXpInTransaction(transaction: Transaction, user: Pick<User, "uid">, bugId: string, amount: number, source: BugMasteryXpSource, eventId: string, now = new Date().toISOString()): Promise<BugMasteryAwardResult> {
   const safeAmount = Math.max(0, Math.floor(amount));
   const day = localDayId(new Date(now));
@@ -325,6 +370,19 @@ function awardDemoBugMasteryXp(uid: string, bugId: string, amount: number, sourc
   events.add(eventId);
   userMastery.set(bugId, mastery);
   demoMasteryDailyTotals.set(dailyKey, { ...dailyTotals, total: (dailyTotals.total ?? 0) + cappedAmount });
+  demoMasteryEvents.set(uid, events);
+  demoMastery.set(uid, userMastery);
+  return { awarded: true, eventId, mastery };
+}
+
+function awardDemoBugMasteryBattleWin(uid: string, bugId: string, eventId: string, now: string): BugMasteryBattleWinResult {
+  const events = demoMasteryEvents.get(uid) ?? new Set<string>();
+  const userMastery = demoMastery.get(uid) ?? new Map<string, BugMastery>();
+  const current = userMastery.get(bugId) ?? normalizeBugMastery(bugId, undefined, now);
+  if (events.has(eventId)) return { awarded: false, eventId, mastery: current };
+  const mastery = normalizeBugMastery(bugId, { ...current, battleWins: current.battleWins + 1, updatedAt: now }, now);
+  events.add(eventId);
+  userMastery.set(bugId, mastery);
   demoMasteryEvents.set(uid, events);
   demoMastery.set(uid, userMastery);
   return { awarded: true, eventId, mastery };

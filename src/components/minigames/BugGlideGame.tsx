@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, BackHandler, DimensionValue, GestureResponderEvent, Image, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import { createArcadeSeed, loadArcadeHighScore, saveArcadeHighScore, seededNumber } from "../../services/arcadeResultService";
 import { arcadeSquadAssistForUser } from "../../services/bugSquadGameBalance";
+import { frameScaleForTick, startArcadeFrameLoop } from "../../services/gameLoopTiming";
 import { playBugSound } from "../../services/soundService";
 import { ArcadeRunResult, User } from "../../types";
 import { BugArtImage } from "../BugArtImage";
+import { GameUiIcon } from "../ui/GameUiIcon";
 import { ArcadeSquadAssist } from "./ArcadeSquadAssist";
 
 type Props = { onBack: () => void; onResult?: (result: ArcadeRunResult) => void; practice?: boolean; ranked?: boolean; seed?: string; user: User };
@@ -14,7 +16,8 @@ type Entity = { expiresAt?: number; id: string; kind: EntityKind; stationary?: b
 type TapPulse = { id: string; x: number; y: number };
 type BeeDirection = "down" | "right" | "up";
 
-const tickMs = 50;
+const simulationStepMs = 66;
+const tickMs = 16;
 const gravity = 0.34;
 const liftImpulse = -3.85;
 const horizontalImpulse = 1.35;
@@ -77,6 +80,7 @@ export function BugGlideGame({ onBack, onResult, practice = false, ranked = fals
   const seedRef = useRef(createArcadeSeed("bug_glide", user.uid));
   const statsRef = useRef({ hits: 0, pickups: 0, startAt: 0 });
   const finishedRef = useRef(false);
+  const lastFrameAtRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -86,8 +90,7 @@ export function BugGlideGame({ onBack, onResult, practice = false, ranked = fals
 
   useEffect(() => {
     if (state !== "running") return;
-    const id = setInterval(tick, tickMs);
-    return () => clearInterval(id);
+    return startArcadeFrameLoop(tick);
   }, [state, squadAssist.bugGlide.liftAssist, squadAssist.bugGlide.pickupRadiusBonus, squadAssist.bugGlide.shieldBonusMs]);
 
   useEffect(() => {
@@ -99,8 +102,10 @@ export function BugGlideGame({ onBack, onResult, practice = false, ranked = fals
   function start() {
     const startingHearts = 3 + squadAssist.bugGlide.extraHeart;
     finishedRef.current = false;
-    seedRef.current = seed ?? createArcadeSeed("bug_glide", `${user.uid}:${Date.now()}`);
-    statsRef.current = { hits: 0, pickups: 0, startAt: Date.now() };
+    const startedAt = Date.now();
+    seedRef.current = seed ?? createArcadeSeed("bug_glide", `${user.uid}:${startedAt}`);
+    statsRef.current = { hits: 0, pickups: 0, startAt: startedAt };
+    lastFrameAtRef.current = startedAt;
     entitiesRef.current = [];
     heartsRef.current = startingHearts;
     scoreRef.current = 0;
@@ -131,6 +136,8 @@ export function BugGlideGame({ onBack, onResult, practice = false, ranked = fals
 
   function tick() {
     const now = Date.now();
+    const frameScale = frameScaleForTick(now, lastFrameAtRef.current, simulationStepMs);
+    lastFrameAtRef.current = now;
     const elapsed = now - statsRef.current.startAt;
     if (shieldUntilRef.current > 0 && now >= shieldUntilRef.current) {
       shieldUntilRef.current = 0;
@@ -138,27 +145,27 @@ export function BugGlideGame({ onBack, onResult, practice = false, ranked = fals
     }
     const windActive = now < windUntilRef.current;
     if (tailwind !== windActive) setTailwind(windActive);
-    movePlayer(now);
+    movePlayer(now, frameScale);
     setBeeFrame(Math.floor(elapsed / 100) % 4);
     setBeeDirection(vyRef.current < -0.45 ? "up" : vyRef.current > 1.25 ? "down" : "right");
-    const moved = moveEntities(entitiesRef.current, elapsed);
+    const moved = moveEntities(entitiesRef.current, elapsed, frameScale);
     const collided = resolveCollisions(moved, now);
     entitiesRef.current = spawnEntities(collided, elapsed);
     const tailwindBoost = now < windUntilRef.current ? 0.35 : 0;
     const edgeBonus = xRef.current > 58 ? 0.16 : 0;
-    scoreRef.current += 0.2 + tailwindBoost + edgeBonus;
+    scoreRef.current += (0.2 + tailwindBoost + edgeBonus) * frameScale;
     setEntities(entitiesRef.current);
     setScore(Math.floor(scoreRef.current));
     if (heartsRef.current <= 0) finish();
   }
 
-  function movePlayer(now: number) {
-    vxRef.current = clamp(vxRef.current * 0.91, -maxHorizontalSpeed, maxHorizontalSpeed);
-    vyRef.current = clamp(vyRef.current * 0.94 + gravity, -maxVerticalSpeed, maxVerticalSpeed);
+  function movePlayer(now: number, frameScale: number) {
+    vxRef.current = clamp(vxRef.current * Math.pow(0.91, frameScale), -maxHorizontalSpeed, maxHorizontalSpeed);
+    vyRef.current = clamp(vyRef.current * Math.pow(0.94, frameScale) + gravity * frameScale, -maxVerticalSpeed, maxVerticalSpeed);
     const skyWidth = skySizeRef.current.width > 1 ? skySizeRef.current.width : referenceSkyWidth;
     const leftCharacterBoundary = ((leftControlStripWidth + (playerVisualPx * gameScaleRef.current) / 2) / skyWidth) * 100;
-    xRef.current = Math.max(leftCharacterBoundary, Math.min(maxPlayerX, xRef.current + vxRef.current));
-    yRef.current = Math.max(10, Math.min(82, yRef.current + vyRef.current));
+    xRef.current = Math.max(leftCharacterBoundary, Math.min(maxPlayerX, xRef.current + vxRef.current * frameScale));
+    yRef.current = Math.max(10, Math.min(82, yRef.current + vyRef.current * frameScale));
     if (xRef.current <= leftCharacterBoundary || xRef.current >= maxPlayerX) vxRef.current *= -0.3;
     if (yRef.current <= 10) vyRef.current = Math.max(0.8, vyRef.current * -0.2);
     if (yRef.current >= 82) vyRef.current = Math.min(0, vyRef.current * -0.35);
@@ -201,11 +208,11 @@ export function BugGlideGame({ onBack, onResult, practice = false, ranked = fals
     setTimeout(() => setTapPulses((current) => current.filter((pulse) => pulse.id !== id)), 260);
   }
 
-  function moveEntities(current: Entity[], elapsed: number) {
+  function moveEntities(current: Entity[], elapsed: number, frameScale: number) {
     const difficulty = glideDifficulty(elapsed);
     const speed = Math.min(5.35, 2.02 + difficulty.speedLevel * 0.34);
     return current
-      .map((item) => item.stationary ? item : { ...item, x: item.x - speed, y: item.y + item.vy })
+      .map((item) => item.stationary ? item : { ...item, x: item.x - speed * frameScale, y: item.y + item.vy * frameScale })
       .filter((item) => (item.expiresAt === undefined || elapsed < item.expiresAt) && item.x > -12 && item.y > 2 && item.y < 96);
   }
 
@@ -355,7 +362,7 @@ export function BugGlideGame({ onBack, onResult, practice = false, ranked = fals
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}><View><Text style={styles.title}>Bug Glide</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>{(practice || state === "result") && <Pressable style={styles.closeButton} onPress={back}><Text style={styles.closeText}>x</Text></Pressable>}</View>
+      <View style={styles.header}><View><Text style={styles.title}>Bug Glide</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>{(practice || state === "result") && <Pressable accessibilityLabel="Back to games" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}</View>
       {state === "ready" && <Ready onStart={start} />}
       {state === "running" && (
         <View style={styles.game}>

@@ -9,6 +9,9 @@
     "**/node_modules",
     ".playwright-cli",
     "dist",
-    "dist-*"
+    "dist-*",
+    "output",
+    "tmp",
+    "*-bundle.js"
   ]
 }

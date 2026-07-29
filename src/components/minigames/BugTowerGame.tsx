@@ -3,8 +3,10 @@ import { Alert, BackHandler, DimensionValue, Image, ImageBackground, Platform as
 import { createArcadeSeed, loadArcadeHighScore, saveArcadeHighScore, seededNumber } from "../../services/arcadeResultService";
 import { arcadeSquadAssistForUser } from "../../services/bugSquadGameBalance";
 import { towerJumpVelocity, towerPlatformGap, towerPlatformX, towerScrollSpeed } from "../../services/bugTowerBalance";
+import { frameScaleForTick, startArcadeFrameLoop } from "../../services/gameLoopTiming";
 import { playBugSound } from "../../services/soundService";
 import { ArcadeRunResult, User } from "../../types";
+import { GameUiIcon } from "../ui/GameUiIcon";
 import { ArcadeSquadAssist } from "./ArcadeSquadAssist";
 
 type Props = { onBack: () => void; onResult?: (result: ArcadeRunResult) => void; practice?: boolean; ranked?: boolean; seed?: string; user: User };
@@ -14,23 +16,23 @@ type TowerPickup = { id: string; kind: "coin" | "rocket" | "spring"; x: number; 
 type Player = { grounded: boolean; highJump: boolean; lastGroundAt: number; spinAngle: number; spinning: boolean; vx: number; vy: number; x: number; y: number };
 type RenderState = { chainProgress: number; chainUntil: number; charge: number; combo: number; elapsed: number; floor: number; maxCombo: number; pickups: TowerPickup[]; platforms: Platform[]; player: Player; rocketActive: boolean; score: number; springReady: boolean };
 
-const tickMs = 20;
-const gravity = 0.13;
-const horizontalAcceleration = 0.075;
-const maxHorizontalSpeed = 0.92;
+const simulationStepMs = 20;
+const tickMs = 16;
+const gravity = 0.145;
+const horizontalAcceleration = 0.035;
+const maxHorizontalSpeed = 0.6;
 const playerHalfWidth = 6.5;
 const playerHalfHeight = 5.2;
-const maxDurationMs = 120000;
 const landingChainWindowMs = 360;
 const rocketDurationMs = 3000;
 const rocketClimbSpeed = -0.76;
-const towerBackground = require("../../../assets/minigames/bug-tower/bug-tower-background.png");
-const towerJungleBackground = require("../../../assets/minigames/bug-tower/bug-tower-jungle.png");
-const towerForgeBackground = require("../../../assets/minigames/bug-tower/bug-tower-forge.png");
-const towerSkyBackground = require("../../../assets/minigames/bug-tower/bug-tower-sky.png");
-const towerVoidBackground = require("../../../assets/minigames/bug-tower/bug-tower-void.png");
+const towerBackground = require("../../../assets/minigames/bug-tower/bug-tower-background.jpg");
+const towerJungleBackground = require("../../../assets/minigames/bug-tower/bug-tower-jungle.jpg");
+const towerForgeBackground = require("../../../assets/minigames/bug-tower/bug-tower-forge.jpg");
+const towerSkyBackground = require("../../../assets/minigames/bug-tower/bug-tower-sky.jpg");
+const towerVoidBackground = require("../../../assets/minigames/bug-tower/bug-tower-void.jpg");
 const towerBackgrounds = [towerBackground, towerJungleBackground, towerForgeBackground, towerSkyBackground, towerVoidBackground];
-const beetleSpriteSheet = require("../../../assets/minigames/bug-tower/bug-tower-beetle.png");
+const beetleSpriteSheet = require("../../../assets/minigames/bug-tower/bug-tower-beetle.webp");
 const webHoldStyle = RNPlatform.OS === "web"
   ? ({ touchAction: "none", userSelect: "none", WebkitTouchCallout: "none", WebkitUserSelect: "none" } as any)
   : undefined;
@@ -61,6 +63,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
   const rocketUntilRef = useRef(0);
   const rocketCooldownUntilRef = useRef(0);
   const springReadyRef = useRef(false);
+  const lastFrameAtRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -70,8 +73,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
 
   useEffect(() => {
     if (state !== "running") return;
-    const interval = setInterval(tick, tickMs);
-    return () => clearInterval(interval);
+    return startArcadeFrameLoop(tick);
   }, [state]);
 
   useEffect(() => {
@@ -107,6 +109,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
     comboRef.current = 0;
     maxComboRef.current = 0;
     startAtRef.current = Date.now();
+    lastFrameAtRef.current = startAtRef.current;
     finishedRef.current = false;
     manualDirectionRef.current = 0;
     runDistanceRef.current = 0;
@@ -126,28 +129,26 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
   function tick() {
     if (finishedRef.current) return;
     const now = Date.now();
+    const frameScale = frameScaleForTick(now, lastFrameAtRef.current, simulationStepMs);
+    lastFrameAtRef.current = now;
     const elapsed = now - startAtRef.current;
-    if (elapsed >= maxDurationMs) {
-      finish();
-      return;
-    }
     const previous = playerRef.current;
     const input = manualDirectionRef.current;
     const rocketActive = rocketUntilRef.current > now;
-    const friction = previous.grounded ? 0.84 : 0.995;
+    const friction = Math.pow(previous.grounded ? 0.84 : 0.995, frameScale);
     const vx = input
-      ? clamp(previous.vx * 0.96 + input * horizontalAcceleration, -maxHorizontalSpeed, maxHorizontalSpeed)
+      ? clamp(previous.vx * Math.pow(0.96, frameScale) + input * horizontalAcceleration * frameScale, -maxHorizontalSpeed, maxHorizontalSpeed)
       : previous.vx * friction;
-    if (previous.grounded && input) runDistanceRef.current = Math.min(32, runDistanceRef.current + Math.abs(vx));
-    const nextVy = rocketActive ? rocketClimbSpeed : Math.min(2.25, previous.vy + gravity);
+    if (previous.grounded && input) runDistanceRef.current = Math.min(32, runDistanceRef.current + Math.abs(vx) * frameScale);
+    const nextVy = rocketActive ? rocketClimbSpeed : Math.min(2.25, previous.vy + gravity * frameScale);
     let nextPlayer: Player = {
       ...previous,
       grounded: false,
-      spinAngle: previous.spinning ? previous.spinAngle + Math.sign(previous.vx || input || 1) * 18 : 0,
+      spinAngle: previous.spinning ? previous.spinAngle + Math.sign(previous.vx || input || 1) * 18 * frameScale : 0,
       vx,
       vy: nextVy,
-      x: previous.x + vx,
-      y: previous.y + (rocketActive ? rocketClimbSpeed : previous.vy + gravity)
+      x: previous.x + vx * frameScale,
+      y: previous.y + (rocketActive ? rocketClimbSpeed : nextVy) * frameScale
     };
 
     if (nextPlayer.x <= playerHalfWidth) {
@@ -158,7 +159,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
       nextPlayer.vx = -Math.abs(nextPlayer.vx) * 0.9;
     }
 
-    const scroll = towerScrollSpeed(landedFloorRef.current, elapsed);
+    const scroll = towerScrollSpeed(landedFloorRef.current, elapsed) * frameScale;
     let platforms = platformsRef.current.map((platform) => movePlatform(platform, scroll));
     let pickups = pickupsRef.current.map((pickup) => ({ ...pickup, y: pickup.y + scroll }));
     nextPlayer.y += scroll;
@@ -230,7 +231,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
     playerRef.current = nextPlayer;
     platformsRef.current = platforms;
     pickupsRef.current = pickups;
-    scoreRef.current += 0.08 + Math.max(0, comboRef.current - 1) * 0.012;
+    scoreRef.current += (0.08 + Math.max(0, comboRef.current - 1) * 0.012) * frameScale;
     setRenderState({
       chainProgress: clamp((landingChainUntilRef.current - now) / landingChainWindowMs, 0, 1),
       chainUntil: landingChainUntilRef.current,
@@ -269,7 +270,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
     if (state !== "running") return;
     const now = Date.now();
     const player = playerRef.current;
-    if (!player.grounded && now - player.lastGroundAt > 140) {
+    if (!player.grounded && now - player.lastGroundAt > 190) {
       runDistanceRef.current = 0;
       return;
     }
@@ -307,8 +308,8 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
   function finish() {
     if (finishedRef.current) return;
     finishedRef.current = true;
-    const durationMs = Math.min(maxDurationMs, Math.max(0, Date.now() - startAtRef.current));
-    const finalScore = Math.min(50000, Math.max(1, Math.round(scoreRef.current + landedFloorRef.current * 14 + maxComboRef.current * 45)));
+    const durationMs = Math.max(0, Date.now() - startAtRef.current);
+    const finalScore = Math.max(1, Math.round(scoreRef.current + landedFloorRef.current * 14 + maxComboRef.current * 45));
     playBugSound("arcade_finish");
     const highScorePromise = practice ? Promise.resolve(bestScore) : saveArcadeHighScore(user.uid, "bug_tower", finalScore);
     void highScorePromise.then((highScore) => {
@@ -352,7 +353,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
     <View style={styles.shell}>
       <View style={styles.header}>
         <View><Text style={styles.title}>Bug Tower</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>
-        {(practice || state === "result") && <Pressable style={styles.closeButton} onPress={back}><Text style={styles.closeText}>x</Text></Pressable>}
+        {(practice || state === "result") && <Pressable accessibilityLabel="Back to games" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}
       </View>
       {state === "ready" && <Ready onStart={start} />}
       {state === "running" && (
@@ -380,6 +381,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
                   accessibilityLabel="Run left and release to jump"
                   testID="bug-tower-left-control"
                   style={[styles.controlHalf, webHoldStyle, heldDirection === -1 && styles.controlHalfActive]}
+                  unstable_pressDelay={0}
                   onPressIn={() => beginRun(-1)}
                   onPressOut={RNPlatform.OS === "web" ? undefined : () => releaseRun(-1)}
                 ><Text style={styles.controlArrow}>‹</Text><Text style={styles.controlSideLabel}>LEFT</Text></Pressable>
@@ -387,6 +389,7 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
                   accessibilityLabel="Run right and release to jump"
                   testID="bug-tower-right-control"
                   style={[styles.controlHalf, webHoldStyle, heldDirection === 1 && styles.controlHalfActive]}
+                  unstable_pressDelay={0}
                   onPressIn={() => beginRun(1)}
                   onPressOut={RNPlatform.OS === "web" ? undefined : () => releaseRun(1)}
                 ><Text style={styles.controlArrow}>›</Text><Text style={styles.controlSideLabel}>RIGHT</Text></Pressable>
@@ -432,12 +435,12 @@ function Ready({ onStart }: { onStart: () => void }) {
       <View style={styles.panel}>
         <BugTowerSprite frame={3} large />
         <Text style={styles.panelTitle}>Climb the endless tower</Text>
-        <Text style={styles.body}>Hold left or right to run. Release to jump: a full bar can clear 5-6 steps. Green MEGA gives +100 points and supercharges your next jump. After a spinning landing, tap immediately for an extra flip.</Text>
+        <Text style={styles.body}>Hold left or right to run. Release to jump: a full bar can clear around 7 steps. Green MEGA gives +100 points and supercharges your next jump. After a spinning landing, tap immediately for an extra flip.</Text>
         <View style={styles.difficultyRow}>
-          <Text style={styles.difficultyChip}>5-6 step jumps</Text>
+          <Text style={styles.difficultyChip}>Higher 7-step jumps</Text>
           <Text style={styles.difficultyChip}>100-floor worlds</Text>
           <Text style={styles.difficultyChip}>MEGA jump boost</Text>
-          <Text style={styles.difficultyChip}>120-second peak</Text>
+          <Text style={styles.difficultyChip}>Survive until you fall</Text>
         </View>
         <Pressable accessibilityLabel="Start Bug Tower" testID="bug-tower-start" style={styles.primaryButton} onPress={onStart}><Text style={styles.primaryText}>Start climb</Text></Pressable>
       </View>

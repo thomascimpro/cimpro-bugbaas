@@ -176,6 +176,58 @@ test("rejects images without a visible bug", () => {
   assert.equal(result.status, "rejected_no_bug");
 });
 
+test("rejects a photographed screen before any high-value reward", () => {
+  const result = normalizeIdentification({
+    containsBug: true,
+    imageQuality: "good",
+    captureAuthenticity: "reproduction",
+    authenticityReason: "Visible monitor pixels and browser chrome.",
+    catalogStatus: "matched",
+    matchedBugId: "koningin-alexandravlinder",
+    commonName: "Koningin-Alexandravlinder",
+    scientificName: "Ornithoptera alexandrae",
+    confidence: 0.99,
+    reason: "De soort is herkenbaar op het scherm."
+  }, catalog);
+
+  assert.equal(result.status, "rejected_authenticity");
+  assert.equal(result.identification.captureAuthenticity, "reproduction");
+});
+
+test("holds an ambiguous capture for review without consuming a reward", () => {
+  const result = normalizeIdentification({
+    containsBug: true,
+    imageQuality: "good",
+    captureAuthenticity: "uncertain",
+    authenticityReason: "Mogelijk moirepatroon, maar geen schermrand zichtbaar.",
+    catalogStatus: "matched",
+    matchedBugId: "mier",
+    commonName: "Mier",
+    scientificName: "Formicidae",
+    confidence: 0.96,
+    reason: "De mier is herkenbaar."
+  }, catalog);
+
+  assert.equal(result.status, "pending_review");
+});
+
+test("uses the same seventy percent threshold for legendary and mythic auto-awards", () => {
+  const raw = {
+    containsBug: true,
+    imageQuality: "good",
+    captureAuthenticity: "live",
+    authenticityReason: "Physical subject with natural depth.",
+    catalogStatus: "matched",
+    matchedBugId: "koningin-alexandravlinder",
+    commonName: "Koningin-Alexandravlinder",
+    scientificName: "Ornithoptera alexandrae",
+    reason: "Vleugelvorm en patroon komen overeen."
+  };
+
+  assert.equal(normalizeIdentification({ ...raw, confidence: 0.69 }, catalog).status, "pending_review");
+  assert.equal(normalizeIdentification({ ...raw, confidence: 0.7 }, catalog).status, "matched");
+});
+
 test("builds Amsterdam day keys across the UTC day boundary", () => {
   assert.equal(dayKeyInTimeZone(new Date("2026-07-20T21:59:00.000Z")), "2026-07-20");
   assert.equal(dayKeyInTimeZone(new Date("2026-07-20T22:01:00.000Z")), "2026-07-21");
@@ -190,8 +242,23 @@ test("includes only compact catalog ids and names in the model prompt", () => {
 
 test("keeps the scan catalog synchronized with BugDex entries", () => {
   const source = readFileSync(new URL("../../src/services/pointsService.ts", import.meta.url), "utf8");
+  const expansionSource = readFileSync(new URL("../../src/services/bugDexExpansion.ts", import.meta.url), "utf8");
   const entriesSection = source.slice(source.indexOf("export const bugDexEntries"));
   const sourceIds = Array.from(entriesSection.matchAll(/\{ id: \"([^\"]+)\", name: \"([^\"]+)\", title:/g), (match) => match[1]);
+  const idsFromTemplate = (name, limit) => {
+    const match = expansionSource.match(new RegExp(`const ${name} = [^\\x60]*\\x60([\\s\\S]*?)\\x60`));
+    assert.ok(match, `${name} expansion list is missing`);
+    const ids = [...new Set(match[1].trim().split(/\s+/))];
+    return Number.isFinite(limit) ? ids.slice(0, limit) : ids;
+  };
+  sourceIds.push(
+    ...idsFromTemplate("commonIds", 80),
+    ...idsFromTemplate("rareIds", 85),
+    ...idsFromTemplate("epicIds", 60),
+    ...idsFromTemplate("legendaryIds"),
+    ...idsFromTemplate("mythicIds"),
+    ...Array.from(expansionSource.matchAll(/\[\"([^\"]+)\", \"(?:Gewoon|Zeldzaam|Episch|Legendarisch|Mythisch)\"\]/g), (match) => match[1])
+  );
   assert.ok(sourceIds.length > 0);
   assert.deepEqual(new Set(catalog.map((entry) => entry.id)), new Set(sourceIds));
 });

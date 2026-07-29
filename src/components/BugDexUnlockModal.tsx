@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Image, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Image, ImageSourcePropType, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { nativeDriver } from "../services/animationPlatform";
 import { BugDexDropResult } from "../services/bugDexService";
 import { bugDexEntryFact, bugDexEntryName, useI18n } from "../services/i18n";
 import { BugDexRarity } from "../services/pointsService";
 import { playBugSound } from "../services/soundService";
 import { BugArtImage } from "./BugArtImage";
+import { specimenRarityAccent } from "./collection/SpecimenArchiveVisuals";
 import { MythicRarityFrame } from "./MythicRarityFrame";
 
 type Props = {
@@ -13,21 +15,7 @@ type Props = {
   onClose: () => void;
 };
 
-const rarityColors: Record<BugDexRarity, string> = {
-  Gewoon: "#2f9e44",
-  Zeldzaam: "#228be6",
-  Episch: "#9c36b5",
-  Legendarisch: "#f59f00",
-  Mythisch: "#ef4444"
-};
-
-const rarityStarColors: Record<BugDexRarity, string> = {
-  Gewoon: "#2f9e44",
-  Zeldzaam: "#228be6",
-  Episch: "#9c36b5",
-  Legendarisch: "#f59f00",
-  Mythisch: "#ef4444"
-};
+const rarityColors: Record<BugDexRarity, string> = specimenRarityAccent;
 
 const rarityStars: Record<BugDexRarity, number> = {
   Gewoon: 1,
@@ -77,6 +65,7 @@ const premiumRarityStyles: Record<"Episch" | "Legendarisch" | "Mythisch", {
 
 export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
   const { t } = useI18n();
+  const { height } = useWindowDimensions();
   const scale = useRef(new Animated.Value(0.82)).current;
   const glow = useRef(new Animated.Value(0)).current;
 
@@ -85,21 +74,23 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
     playBugSound(drop.rewardType === "bug" && (drop.entry.rarity === "Episch" || drop.entry.rarity === "Legendarisch" || drop.entry.rarity === "Mythisch") ? "bug_rare_unlock" : "bug_unlock");
     scale.setValue(0.82);
     glow.setValue(0);
-    Animated.parallel([
+    const animation = Animated.parallel([
       Animated.spring(scale, {
         friction: 5,
         tension: 95,
         toValue: 1,
-        useNativeDriver: true
+        useNativeDriver: nativeDriver
       }),
       Animated.loop(
         Animated.sequence([
-          Animated.timing(glow, { duration: 760, toValue: 1, useNativeDriver: true }),
-          Animated.timing(glow, { duration: 760, toValue: 0, useNativeDriver: true })
+          Animated.timing(glow, { duration: 760, toValue: 1, useNativeDriver: nativeDriver }),
+          Animated.timing(glow, { duration: 760, toValue: 0, useNativeDriver: nativeDriver })
         ]),
         { iterations: 2 }
       )
-    ]).start();
+    ]);
+    animation.start();
+    return () => animation.stop();
   }, [drop, glow, scale]);
 
   if (!drop) return null;
@@ -117,8 +108,6 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
         ? t("bugdex.legendary")
         : t("bugdex.mythic")
     : "";
-  const starColor = isPointsReward ? "#d7bd57" : rarityStarColors[drop.entry.rarity];
-  const starCount = isPointsReward ? 0 : rarityStars[drop.entry.rarity];
   const bugFact = isPointsReward ? t("bugdex.dailyLogin") : bugDexEntryFact(drop.entry, t);
   const title = isDailyReward ? t("bugdex.daily") : drop.source === "combine" ? t("bugdex.combineDone") : drop.isNew ? t("bugdex.unlocked") : t("bugdex.duplicate");
   const subtitle = isPointsReward
@@ -141,19 +130,19 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
       <View style={styles.backdrop}>
         <Animated.View style={[
           styles.card,
+          height < 700 && styles.cardCompact,
           premiumStyle && styles.premiumCard,
-          premiumStyle && { backgroundColor: premiumStyle.background, borderColor: premiumStyle.border },
-          !premiumStyle && { borderColor: rarityColor },
+          { borderColor: rarityColor },
           { transform: [{ scale }] }
         ]}>
-          {premiumStyle && <View style={[styles.premiumTopBar, { backgroundColor: premiumStyle.accent }]} />}
+          {premiumStyle && <View style={[styles.premiumTopBar, { backgroundColor: rarityColor }]} />}
           {premiumStyle && (
-            <View style={[styles.rarityBadge, { backgroundColor: premiumStyle.border }]}>
+            <View style={[styles.rarityBadge, { backgroundColor: rarityColor }]}>
               <Text style={styles.rarityBadgeText}>{premiumLabel}</Text>
             </View>
           )}
-          <Text style={[styles.kicker, premiumStyle && { color: premiumStyle.text }]}>{title}</Text>
-          <Text style={[styles.subtitle, premiumStyle && { color: premiumStyle.text }]}>{subtitle}</Text>
+          <Text style={[styles.kicker, { color: rarityColor }]}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
           <View style={styles.artStage}>
             {premiumStyle && (
               <>
@@ -163,20 +152,27 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
               </>
             )}
             <Animated.View style={[styles.glow, { backgroundColor: premiumStyle?.glow ?? rarityColor, opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
-            {isMythicBugReward && <MythicRarityFrame size={194} style={styles.mythicUnlockFrame} />}
-            {isPointsReward ? <Text style={styles.pointsReward}>+{drop.points}</Text> : <BugArtImage bugId={drop.entry.id} size={138} style={isMythicBugReward && styles.mythicBugArt} />}
+            <View style={[styles.rarityBackdrop, { backgroundColor: rarityColor }]} />
+            {isPointsReward ? (
+              <Text style={styles.pointsReward}>+{drop.points}</Text>
+            ) : (
+              <>
+                {isMythicBugReward && <MythicRarityFrame size={166} style={styles.mythicUnlockFrame} />}
+                <BugArtImage bugId={drop.entry.id} size={138} style={isMythicBugReward && styles.mythicBugArt} />
+              </>
+            )}
           </View>
-          <Text style={[styles.name, premiumStyle && { color: premiumStyle.text }]}>{isPointsReward ? t("bugdex.pointsFound") : bugDexEntryName(drop.entry, t)}</Text>
-          {!isPointsReward && (
+          <Text style={styles.name}>{isPointsReward ? t("bugdex.pointsFound") : bugDexEntryName(drop.entry, t)}</Text>
+          {!isPointsReward ? (
             <View style={styles.rarityStarsRow}>
-              {Array.from({ length: starCount }).map((_, index) => (
-                <Text key={index} style={[styles.rarityStar, { color: starColor }]}>★</Text>
+              {Array.from({ length: rarityStars[drop.entry.rarity] }).map((_, index) => (
+                <Text key={index} style={[styles.rarityStar, { color: rarityColor }]}>★</Text>
               ))}
             </View>
-          )}
-          <Text style={[styles.meta, premiumStyle && { color: premiumStyle.text }]}>{bugFact}</Text>
-          {!!streakText && <Text style={styles.streak}>{streakText}</Text>}
-          <Pressable disabled={busy} style={[styles.button, busy && styles.buttonDisabled, premiumStyle && { backgroundColor: premiumStyle.border }]} onPress={onClose}>
+          ) : null}
+          <Text style={styles.meta}>{bugFact}</Text>
+          {!!streakText && <Text style={[styles.streak, { color: rarityColor }]}>{streakText}</Text>}
+          <Pressable disabled={busy} style={[styles.button, { backgroundColor: rarityColor }, busy && styles.buttonDisabled]} onPress={onClose}>
             <Text style={styles.buttonText}>{busy ? "..." : t("bugdex.nice")}</Text>
           </Pressable>
         </Animated.View>
@@ -188,19 +184,30 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     alignItems: "center",
-    backgroundColor: "rgba(16,32,24,0.58)",
+    backgroundColor: "rgba(8,12,28,0.78)",
     flex: 1,
     justifyContent: "center",
     padding: 24
   },
   card: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
+    backgroundColor: "#ffffff",
     borderColor: "#d7bd57",
-    borderRadius: 8,
+    borderRadius: 28,
     borderWidth: 2,
+    elevation: 16,
+    maxHeight: "94%",
+    maxWidth: 460,
     padding: 22,
+    shadowColor: "#050817",
+    shadowOffset: { height: 14, width: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 22,
     width: "100%"
+  },
+  cardCompact: {
+    paddingBottom: 15,
+    paddingTop: 17
   },
   premiumCard: {
     borderWidth: 4,
@@ -221,7 +228,7 @@ const styles = StyleSheet.create({
     top: 0
   },
   kicker: {
-    color: "#15724f",
+    color: "#6b3fc6",
     fontSize: 16,
     fontWeight: "900",
     marginBottom: 4,
@@ -239,7 +246,7 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   },
   subtitle: {
-    color: "#53645d",
+    color: "#706658",
     fontSize: 13,
     fontWeight: "900",
     marginBottom: 10
@@ -254,6 +261,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#d7bd57",
     borderRadius: 78,
     height: 156,
+    position: "absolute",
+    width: 156
+  },
+  rarityBackdrop: {
+    borderRadius: 78,
+    height: 156,
+    opacity: 0.42,
     position: "absolute",
     width: 156
   },
@@ -283,7 +297,7 @@ const styles = StyleSheet.create({
     zIndex: 4
   },
   name: {
-    color: "#102018",
+    color: "#17182b",
     fontSize: 28,
     fontWeight: "900",
     marginTop: 8,
@@ -291,30 +305,26 @@ const styles = StyleSheet.create({
   },
   rarityStarsRow: {
     flexDirection: "row",
-    gap: 3,
-    marginTop: 4
+    marginTop: 7
   },
   rarityStar: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: "900",
-    lineHeight: 22,
-    textShadowColor: "rgba(16,32,24,0.18)",
-    textShadowOffset: { height: 1, width: 0 },
-    textShadowRadius: 2
+    marginHorizontal: 2
   },
   meta: {
-    color: "#53645d",
+    color: "#706658",
     fontSize: 15,
     fontWeight: "900",
     marginTop: 4
   },
   pointsReward: {
-    color: "#102018",
+    color: "#17182b",
     fontSize: 54,
     fontWeight: "900"
   },
   streak: {
-    color: "#15724f",
+    color: "#6b3fc6",
     fontSize: 13,
     fontWeight: "900",
     marginTop: 8,
@@ -322,8 +332,9 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: "#15724f",
-    borderRadius: 8,
+    backgroundColor: "#6b3fc6",
+    borderRadius: 16,
+    elevation: 4,
     marginTop: 18,
     paddingHorizontal: 28,
     paddingVertical: 14

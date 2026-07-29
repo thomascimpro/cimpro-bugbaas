@@ -133,6 +133,21 @@ for (const rejectedResult of [
       confidence: 0.3,
       reason: "De foto is te onscherp."
     }
+  },
+  {
+    expectedStatus: "rejected_authenticity",
+    identification: {
+      containsBug: true,
+      imageQuality: "good",
+      captureAuthenticity: "reproduction",
+      authenticityReason: "Een monitorrand en pixelpatroon zijn zichtbaar.",
+      catalogStatus: "matched",
+      matchedBugId: "lieveheersbeestje",
+      commonName: "Lieveheersbeestje",
+      scientificName: "Coccinellidae",
+      confidence: 0.99,
+      reason: "De bug staat op een computerscherm."
+    }
   }
 ]) {
   test(`does not consume a daily scan for ${rejectedResult.expectedStatus}`, async () => {

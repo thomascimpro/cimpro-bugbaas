@@ -66,6 +66,7 @@ export function createRealBugIdentifyHandler({
   verifyIdToken,
   checkUsage,
   reserveUsage,
+  signReceipt,
   identifyImage,
   allowedOrigins = []
 }) {
@@ -144,12 +145,16 @@ export function createRealBugIdentifyHandler({
           return sendJson(response, 503, { ok: false, error: "De bugscanlimiet kon niet veilig worden bijgewerkt." });
         }
       }
+      const receipt = typeof signReceipt === "function"
+        ? signReceipt({ uid: decoded.uid, scanId: body.scanId, status: normalized.status, identification: normalized.identification })
+        : undefined;
       return sendJson(response, 200, {
         ok: true,
         scanId: body.scanId,
         status: normalized.status,
         remainingScans,
-        identification: normalized.identification
+        identification: normalized.identification,
+        ...(receipt ? { receipt } : {})
       });
     } catch (error) {
       console.error("Real bug identification failed:", error instanceof Error ? error.message : "Unknown error");

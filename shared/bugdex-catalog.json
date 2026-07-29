@@ -1,1 +1,2562 @@
-[{"id":"zilvervisje","name":"Zilvervisje","rarity":"Gewoon"},{"id":"fruitvlieg","name":"Fruitvlieg","rarity":"Gewoon"},{"id":"bladluis","name":"Bladluis","rarity":"Gewoon"},{"id":"mug","name":"Mug","rarity":"Gewoon"},{"id":"mot","name":"Mot","rarity":"Gewoon"},{"id":"mier","name":"Mier","rarity":"Gewoon"},{"id":"vlo","name":"Vlo","rarity":"Gewoon"},{"id":"pissebed","name":"Pissebed","rarity":"Gewoon"},{"id":"stinkwants","name":"Stinkwants","rarity":"Zeldzaam"},{"id":"snuitkever","name":"Snuitkever","rarity":"Zeldzaam"},{"id":"lieveheersbeestje","name":"Lieveheersbeestje","rarity":"Zeldzaam"},{"id":"kakkerlak","name":"Kakkerlak","rarity":"Gewoon"},{"id":"oorworm","name":"Oorworm","rarity":"Gewoon"},{"id":"boktor","name":"Boktor","rarity":"Episch"},{"id":"tapijtkever","name":"Tapijtkever","rarity":"Zeldzaam"},{"id":"roofwants","name":"Roofwants","rarity":"Zeldzaam"},{"id":"duizendpoot","name":"Duizendpoot","rarity":"Zeldzaam"},{"id":"sprinkhaan","name":"Sprinkhaan","rarity":"Zeldzaam"},{"id":"wesp","name":"Wesp","rarity":"Zeldzaam"},{"id":"hoornaar","name":"Hoornaar","rarity":"Episch"},{"id":"schorpioen","name":"Schorpioen","rarity":"Legendarisch"},{"id":"termiet","name":"Termiet","rarity":"Gewoon"},{"id":"mestkever","name":"Mestkever","rarity":"Zeldzaam"},{"id":"wandelende-tak","name":"Wandelende tak","rarity":"Zeldzaam"},{"id":"vogelspin","name":"Vogelspin","rarity":"Episch"},{"id":"reuzenkakkerlak","name":"Reuzenkakkerlak","rarity":"Episch"},{"id":"reuzen-duizendpoot","name":"Reuzenduizendpoot","rarity":"Legendarisch"},{"id":"neushoornkever","name":"Neushoornkever","rarity":"Legendarisch"},{"id":"atlaskever","name":"Atlaskever","rarity":"Legendarisch"},{"id":"herculeskever","name":"Herculeskever","rarity":"Legendarisch"},{"id":"goliathkever","name":"Goliathkever","rarity":"Legendarisch"},{"id":"motmug","name":"Motmug","rarity":"Gewoon"},{"id":"langpootmug","name":"Langpootmug","rarity":"Gewoon"},{"id":"faraomier","name":"Faraomier","rarity":"Gewoon"},{"id":"boekluis","name":"Boekluis","rarity":"Gewoon"},{"id":"stofluis","name":"Stofluis","rarity":"Gewoon"},{"id":"teek","name":"Teek","rarity":"Gewoon"},{"id":"fluweelmijt","name":"Fluweelmijt","rarity":"Gewoon"},{"id":"schildwants","name":"Schildwants","rarity":"Zeldzaam"},{"id":"houtmier","name":"Houtmier","rarity":"Zeldzaam"},{"id":"kniptor","name":"Kniptor","rarity":"Zeldzaam"},{"id":"loopkever","name":"Loopkever","rarity":"Zeldzaam"},{"id":"waterkever","name":"Waterkever","rarity":"Zeldzaam"},{"id":"schrijvertje","name":"Schrijvertje","rarity":"Gewoon"},{"id":"schaatsenrijder","name":"Schaatsenrijder","rarity":"Zeldzaam"},{"id":"goudtor","name":"Goudtor","rarity":"Zeldzaam"},{"id":"tijgerkever","name":"Tijgerkever","rarity":"Zeldzaam"},{"id":"doodgraver","name":"Doodgraver","rarity":"Zeldzaam"},{"id":"waterschorpioen","name":"Waterschorpioen","rarity":"Zeldzaam"},{"id":"bidsprinkhaan","name":"Bidsprinkhaan","rarity":"Episch"},{"id":"wandelend-blad","name":"Wandelend blad","rarity":"Episch"},{"id":"wespspin","name":"Wespspin","rarity":"Zeldzaam"},{"id":"kruisspin","name":"Kruisspin","rarity":"Zeldzaam"},{"id":"springspin","name":"Springspin","rarity":"Zeldzaam"},{"id":"libel","name":"Libel","rarity":"Episch"},{"id":"waterjuffer","name":"Waterjuffer","rarity":"Episch"},{"id":"gaasvlieg","name":"Gaasvlieg","rarity":"Episch"},{"id":"doodshoofdvlinder","name":"Doodshoofdvlinder","rarity":"Episch"},{"id":"kolibrievlinder","name":"Kolibrievlinder","rarity":"Episch"},{"id":"koninginnenpage","name":"Koninginnenpage","rarity":"Episch"},{"id":"atalanta","name":"Atalanta","rarity":"Episch"},{"id":"dagpauwoog","name":"Dagpauwoog","rarity":"Episch"},{"id":"eikenprocessierups","name":"Eikenprocessierups","rarity":"Zeldzaam"},{"id":"pijlstaartrups","name":"Pijlstaartrups","rarity":"Episch"},{"id":"cicade","name":"Cicade","rarity":"Zeldzaam"},{"id":"schuimcicade","name":"Schuimcicade","rarity":"Gewoon"},{"id":"vliegend-hert","name":"Vliegend hert","rarity":"Legendarisch"},{"id":"juweelkever","name":"Juweelkever","rarity":"Episch"},{"id":"orchidee-bidsprinkhaan","name":"Orchidee-bidsprinkhaan","rarity":"Legendarisch"},{"id":"pauwspin","name":"Pauwspin","rarity":"Episch"},{"id":"juweelwesp","name":"Juweelwesp","rarity":"Episch"},{"id":"goudschildkever","name":"Goudschildkever","rarity":"Episch"},{"id":"harlekijnwants","name":"Harlekijnwants","rarity":"Episch"},{"id":"lantaarnvlieg","name":"Lantaarnvlieg","rarity":"Episch"},{"id":"vioolspin","name":"Vioolspin","rarity":"Episch"},{"id":"gespikkelde-houtvlinder","name":"Gespikkelde houtvlinder","rarity":"Episch"},{"id":"zebra-springspin","name":"Zebra-springspin","rarity":"Episch"},{"id":"smaragdlibel","name":"Smaragdlibel","rarity":"Legendarisch"},{"id":"glasvleugelvlinder","name":"Glasvleugelvlinder","rarity":"Episch"},{"id":"komeetmot","name":"Komeetmot","rarity":"Episch"},{"id":"maanmot","name":"Maanmot","rarity":"Episch"},{"id":"atlasvlinder","name":"Atlasvlinder","rarity":"Legendarisch"},{"id":"rozekever","name":"Rozekever","rarity":"Zeldzaam"},{"id":"kardinaalkever","name":"Kardinaalkever","rarity":"Episch"},{"id":"vuurwants","name":"Vuurwants","rarity":"Zeldzaam"},{"id":"sabelsprinkhaan","name":"Sabelsprinkhaan","rarity":"Episch"},{"id":"mierenleeuw","name":"Mierenleeuw","rarity":"Gewoon"},{"id":"dobsonvlieg","name":"Dobsonvlieg","rarity":"Legendarisch"},{"id":"helikopterjuffer","name":"Helikopterjuffer","rarity":"Episch"},{"id":"spookinsect","name":"Spookinsect","rarity":"Legendarisch"},{"id":"bladpootwants","name":"Bladpootwants","rarity":"Episch"},{"id":"assassin-bug","name":"Assassin bug","rarity":"Legendarisch"},{"id":"tijgermug","name":"Tijgermug","rarity":"Episch"},{"id":"dolksteekwesp","name":"Dolksteekwesp","rarity":"Legendarisch"},{"id":"roofvlieg","name":"Roofvlieg","rarity":"Episch"},{"id":"kameelhalsvlieg","name":"Kameelhalsvlieg","rarity":"Episch"},{"id":"zweefvlieg","name":"Zweefvlieg","rarity":"Gewoon"},{"id":"goudwesp","name":"Goudwesp","rarity":"Episch"},{"id":"sluipwesp","name":"Sluipwesp","rarity":"Zeldzaam"},{"id":"fluweelmier","name":"Fluweelmier","rarity":"Episch"},{"id":"reuzenwaterwants","name":"Reuzenwaterwants","rarity":"Legendarisch"},{"id":"zweepschorpioen","name":"Zweepschorpioen","rarity":"Legendarisch"},{"id":"azuren-waterjuffer","name":"Azuren waterjuffer","rarity":"Episch"},{"id":"rouwmantelvlinder","name":"Rouwmantelvlinder","rarity":"Legendarisch"},{"id":"keizersmantel","name":"Keizersmantel","rarity":"Legendarisch"},{"id":"gouden-tor","name":"Gouden tor","rarity":"Zeldzaam"},{"id":"soldaatje","name":"Soldaatje","rarity":"Zeldzaam"},{"id":"doodgraverkever","name":"Doodgraverkever","rarity":"Episch"},{"id":"olifantskever","name":"Olifantskever","rarity":"Legendarisch"},{"id":"regenboogmestkever","name":"Regenboogmestkever","rarity":"Legendarisch"},{"id":"titanus-kever","name":"Titanus-kever","rarity":"Legendarisch"},{"id":"langsprietboktor","name":"Langsprietboktor","rarity":"Episch"},{"id":"schildpadkever","name":"Schildpadkever","rarity":"Episch"},{"id":"vuurkever","name":"Vuurkever","rarity":"Zeldzaam"},{"id":"blauwe-ertsbij","name":"Blauwe ertsbij","rarity":"Legendarisch"},{"id":"wespboktor","name":"Wespboktor","rarity":"Episch"},{"id":"groene-zandloopkever","name":"Groene zandloopkever","rarity":"Legendarisch"},{"id":"lauwstaartwaterjuffer","name":"Lauwstaartwaterjuffer","rarity":"Episch"},{"id":"roodwitte-celspin","name":"Roodwitte celspin","rarity":"Episch"},{"id":"koningin-alexandravlinder","name":"Koningin-Alexandravlinder","rarity":"Mythisch"},{"id":"zonsondergangsmot","name":"Zonsondergangsmot","rarity":"Mythisch"},{"id":"picasso-wants","name":"Picasso-wants","rarity":"Mythisch"},{"id":"roze-esdoornmot","name":"Roze esdoornmot","rarity":"Mythisch"},{"id":"giraffekevertje","name":"Giraffekevertje","rarity":"Mythisch"},{"id":"doornbloembidsprinkhaan","name":"Doornbloembidsprinkhaan","rarity":"Mythisch"},{"id":"lantaarndrager","name":"Lantaarndrager","rarity":"Mythisch"},{"id":"glorieuze-scarabee","name":"Glorieuze scarabee","rarity":"Mythisch"},{"id":"bromvlieg","name":"Bromvlieg","rarity":"Gewoon"},{"id":"dwergcicade","name":"Dwergcicade","rarity":"Gewoon"},{"id":"groene-junikever","name":"Groene junikever","rarity":"Gewoon"},{"id":"hommel","name":"Hommel","rarity":"Gewoon"},{"id":"huisvlieg","name":"Huisvlieg","rarity":"Gewoon"},{"id":"kleermot","name":"Kleermot","rarity":"Gewoon"},{"id":"meikever","name":"Meikever","rarity":"Gewoon"},{"id":"schorpioenvlieg","name":"Schorpioenvlieg","rarity":"Gewoon"},{"id":"voorraadmot","name":"Voorraadmot","rarity":"Gewoon"},{"id":"whitefly","name":"Whitefly","rarity":"Gewoon"},{"id":"witte-tijger","name":"Witte tijger","rarity":"Gewoon"},{"id":"zadelrups","name":"Zadelrups","rarity":"Episch"},{"id":"reuzenpantervlinder","name":"Reuzenpantervlinder","rarity":"Episch"},{"id":"monarchvlinder","name":"Monarchvlinder","rarity":"Episch"},{"id":"zakdrager","name":"Zakdrager","rarity":"Zeldzaam"},{"id":"gehakkelde-aurelia","name":"Gehakkelde aurelia","rarity":"Zeldzaam"},{"id":"blauwe-morpho","name":"Blauwe morpho","rarity":"Mythisch"},{"id":"spinnendoder","name":"Spinnendoder","rarity":"Episch"},{"id":"kameelspin","name":"Kameelspin","rarity":"Episch"},{"id":"hooiwagen","name":"Hooiwagen","rarity":"Gewoon"},{"id":"zweepspin","name":"Zweepspin","rarity":"Legendarisch"},{"id":"doorncicade","name":"Doorncicade","rarity":"Episch"},{"id":"kortschildkever","name":"Kortschildkever","rarity":"Zeldzaam"},{"id":"uilvlinder","name":"Uilvlinder","rarity":"Episch"},{"id":"groot-avondrood","name":"Groot avondrood","rarity":"Episch"},{"id":"alpenboktor","name":"Alpenboktor","rarity":"Legendarisch"},{"id":"veenmol","name":"Veenmol","rarity":"Episch"},{"id":"schietmot","name":"Schietmot","rarity":"Gewoon"},{"id":"eendagsvlieg","name":"Eendagsvlieg","rarity":"Zeldzaam"},{"id":"oranjetipje","name":"Oranjetipje","rarity":"Zeldzaam"},{"id":"kleine-vuurvlinder","name":"Kleine vuurvlinder","rarity":"Zeldzaam"},{"id":"dikkopje","name":"Dikkopje","rarity":"Gewoon"},{"id":"veldkrekel","name":"Veldkrekel","rarity":"Gewoon"},{"id":"coloradokever","name":"Coloradokever","rarity":"Zeldzaam"},{"id":"meeltor","name":"Meeltor","rarity":"Gewoon"},{"id":"roodbruine-rijstmeelkever","name":"Roodbruine rijstmeelkever","rarity":"Gewoon"},{"id":"schorskever","name":"Schorskever","rarity":"Gewoon"},{"id":"glimworm","name":"Glimworm","rarity":"Zeldzaam"},{"id":"zijdevlinder","name":"Zijdevlinder","rarity":"Zeldzaam"},{"id":"gevlekte-komkommerkever","name":"Gevlekte komkommerkever","rarity":"Zeldzaam"},{"id":"gestreepte-komkommerkever","name":"Gestreepte komkommerkever","rarity":"Zeldzaam"},{"id":"oliekever","name":"Oliekever","rarity":"Zeldzaam"},{"id":"groentje","name":"Groentje","rarity":"Zeldzaam"},{"id":"heideblauwtje","name":"Heideblauwtje","rarity":"Zeldzaam"},{"id":"grote-weerschijnvlinder","name":"Grote weerschijnvlinder","rarity":"Episch"},{"id":"bruin-zandoogje","name":"Bruin zandoogje","rarity":"Gewoon"},{"id":"kraamwebspin","name":"Kraamwebspin","rarity":"Zeldzaam"},{"id":"groene-krabspin","name":"Groene krabspin","rarity":"Zeldzaam"},{"id":"honingbij","name":"Honingbij","rarity":"Gewoon"},{"id":"dambordvlieg","name":"Dambordvlieg","rarity":"Gewoon"},{"id":"ligusterpijlstaart","name":"Ligusterpijlstaart","rarity":"Episch"},{"id":"dorbladbidsprinkhaan","name":"Dorbladbidsprinkhaan","rarity":"Legendarisch"},{"id":"roze-sprinkhaan","name":"Roze sprinkhaan","rarity":"Episch"},{"id":"gouden-vogelvlinder","name":"Gouden vogelvlinder","rarity":"Legendarisch"},{"id":"pauwoogpijlstaart","name":"Pauwoogpijlstaart","rarity":"Episch"},{"id":"smaragd-springspin","name":"Smaragd-springspin","rarity":"Episch"},{"id":"papiervisje","name":"Papiervisje","rarity":"Gewoon"},{"id":"ovenvisje","name":"Ovenvisje","rarity":"Zeldzaam"},{"id":"bedwants","name":"Bedwants","rarity":"Gewoon"},{"id":"varenrouwmug","name":"Varenrouwmug","rarity":"Gewoon"},{"id":"trips","name":"Trips","rarity":"Gewoon"},{"id":"spintmijt","name":"Spintmijt","rarity":"Zeldzaam"},{"id":"wolluis","name":"Wolluis","rarity":"Zeldzaam"},{"id":"schildluis","name":"Schildluis","rarity":"Gewoon"},{"id":"grote-huisspin","name":"Grote huisspin","rarity":"Zeldzaam"},{"id":"trilspin","name":"Trilspin","rarity":"Gewoon"},{"id":"klein-koolwitje","name":"Klein koolwitje","rarity":"Gewoon"},{"id":"klein-geaderd-witje","name":"Klein geaderd witje","rarity":"Zeldzaam"},{"id":"citroenvlinder","name":"Citroenvlinder","rarity":"Episch"},{"id":"bont-zandoogje","name":"Bont zandoogje","rarity":"Zeldzaam"},{"id":"icarusblauwtje","name":"Icarusblauwtje","rarity":"Legendarisch"},{"id":"kleine-vos","name":"Kleine vos","rarity":"Legendarisch"},{"id":"landkaartje","name":"Landkaartje","rarity":"Episch"},{"id":"boomblauwtje","name":"Boomblauwtje","rarity":"Episch"},{"id":"springstaart","name":"Springstaart","rarity":"Gewoon"},{"id":"miljoenpoot","name":"Miljoenpoot","rarity":"Zeldzaam"},{"id":"kelderpissebed","name":"Kelderpissebed","rarity":"Gewoon"},{"id":"oprolpissebed","name":"Oprolpissebed","rarity":"Zeldzaam"},{"id":"buxusmot","name":"Buxusmot","rarity":"Episch"},{"id":"buxusrups","name":"Buxusrups","rarity":"Zeldzaam"},{"id":"leliehaantje","name":"Leliehaantje","rarity":"Episch"},{"id":"engerling","name":"Engerling","rarity":"Gewoon"},{"id":"emelt","name":"Emelt","rarity":"Gewoon"},{"id":"gamma-uil","name":"Gamma-uil","rarity":"Episch"},{"id":"huismoeder","name":"Huismoeder","rarity":"Zeldzaam"},{"id":"agaatvlinder","name":"Agaatvlinder","rarity":"Episch"},{"id":"windevedermot","name":"Windevedermot","rarity":"Episch"},{"id":"jakobsvlinder","name":"Jakobsvlinder","rarity":"Legendarisch"},{"id":"jakobsvlinderrups","name":"Jakobsvlinderrups","rarity":"Episch"},{"id":"distelvlinder","name":"Distelvlinder","rarity":"Legendarisch"},{"id":"groot-koolwitje","name":"Groot koolwitje","rarity":"Zeldzaam"},{"id":"hooibeestje","name":"Hooibeestje","rarity":"Zeldzaam"},{"id":"koevinkje","name":"Koevinkje","rarity":"Episch"},{"id":"geelpoothoornaar","name":"Geelpoothoornaar","rarity":"Legendarisch"},{"id":"daas","name":"Daas","rarity":"Zeldzaam"},{"id":"stadsreus","name":"Stadsreus","rarity":"Episch"},{"id":"bijvlieg","name":"Bijvlieg","rarity":"Zeldzaam"},{"id":"rosse-metselbij","name":"Rosse metselbij","rarity":"Episch"},{"id":"blauwzwarte-houtbij","name":"Blauwzwarte houtbij","rarity":"Legendarisch"},{"id":"gewone-wolfspin","name":"Gewone wolfspin","rarity":"Zeldzaam"},{"id":"venstersectorspin","name":"Venstersectorspin","rarity":"Episch"},{"id":"grote-wegslak","name":"Grote wegslak","rarity":"Gewoon"},{"id":"segrijnslak","name":"Segrijnslak","rarity":"Zeldzaam"},{"id":"regenworm","name":"Regenworm","rarity":"Gewoon"}]
+[
+  {
+    "id": "zilvervisje",
+    "name": "Zilvervisje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "fruitvlieg",
+    "name": "Fruitvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bladluis",
+    "name": "Bladluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "mug",
+    "name": "Mug",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "mot",
+    "name": "Mot",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "mier",
+    "name": "Mier",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "vlo",
+    "name": "Vlo",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "pissebed",
+    "name": "Pissebed",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "stinkwants",
+    "name": "Stinkwants",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "snuitkever",
+    "name": "Snuitkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "lieveheersbeestje",
+    "name": "Lieveheersbeestje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kakkerlak",
+    "name": "Kakkerlak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "oorworm",
+    "name": "Oorworm",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "boktor",
+    "name": "Boktor",
+    "rarity": "Episch"
+  },
+  {
+    "id": "tapijtkever",
+    "name": "Tapijtkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "roofwants",
+    "name": "Roofwants",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "duizendpoot",
+    "name": "Duizendpoot",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "sprinkhaan",
+    "name": "Sprinkhaan",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "wesp",
+    "name": "Wesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "hoornaar",
+    "name": "Hoornaar",
+    "rarity": "Episch"
+  },
+  {
+    "id": "schorpioen",
+    "name": "Schorpioen",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "termiet",
+    "name": "Termiet",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "mestkever",
+    "name": "Mestkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "wandelende-tak",
+    "name": "Wandelende tak",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "vogelspin",
+    "name": "Vogelspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenkakkerlak",
+    "name": "Reuzenkakkerlak",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzen-duizendpoot",
+    "name": "Reuzenduizendpoot",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "neushoornkever",
+    "name": "Neushoornkever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "atlaskever",
+    "name": "Atlaskever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "herculeskever",
+    "name": "Herculeskever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "goliathkever",
+    "name": "Goliathkever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "motmug",
+    "name": "Motmug",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "langpootmug",
+    "name": "Langpootmug",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "faraomier",
+    "name": "Faraomier",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "boekluis",
+    "name": "Boekluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "stofluis",
+    "name": "Stofluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "teek",
+    "name": "Teek",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "fluweelmijt",
+    "name": "Fluweelmijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "schildwants",
+    "name": "Schildwants",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "houtmier",
+    "name": "Houtmier",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kniptor",
+    "name": "Kniptor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "loopkever",
+    "name": "Loopkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "waterkever",
+    "name": "Waterkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "schrijvertje",
+    "name": "Schrijvertje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "schaatsenrijder",
+    "name": "Schaatsenrijder",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "goudtor",
+    "name": "Goudtor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "tijgerkever",
+    "name": "Tijgerkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "doodgraver",
+    "name": "Doodgraver",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "waterschorpioen",
+    "name": "Waterschorpioen",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bidsprinkhaan",
+    "name": "Bidsprinkhaan",
+    "rarity": "Episch"
+  },
+  {
+    "id": "wandelend-blad",
+    "name": "Wandelend blad",
+    "rarity": "Episch"
+  },
+  {
+    "id": "wespspin",
+    "name": "Wespspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kruisspin",
+    "name": "Kruisspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "springspin",
+    "name": "Springspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "libel",
+    "name": "Libel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "waterjuffer",
+    "name": "Waterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gaasvlieg",
+    "name": "Gaasvlieg",
+    "rarity": "Episch"
+  },
+  {
+    "id": "doodshoofdvlinder",
+    "name": "Doodshoofdvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "kolibrievlinder",
+    "name": "Kolibrievlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "koninginnenpage",
+    "name": "Koninginnenpage",
+    "rarity": "Episch"
+  },
+  {
+    "id": "atalanta",
+    "name": "Atalanta",
+    "rarity": "Episch"
+  },
+  {
+    "id": "dagpauwoog",
+    "name": "Dagpauwoog",
+    "rarity": "Episch"
+  },
+  {
+    "id": "eikenprocessierups",
+    "name": "Eikenprocessierups",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "pijlstaartrups",
+    "name": "Pijlstaartrups",
+    "rarity": "Episch"
+  },
+  {
+    "id": "cicade",
+    "name": "Cicade",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "schuimcicade",
+    "name": "Schuimcicade",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "vliegend-hert",
+    "name": "Vliegend hert",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "juweelkever",
+    "name": "Juweelkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "orchidee-bidsprinkhaan",
+    "name": "Orchidee-bidsprinkhaan",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "pauwspin",
+    "name": "Pauwspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "juweelwesp",
+    "name": "Juweelwesp",
+    "rarity": "Episch"
+  },
+  {
+    "id": "goudschildkever",
+    "name": "Goudschildkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "harlekijnwants",
+    "name": "Harlekijnwants",
+    "rarity": "Episch"
+  },
+  {
+    "id": "lantaarnvlieg",
+    "name": "Lantaarnvlieg",
+    "rarity": "Episch"
+  },
+  {
+    "id": "vioolspin",
+    "name": "Vioolspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gespikkelde-houtvlinder",
+    "name": "Gespikkelde houtvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zebra-springspin",
+    "name": "Zebra-springspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "smaragdlibel",
+    "name": "Smaragdlibel",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "glasvleugelvlinder",
+    "name": "Glasvleugelvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "komeetmot",
+    "name": "Komeetmot",
+    "rarity": "Episch"
+  },
+  {
+    "id": "maanmot",
+    "name": "Maanmot",
+    "rarity": "Episch"
+  },
+  {
+    "id": "atlasvlinder",
+    "name": "Atlasvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "rozekever",
+    "name": "Rozekever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kardinaalkever",
+    "name": "Kardinaalkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "vuurwants",
+    "name": "Vuurwants",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "sabelsprinkhaan",
+    "name": "Sabelsprinkhaan",
+    "rarity": "Episch"
+  },
+  {
+    "id": "mierenleeuw",
+    "name": "Mierenleeuw",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "dobsonvlieg",
+    "name": "Dobsonvlieg",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "helikopterjuffer",
+    "name": "Helikopterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "spookinsect",
+    "name": "Spookinsect",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "bladpootwants",
+    "name": "Bladpootwants",
+    "rarity": "Episch"
+  },
+  {
+    "id": "assassin-bug",
+    "name": "Assassin bug",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "tijgermug",
+    "name": "Tijgermug",
+    "rarity": "Episch"
+  },
+  {
+    "id": "dolksteekwesp",
+    "name": "Dolksteekwesp",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "roofvlieg",
+    "name": "Roofvlieg",
+    "rarity": "Episch"
+  },
+  {
+    "id": "kameelhalsvlieg",
+    "name": "Kameelhalsvlieg",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zweefvlieg",
+    "name": "Zweefvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "goudwesp",
+    "name": "Goudwesp",
+    "rarity": "Episch"
+  },
+  {
+    "id": "sluipwesp",
+    "name": "Sluipwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "fluweelmier",
+    "name": "Fluweelmier",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenwaterwants",
+    "name": "Reuzenwaterwants",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "zweepschorpioen",
+    "name": "Zweepschorpioen",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "azuren-waterjuffer",
+    "name": "Azuren waterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "rouwmantelvlinder",
+    "name": "Rouwmantelvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "keizersmantel",
+    "name": "Keizersmantel",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "gouden-tor",
+    "name": "Gouden tor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "soldaatje",
+    "name": "Soldaatje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "doodgraverkever",
+    "name": "Doodgraverkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "olifantskever",
+    "name": "Olifantskever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "regenboogmestkever",
+    "name": "Regenboogmestkever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "titanus-kever",
+    "name": "Titanus-kever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "langsprietboktor",
+    "name": "Langsprietboktor",
+    "rarity": "Episch"
+  },
+  {
+    "id": "schildpadkever",
+    "name": "Schildpadkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "vuurkever",
+    "name": "Vuurkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "blauwe-ertsbij",
+    "name": "Blauwe ertsbij",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "wespboktor",
+    "name": "Wespboktor",
+    "rarity": "Episch"
+  },
+  {
+    "id": "groene-zandloopkever",
+    "name": "Groene zandloopkever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "lauwstaartwaterjuffer",
+    "name": "Lauwstaartwaterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "roodwitte-celspin",
+    "name": "Roodwitte celspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "koningin-alexandravlinder",
+    "name": "Koningin-Alexandravlinder",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "zonsondergangsmot",
+    "name": "Zonsondergangsmot",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "picasso-wants",
+    "name": "Picasso-wants",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "roze-esdoornmot",
+    "name": "Roze esdoornmot",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "giraffekevertje",
+    "name": "Giraffekevertje",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "doornbloembidsprinkhaan",
+    "name": "Doornbloembidsprinkhaan",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "lantaarndrager",
+    "name": "Lantaarndrager",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "glorieuze-scarabee",
+    "name": "Glorieuze scarabee",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "bromvlieg",
+    "name": "Bromvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "dwergcicade",
+    "name": "Dwergcicade",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "groene-junikever",
+    "name": "Groene junikever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "hommel",
+    "name": "Hommel",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "huisvlieg",
+    "name": "Huisvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kleermot",
+    "name": "Kleermot",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "meikever",
+    "name": "Meikever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "schorpioenvlieg",
+    "name": "Schorpioenvlieg",
+    "rarity": "Episch"
+  },
+  {
+    "id": "voorraadmot",
+    "name": "Voorraadmot",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "whitefly",
+    "name": "Whitefly",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "witte-tijger",
+    "name": "Witte tijger",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zadelrups",
+    "name": "Zadelrups",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenpantervlinder",
+    "name": "Reuzenpantervlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "monarchvlinder",
+    "name": "Monarchvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zakdrager",
+    "name": "Zakdrager",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "gehakkelde-aurelia",
+    "name": "Gehakkelde aurelia",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "blauwe-morpho",
+    "name": "Blauwe morpho",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "spinnendoder",
+    "name": "Spinnendoder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "kameelspin",
+    "name": "Kameelspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "hooiwagen",
+    "name": "Hooiwagen",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zweepspin",
+    "name": "Zweepspin",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "doorncicade",
+    "name": "Doorncicade",
+    "rarity": "Episch"
+  },
+  {
+    "id": "kortschildkever",
+    "name": "Kortschildkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "uilvlinder",
+    "name": "Uilvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "groot-avondrood",
+    "name": "Groot avondrood",
+    "rarity": "Episch"
+  },
+  {
+    "id": "alpenboktor",
+    "name": "Alpenboktor",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "veenmol",
+    "name": "Veenmol",
+    "rarity": "Episch"
+  },
+  {
+    "id": "schietmot",
+    "name": "Schietmot",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "eendagsvlieg",
+    "name": "Eendagsvlieg",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "oranjetipje",
+    "name": "Oranjetipje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kleine-vuurvlinder",
+    "name": "Kleine vuurvlinder",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "dikkopje",
+    "name": "Dikkopje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "veldkrekel",
+    "name": "Veldkrekel",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "coloradokever",
+    "name": "Coloradokever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "meeltor",
+    "name": "Meeltor",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "roodbruine-rijstmeelkever",
+    "name": "Roodbruine rijstmeelkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "schorskever",
+    "name": "Schorskever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "glimworm",
+    "name": "Glimworm",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zijdevlinder",
+    "name": "Zijdevlinder",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "gevlekte-komkommerkever",
+    "name": "Gevlekte komkommerkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "gestreepte-komkommerkever",
+    "name": "Gestreepte komkommerkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "oliekever",
+    "name": "Oliekever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "groentje",
+    "name": "Groentje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "heideblauwtje",
+    "name": "Heideblauwtje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grote-weerschijnvlinder",
+    "name": "Grote weerschijnvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "bruin-zandoogje",
+    "name": "Bruin zandoogje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kraamwebspin",
+    "name": "Kraamwebspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "groene-krabspin",
+    "name": "Groene krabspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "honingbij",
+    "name": "Honingbij",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "dambordvlieg",
+    "name": "Dambordvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "ligusterpijlstaart",
+    "name": "Ligusterpijlstaart",
+    "rarity": "Episch"
+  },
+  {
+    "id": "dorbladbidsprinkhaan",
+    "name": "Dorbladbidsprinkhaan",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "roze-sprinkhaan",
+    "name": "Roze sprinkhaan",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gouden-vogelvlinder",
+    "name": "Gouden vogelvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "pauwoogpijlstaart",
+    "name": "Pauwoogpijlstaart",
+    "rarity": "Episch"
+  },
+  {
+    "id": "smaragd-springspin",
+    "name": "Smaragd-springspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "papiervisje",
+    "name": "Papiervisje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "ovenvisje",
+    "name": "Ovenvisje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bedwants",
+    "name": "Bedwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "varenrouwmug",
+    "name": "Varenrouwmug",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "trips",
+    "name": "Trips",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "spintmijt",
+    "name": "Spintmijt",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "wolluis",
+    "name": "Wolluis",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "schildluis",
+    "name": "Schildluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "grote-huisspin",
+    "name": "Grote huisspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "trilspin",
+    "name": "Trilspin",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "klein-koolwitje",
+    "name": "Klein koolwitje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "klein-geaderd-witje",
+    "name": "Klein geaderd witje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "citroenvlinder",
+    "name": "Citroenvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "bont-zandoogje",
+    "name": "Bont zandoogje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "icarusblauwtje",
+    "name": "Icarusblauwtje",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "kleine-vos",
+    "name": "Kleine vos",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "landkaartje",
+    "name": "Landkaartje",
+    "rarity": "Episch"
+  },
+  {
+    "id": "boomblauwtje",
+    "name": "Boomblauwtje",
+    "rarity": "Episch"
+  },
+  {
+    "id": "springstaart",
+    "name": "Springstaart",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "miljoenpoot",
+    "name": "Miljoenpoot",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kelderpissebed",
+    "name": "Kelderpissebed",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "oprolpissebed",
+    "name": "Oprolpissebed",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "buxusmot",
+    "name": "Buxusmot",
+    "rarity": "Episch"
+  },
+  {
+    "id": "buxusrups",
+    "name": "Buxusrups",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "leliehaantje",
+    "name": "Leliehaantje",
+    "rarity": "Episch"
+  },
+  {
+    "id": "engerling",
+    "name": "Engerling",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "emelt",
+    "name": "Emelt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "gamma-uil",
+    "name": "Gamma-uil",
+    "rarity": "Episch"
+  },
+  {
+    "id": "huismoeder",
+    "name": "Huismoeder",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "agaatvlinder",
+    "name": "Agaatvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "windevedermot",
+    "name": "Windevedermot",
+    "rarity": "Episch"
+  },
+  {
+    "id": "jakobsvlinder",
+    "name": "Jakobsvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "jakobsvlinderrups",
+    "name": "Jakobsvlinderrups",
+    "rarity": "Episch"
+  },
+  {
+    "id": "distelvlinder",
+    "name": "Distelvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "groot-koolwitje",
+    "name": "Groot koolwitje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "hooibeestje",
+    "name": "Hooibeestje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "koevinkje",
+    "name": "Koevinkje",
+    "rarity": "Episch"
+  },
+  {
+    "id": "geelpoothoornaar",
+    "name": "Geelpoothoornaar",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "daas",
+    "name": "Daas",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "stadsreus",
+    "name": "Stadsreus",
+    "rarity": "Episch"
+  },
+  {
+    "id": "bijvlieg",
+    "name": "Bijvlieg",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "rosse-metselbij",
+    "name": "Rosse metselbij",
+    "rarity": "Episch"
+  },
+  {
+    "id": "blauwzwarte-houtbij",
+    "name": "Blauwzwarte houtbij",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "gewone-wolfspin",
+    "name": "Gewone wolfspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "venstersectorspin",
+    "name": "Venstersectorspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "roofvlieg-groot",
+    "name": "Grote roofvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "dambordzweefvlieg",
+    "name": "Dambordzweefvlieg",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "klein-avondrood",
+    "name": "Klein avondrood",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "broodkever",
+    "name": "Broodkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "gewone-houtwormkever",
+    "name": "Gewone houtwormkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "gewone-kogelspin",
+    "name": "Gewone kogelspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kruipende-kogelspin",
+    "name": "Kruipende kogelspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "nachtkaardespin",
+    "name": "Nachtkaardespin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "argusvlinder",
+    "name": "Argusvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "spaanse-vlag",
+    "name": "Spaanse vlag",
+    "rarity": "Episch"
+  },
+  {
+    "id": "weidebeekjuffer",
+    "name": "Weidebeekjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "steenhommel",
+    "name": "Steenhommel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "muskusboktor",
+    "name": "Muskusboktor",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "eikenpage",
+    "name": "Eikenpage",
+    "rarity": "Episch"
+  },
+  {
+    "id": "aardhommel",
+    "name": "Aardhommel",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "akkerhommel",
+    "name": "Akkerhommel",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "boomhommel",
+    "name": "Boomhommel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "heidehommel",
+    "name": "Heidehommel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "tuinhommel",
+    "name": "Tuinhommel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "weidehommel",
+    "name": "Weidehommel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "veldhommel",
+    "name": "Veldhommel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "azijnvlieg",
+    "name": "Azijnvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "knut",
+    "name": "Knut",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zandvlieg",
+    "name": "Zandvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kriebelmug",
+    "name": "Kriebelmug",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "dansmug",
+    "name": "Dansmug",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "langpootvlieg",
+    "name": "Langpootvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "dansvlieg",
+    "name": "Dansvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "ruitvlieg",
+    "name": "Ruitvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "herfstvlieg",
+    "name": "Herfstvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "stalvlieg",
+    "name": "Stalvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zwarte-aasvlieg",
+    "name": "Zwarte aasvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "groene-vleesvlieg",
+    "name": "Groene vleesvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "huisboktor",
+    "name": "Huisboktor",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "houtboorder",
+    "name": "Houtboorder",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "haantjeskever",
+    "name": "Haantjeskever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bladkever",
+    "name": "Bladkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "wilgenhaantje",
+    "name": "Wilgenhaantje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "populierenhaantje",
+    "name": "Populierenhaantje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "elzenhaantje",
+    "name": "Elzenhaantje",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "aardvlo",
+    "name": "Aardvlo",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bonte-aspergekever",
+    "name": "Bonte aspergekever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "aspergekever",
+    "name": "Aspergekever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "snuitkeverlarve",
+    "name": "Snuitkeverlarve",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "graanklander",
+    "name": "Graanklander",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "rijstklander",
+    "name": "Rijstklander",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "erwtenkever",
+    "name": "Erwtenkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bonenkever",
+    "name": "Bonenkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zadenkever",
+    "name": "Zadenkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bladroller",
+    "name": "Bladroller",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bladmineerder",
+    "name": "Bladmineerder",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "meikeverlarve",
+    "name": "Meikeverlarve",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "engerlingkever",
+    "name": "Engerlingkever",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "ritnaald",
+    "name": "Ritnaald",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "emeltvlieg",
+    "name": "Emeltvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "aardrupsvlinder",
+    "name": "Aardrupsvlinder",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "rookwants",
+    "name": "Rookwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "koolschildwants",
+    "name": "Koolschildwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "groene-blinkwants",
+    "name": "Groene blinkwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bleekgroene-wants",
+    "name": "Bleekgroene wants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zuringwants",
+    "name": "Zuringwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "korenwants",
+    "name": "Korenwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "berkenwants",
+    "name": "Berkenwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "tuinrandwants",
+    "name": "Tuinrandwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "groene-bladluis",
+    "name": "Groene bladluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "roze-bladluis",
+    "name": "Roze bladluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zwarte-bladluis",
+    "name": "Zwarte bladluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "wortelluis",
+    "name": "Wortelluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bloedluis",
+    "name": "Bloedluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "druifluis",
+    "name": "Druifluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "wollige-beukenbladluis",
+    "name": "Wollige beukenbladluis",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "beervlinder",
+    "name": "Beervlinder",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "grote-beervlinder",
+    "name": "Grote beervlinder",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zandkrekel",
+    "name": "Zandkrekel",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "boskrekel",
+    "name": "Boskrekel",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "sikkelsprinkhaan",
+    "name": "Sikkelsprinkhaan",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "krasser",
+    "name": "Krasser",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "reuzencicade",
+    "name": "Reuzencicade",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zwarte-dijblindwants",
+    "name": "Zwarte dijblindwants",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "rode-watermijt",
+    "name": "Rode watermijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "oorwurmsoort",
+    "name": "Oorwurmsoort",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "zwarte-springstaart",
+    "name": "Zwarte springstaart",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "witte-springstaart",
+    "name": "Witte springstaart",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "bochelvlieg",
+    "name": "Bochelvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "dansende-langpoot",
+    "name": "Dansende langpoot",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kleine-zweefvlieg",
+    "name": "Kleine zweefvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "snorzweefvlieg",
+    "name": "Snorzweefvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "terrassenvlieg",
+    "name": "Terrassenvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "rioolvlieg",
+    "name": "Rioolvlieg",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "motmijt",
+    "name": "Motmijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "meelmijt",
+    "name": "Meelmijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "hondenvlo",
+    "name": "Hondenvlo",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kattenvlo",
+    "name": "Kattenvlo",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "hertenteek",
+    "name": "Hertenteek",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "schurftmijt",
+    "name": "Schurftmijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "oogstmijt",
+    "name": "Oogstmijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "roodwitte-mijt",
+    "name": "Roodwitte mijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kleine-rode-mijt",
+    "name": "Kleine rode mijt",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "blinde-bij",
+    "name": "Blinde bij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "gewone-langspriet",
+    "name": "Gewone langspriet",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zandbijtje",
+    "name": "Zandbijtje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "maskerbij",
+    "name": "Maskerbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "tronkenbij",
+    "name": "Tronkenbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "metselbij",
+    "name": "Metselbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "pluimvoetbij",
+    "name": "Pluimvoetbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zijdebij",
+    "name": "Zijdebij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "behangersbij",
+    "name": "Behangersbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "wolbij",
+    "name": "Wolbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "sachembij",
+    "name": "Sachembij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bladsnijderbij",
+    "name": "Bladsnijderbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "langhoornbij",
+    "name": "Langhoornbij",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "roodgatje",
+    "name": "Roodgatje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "smalbandwesp",
+    "name": "Smalbandwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "saksische-wesp",
+    "name": "Saksische wesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "franse-wesp",
+    "name": "Franse wesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "limonadewesp",
+    "name": "Limonadewesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "veldhoornaar",
+    "name": "Veldhoornaar",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "rode-wespenboktor",
+    "name": "Rode wespenboktor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kleine-wespenboktor",
+    "name": "Kleine wespenboktor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "schuimbeestje",
+    "name": "Schuimbeestje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "cicade-krekel",
+    "name": "Cicade krekel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "veldcicade",
+    "name": "Veldcicade",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zwarte-cicade",
+    "name": "Zwarte cicade",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grauwe-cicade",
+    "name": "Grauwe cicade",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "blauwe-glazenmaker",
+    "name": "Blauwe glazenmaker",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grote-glazenmaker",
+    "name": "Grote glazenmaker",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "paardenbijter",
+    "name": "Paardenbijter",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "gewone-oeverlibel",
+    "name": "Gewone oeverlibel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "steenrode-heidelibel",
+    "name": "Steenrode heidelibel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bruinrode-heidelibel",
+    "name": "Bruinrode heidelibel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bloedrode-heidelibel",
+    "name": "Bloedrode heidelibel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "viervlek",
+    "name": "Viervlek",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "platbuik",
+    "name": "Platbuik",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "vuurjuffer",
+    "name": "Vuurjuffer",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "lantaarntje",
+    "name": "Lantaarntje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "azuurjuffer",
+    "name": "Azuurjuffer",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "variabele-waterjuffer",
+    "name": "Variabele waterjuffer",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grote-roodoogjuffer",
+    "name": "Grote roodoogjuffer",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kleine-roodoogjuffer",
+    "name": "Kleine roodoogjuffer",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bandheidelibel",
+    "name": "Bandheidelibel",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "gewone-pantserjuffer",
+    "name": "Gewone pantserjuffer",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "schaatsenrijder-groot",
+    "name": "Schaatsenrijder groot",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "duikerwants",
+    "name": "Duikerwants",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bootsmannetje",
+    "name": "Bootsmannetje",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "staafwants",
+    "name": "Staafwants",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "waterspin",
+    "name": "Waterspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grote-zebraspin",
+    "name": "Grote zebraspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "huisspin",
+    "name": "Huisspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zuidelijke-huisspin",
+    "name": "Zuidelijke huisspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "marmertrilspin",
+    "name": "Marmertrilspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grote-kaardespin",
+    "name": "Grote kaardespin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "vierpunts-orbweaver",
+    "name": "Vierpunts orbweaver",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "prachtige-krabspin",
+    "name": "Prachtige krabspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "wespenkrabspin",
+    "name": "Wespenkrabspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zebrakrabspin",
+    "name": "Zebrakrabspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "struikspringspin",
+    "name": "Struikspringspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "huisspringspin",
+    "name": "Huisspringspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "boswolfspin",
+    "name": "Boswolfspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zandwolfspin",
+    "name": "Zandwolfspin",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "watermijt",
+    "name": "Watermijt",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "hooiwagen-langpoot",
+    "name": "Hooiwagen langpoot",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "rolpissebed",
+    "name": "Rolpissebed",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kelderpissebed-groot",
+    "name": "Kelderpissebed groot",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "duinmeikever",
+    "name": "Duinmeikever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "junikever",
+    "name": "Junikever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "roodbruine-bladsprietkever",
+    "name": "Roodbruine bladsprietkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "rozenkever",
+    "name": "Rozenkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zwarte-bladsprietkever",
+    "name": "Zwarte bladsprietkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "kleine-gouden-kever",
+    "name": "Kleine gouden kever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "driehoornmestkever",
+    "name": "Driehoornmestkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "doodshoofdkever",
+    "name": "Doodshoofdkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "schijnboktor",
+    "name": "Schijnboktor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zwarte-populierenboktor",
+    "name": "Zwarte populierenboktor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grote-populierenboktor",
+    "name": "Grote populierenboktor",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "roodkopvuurkever",
+    "name": "Roodkopvuurkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "zwarte-vuurkever",
+    "name": "Zwarte vuurkever",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "bladwesp",
+    "name": "Bladwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "rozenbladwesp",
+    "name": "Rozenbladwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "eikenbladwesp",
+    "name": "Eikenbladwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "dennenbladwesp",
+    "name": "Dennenbladwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "sparrenbladwesp",
+    "name": "Sparrenbladwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "houtsluipwesp",
+    "name": "Houtsluipwesp",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "sluipvlieg",
+    "name": "Sluipvlieg",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "grote-keizerlibel",
+    "name": "Grote keizerlibel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zuidelijke-keizerlibel",
+    "name": "Zuidelijke keizerlibel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "noordse-winterjuffer",
+    "name": "Noordse winterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "tangpantserjuffer",
+    "name": "Tangpantserjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zuidelijke-glassnijder",
+    "name": "Zuidelijke glassnijder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gouden-glazenmaker",
+    "name": "Gouden glazenmaker",
+    "rarity": "Episch"
+  },
+  {
+    "id": "bronlibel",
+    "name": "Bronlibel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "sierlijke-glazenmaker",
+    "name": "Sierlijke glazenmaker",
+    "rarity": "Episch"
+  },
+  {
+    "id": "oostelijke-widderjuffer",
+    "name": "Oostelijke widderjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "vuurlibel",
+    "name": "Vuurlibel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwervende-heidelibel",
+    "name": "Zwervende heidelibel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-smaragdlibel",
+    "name": "Zwarte smaragdlibel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "blauwe-glanslibel",
+    "name": "Blauwe glanslibel",
+    "rarity": "Episch"
+  },
+  {
+    "id": "grote-ocellated-waterjuffer",
+    "name": "Grote ocellated waterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-waterjuffer",
+    "name": "Zwarte waterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenwaterjuffer",
+    "name": "Reuzenwaterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zilvervlekjuffer",
+    "name": "Zilvervlekjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "speerwaterjuffer",
+    "name": "Speerwaterjuffer",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gouden-smaragdkever",
+    "name": "Gouden smaragdkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "violette-loopkever",
+    "name": "Violette loopkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gouden-loopkever",
+    "name": "Gouden loopkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenboktor",
+    "name": "Reuzenboktor",
+    "rarity": "Episch"
+  },
+  {
+    "id": "eikenboktor",
+    "name": "Eikenboktor",
+    "rarity": "Episch"
+  },
+  {
+    "id": "dennenboktor",
+    "name": "Dennenboktor",
+    "rarity": "Episch"
+  },
+  {
+    "id": "roodvleugelboktor",
+    "name": "Roodvleugelboktor",
+    "rarity": "Episch"
+  },
+  {
+    "id": "blauwe-kever",
+    "name": "Blauwe kever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "goudglanzende-bladsprietkever",
+    "name": "Goudglanzende bladsprietkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-junikever",
+    "name": "Zwarte junikever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "grijze-zandloopkever",
+    "name": "Grijze zandloopkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gouden-tijgerkever",
+    "name": "Gouden tijgerkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenwaterkever",
+    "name": "Reuzenwaterkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-waterkever",
+    "name": "Zwarte waterkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-waterschorpioen",
+    "name": "Zwarte waterschorpioen",
+    "rarity": "Episch"
+  },
+  {
+    "id": "roodbuikvuurpadkever",
+    "name": "Roodbuikvuurpadkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "vuurzwamkever",
+    "name": "Vuurzwamkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-weeskindkever",
+    "name": "Zwarte weeskindkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "parelmoerkever",
+    "name": "Parelmoerkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gouden-bloemkever",
+    "name": "Gouden bloemkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "blauwe-mestkever",
+    "name": "Blauwe mestkever",
+    "rarity": "Episch"
+  },
+  {
+    "id": "bergveldwesp",
+    "name": "Bergveldwesp",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenbladsprinkhaan",
+    "name": "Reuzenbladsprinkhaan",
+    "rarity": "Episch"
+  },
+  {
+    "id": "groene-sabelsprinkhaan",
+    "name": "Groene sabelsprinkhaan",
+    "rarity": "Episch"
+  },
+  {
+    "id": "sierlijke-sprinkhaan",
+    "name": "Sierlijke sprinkhaan",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-weduwespin",
+    "name": "Zwarte weduwespin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "rode-weduwespin",
+    "name": "Rode weduwespin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "valse-weduwespin",
+    "name": "Valse weduwespin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "wolfspin-met-eierzak",
+    "name": "Wolfspin met eierzak",
+    "rarity": "Episch"
+  },
+  {
+    "id": "gouden-springspin",
+    "name": "Gouden springspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "groene-jachtspin",
+    "name": "Groene jachtspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "reuzenkrabspin",
+    "name": "Reuzenkrabspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zuidelijke-jachtspin",
+    "name": "Zuidelijke jachtspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "wespenspin-rups",
+    "name": "Wespenspin rups",
+    "rarity": "Episch"
+  },
+  {
+    "id": "grote-kameleonspin",
+    "name": "Grote kameleonspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "rode-krabspin",
+    "name": "Rode krabspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "zwarte-kruisspin",
+    "name": "Zwarte kruisspin",
+    "rarity": "Episch"
+  },
+  {
+    "id": "nachtpauwoog",
+    "name": "Nachtpauwoog",
+    "rarity": "Episch"
+  },
+  {
+    "id": "kleine-nachtpauwoog",
+    "name": "Kleine nachtpauwoog",
+    "rarity": "Episch"
+  },
+  {
+    "id": "populieren-wintervlinder",
+    "name": "Populieren wintervlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "esdoornpage",
+    "name": "Esdoornpage",
+    "rarity": "Episch"
+  },
+  {
+    "id": "grote-vuurvlinder",
+    "name": "Grote vuurvlinder",
+    "rarity": "Episch"
+  },
+  {
+    "id": "atlasmot",
+    "name": "Atlasmot",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "maanvlinder",
+    "name": "Maanvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "nachtpauwoog-mot",
+    "name": "Nachtpauwoog mot",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "groot-doodshoofd",
+    "name": "Groot doodshoofd",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "reuzenhoutwesp",
+    "name": "Reuzenhoutwesp",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "reuzenhoornaar",
+    "name": "Reuzenhoornaar",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "blauwe-houtbij",
+    "name": "Blauwe houtbij",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "reuzenbij",
+    "name": "Reuzenbij",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "gouden-juweelkever",
+    "name": "Gouden juweelkever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "smaragdgroene-kever",
+    "name": "Smaragdgroene kever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "reuzenatlaskever",
+    "name": "Reuzenatlaskever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "halsbandboktor",
+    "name": "Halsbandboktor",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "zwarte-herculeskever",
+    "name": "Zwarte herculeskever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "gouden-neushoornkever",
+    "name": "Gouden neushoornkever",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "goliathvogelspin",
+    "name": "Goliathvogelspin",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "reuzenvogelspin",
+    "name": "Reuzenvogelspin",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "gouden-vogelspin",
+    "name": "Gouden vogelspin",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "prisma-springspin",
+    "name": "Prisma springspin",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "tropische-regenboogvlinder",
+    "name": "Tropische regenboogvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "scharlaken-adelaarvlinder",
+    "name": "Scharlaken adelaarvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "reuzen-boomvlinder",
+    "name": "Reuzen boomvlinder",
+    "rarity": "Legendarisch"
+  },
+  {
+    "id": "gouden-page",
+    "name": "Gouden page",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "nachtelijke-kometenvlinder",
+    "name": "Nachtelijke kometenvlinder",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "blauwe-draaklibel",
+    "name": "Blauwe draaklibel",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "saffierjuweelkever",
+    "name": "Saffierjuweelkever",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "kroonjuweelvlinder",
+    "name": "Kroonjuweelvlinder",
+    "rarity": "Mythisch"
+  },
+  {
+    "id": "grote-wegslak",
+    "name": "Grote wegslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "segrijnslak",
+    "name": "Segrijnslak",
+    "rarity": "Zeldzaam"
+  },
+  {
+    "id": "regenworm",
+    "name": "Regenworm",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "roetdauwslak",
+    "name": "Roetdauwslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "barnsteenslak",
+    "name": "Barnsteenslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "tuinslak",
+    "name": "Tuinslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "grote-tuinslak",
+    "name": "Grote tuinslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "akkerslak",
+    "name": "Akkerslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kleine-akkerslak",
+    "name": "Kleine akkerslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "naaktslak",
+    "name": "Naaktslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "huisjesslak",
+    "name": "Huisjesslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "poelslak",
+    "name": "Poelslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "posthoornslak",
+    "name": "Posthoornslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "waterslak",
+    "name": "Waterslak",
+    "rarity": "Gewoon"
+  },
+  {
+    "id": "kleine-watersalamander",
+    "name": "Kleine watersalamander",
+    "rarity": "Gewoon"
+  }
+]

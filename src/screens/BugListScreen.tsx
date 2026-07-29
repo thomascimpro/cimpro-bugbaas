@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, FlatList, ImageBackground, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { BugCard } from "../components/BugCard";
 import { listBugs } from "../services/bugService";
@@ -27,6 +27,7 @@ const reportTypeLabels: Record<ReportType, string> = {
   workaround: "trick",
   idea: "idee"
 };
+const fieldOperationsBoard = require("../../assets/generated/field-operations-board-v1.jpg");
 
 type Props = {
   onBack: () => void;
@@ -75,16 +76,18 @@ export function BugListScreen({ onBack, onNew, onSelect }: Props) {
 
   return (
     <View style={[sharedStyles.screen, styles.screen]}>
-      <View style={styles.header}>
+      <ImageBackground imageStyle={styles.headerImage} resizeMode="cover" source={fieldOperationsBoard} style={styles.header}>
+        <View style={styles.headerVeil}>
         <View style={styles.headerText}>
-          <Text style={sharedStyles.title}>{t("buglist.title")}</Text>
+          <Text style={[sharedStyles.title, styles.headerTitle]}>{t("buglist.title")}</Text>
           <Text style={styles.subtitle}>{t("buglist.count", { count: visibleReports.length })}</Text>
         </View>
         <Pressable style={styles.newButton} onPress={onNew}>
           <BugArtImage bugId="lieveheersbeestje" size={32} />
           <Text style={styles.newButtonText}>{t("common.new")}</Text>
         </Pressable>
-      </View>
+        </View>
+      </ImageBackground>
 
       <View style={styles.searchRow}>
         <TextInput
@@ -220,26 +223,50 @@ function startOfWeek(date: Date): Date {
 
 const styles = StyleSheet.create({
   screen: {
+    backgroundColor: "#f5f0e4",
     paddingBottom: 150
   },
   header: {
     alignItems: "center",
+    borderColor: "#d7bd57",
+    borderRadius: 18,
+    borderWidth: 1,
     flexDirection: "row",
     gap: 12,
-    marginBottom: 10
+    marginBottom: 12,
+    overflow: "hidden"
+  },
+  headerImage: { opacity: 0.9 },
+  headerVeil: {
+    alignItems: "center",
+    backgroundColor: "rgba(6, 30, 21, 0.38)",
+    flex: 1,
+    flexDirection: "row",
+    gap: 12,
+    minHeight: 94,
+    padding: 14
   },
   headerText: {
     flex: 1
   },
+  headerTitle: {
+    color: "#ffffff",
+    textShadowColor: "rgba(0,0,0,0.72)",
+    textShadowOffset: { height: 1, width: 0 },
+    textShadowRadius: 5
+  },
   subtitle: {
-    color: "#52665d",
+    color: "#eef8f2",
     fontSize: 14,
-    fontWeight: "800"
+    fontWeight: "800",
+    textShadowColor: "rgba(0,0,0,0.72)",
+    textShadowOffset: { height: 1, width: 0 },
+    textShadowRadius: 4
   },
   newButton: {
     alignItems: "center",
-    backgroundColor: "#102018",
-    borderRadius: 8,
+    backgroundColor: "#143f36",
+    borderRadius: 16,
     flexDirection: "row",
     gap: 8,
     minHeight: 54,
@@ -256,9 +283,9 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   searchInput: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#c8d5ce",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 14,
     borderWidth: 1,
     color: "#17211c",
     flex: 1,
@@ -268,8 +295,8 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     alignItems: "center",
-    backgroundColor: "#102018",
-    borderRadius: 8,
+    backgroundColor: "#143f36",
+    borderRadius: 14,
     justifyContent: "center",
     minHeight: 46,
     paddingHorizontal: 12
@@ -288,17 +315,17 @@ const styles = StyleSheet.create({
   },
   filterPill: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#cbd8d1",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 999,
     borderWidth: 1,
     height: 42,
     justifyContent: "center",
     paddingHorizontal: 14
   },
   filterPillActive: {
-    backgroundColor: "#15724f",
-    borderColor: "#15724f"
+    backgroundColor: "#174f43",
+    borderColor: "#174f43"
   },
   filterText: {
     color: "#17211c",
@@ -310,9 +337,9 @@ const styles = StyleSheet.create({
   },
   projectButton: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#cbd8d1",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -328,9 +355,9 @@ const styles = StyleSheet.create({
     color: "#53645d"
   },
   projectMenu: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#cbd8d1",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: "row",
     flexWrap: "wrap",
@@ -344,7 +371,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9
   },
   projectOptionActive: {
-    backgroundColor: "#15724f"
+    backgroundColor: "#174f43"
   },
   projectOptionText: {
     color: "#17211c",
@@ -356,17 +383,17 @@ const styles = StyleSheet.create({
   },
   statusPill: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#d8e2dc",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 999,
     borderWidth: 1,
     height: 36,
     justifyContent: "center",
     paddingHorizontal: 12
   },
   statusPillActive: {
-    backgroundColor: "#102018",
-    borderColor: "#102018"
+    backgroundColor: "#143f36",
+    borderColor: "#143f36"
   },
   statusText: {
     color: "#53645d",
@@ -385,9 +412,9 @@ const styles = StyleSheet.create({
   },
   empty: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 18,
     borderWidth: 1,
     marginTop: 10,
     padding: 24
@@ -406,9 +433,9 @@ const styles = StyleSheet.create({
   },
   backButton: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#c6d3cc",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 14,
     borderWidth: 1,
     justifyContent: "center",
     minHeight: 48

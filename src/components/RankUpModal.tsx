@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { nativeDriver } from "../services/animationPlatform";
 import { useI18n } from "../services/i18n";
 import { type UserTier } from "../services/pointsService";
 import { playBugSound } from "../services/soundService";
@@ -12,6 +13,7 @@ type Props = {
 
 export function RankUpModal({ tier, onClose }: Props) {
   const { t, tr } = useI18n();
+  const { height } = useWindowDimensions();
   const scale = useRef(new Animated.Value(0.84)).current;
   const glow = useRef(new Animated.Value(0)).current;
 
@@ -20,16 +22,18 @@ export function RankUpModal({ tier, onClose }: Props) {
     playBugSound("bug_rare_unlock");
     scale.setValue(0.84);
     glow.setValue(0);
-    Animated.parallel([
-      Animated.spring(scale, { friction: 5, tension: 90, toValue: 1, useNativeDriver: true }),
+    const animation = Animated.parallel([
+      Animated.spring(scale, { friction: 5, tension: 90, toValue: 1, useNativeDriver: nativeDriver }),
       Animated.loop(
         Animated.sequence([
-          Animated.timing(glow, { duration: 780, toValue: 1, useNativeDriver: true }),
-          Animated.timing(glow, { duration: 780, toValue: 0, useNativeDriver: true })
+          Animated.timing(glow, { duration: 780, toValue: 1, useNativeDriver: nativeDriver }),
+          Animated.timing(glow, { duration: 780, toValue: 0, useNativeDriver: nativeDriver })
         ]),
         { iterations: 2 }
       )
-    ]).start();
+    ]);
+    animation.start();
+    return () => animation.stop();
   }, [glow, scale, tier]);
 
   if (!tier) return null;
@@ -40,7 +44,7 @@ export function RankUpModal({ tier, onClose }: Props) {
   return (
     <Modal transparent animationType="fade" visible={Boolean(tier)} onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Animated.View style={[styles.card, { borderColor: tier.frameColor, transform: [{ scale }] }]}>
+        <Animated.View style={[styles.card, height < 700 && styles.cardCompact, { borderColor: tier.frameColor, transform: [{ scale }] }]}>
           <View style={[styles.topBar, { backgroundColor: tier.frameColor }]} />
           <Text style={[styles.kicker, { color: tier.frameColor }]}>{t("rankup.kicker")}</Text>
           <Text style={styles.title}>{tr(tier.title)}</Text>
@@ -62,20 +66,29 @@ export function RankUpModal({ tier, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     alignItems: "center",
-    backgroundColor: "rgba(16,32,24,0.6)",
+    backgroundColor: "rgba(8,12,28,0.78)",
     flex: 1,
     justifyContent: "center",
     padding: 24
   },
   card: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderRadius: 8,
-    borderWidth: 3,
+    backgroundColor: "#f8f4ff",
+    borderRadius: 28,
+    borderWidth: 2,
+    elevation: 16,
     maxWidth: 440,
     overflow: "hidden",
-    padding: 22,
+    padding: 24,
+    shadowColor: "#050817",
+    shadowOffset: { height: 14, width: 0 },
+    shadowOpacity: 0.34,
+    shadowRadius: 22,
     width: "100%"
+  },
+  cardCompact: {
+    paddingBottom: 17,
+    paddingTop: 19
   },
   topBar: {
     height: 8,
@@ -91,7 +104,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase"
   },
   title: {
-    color: "#102018",
+    color: "#15172c",
     fontSize: 28,
     fontWeight: "900",
     marginTop: 4,
@@ -99,7 +112,8 @@ const styles = StyleSheet.create({
   },
   stage: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 24,
+    borderWidth: 1,
     height: 168,
     justifyContent: "center",
     marginTop: 14,
@@ -113,7 +127,7 @@ const styles = StyleSheet.create({
     width: 160
   },
   body: {
-    color: "#53645d",
+    color: "#666177",
     fontSize: 14,
     fontWeight: "800",
     lineHeight: 20,
@@ -128,7 +142,8 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 16,
+    elevation: 4,
     marginTop: 18,
     minWidth: 160,
     paddingHorizontal: 22,

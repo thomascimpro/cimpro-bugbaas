@@ -24,8 +24,8 @@ export function towerPlatformGap(floor: number, gapRoll: number, skipRoll: numbe
 export function towerJumpVelocity(speed: number, charge: number, springReady: boolean): number {
   const safeSpeed = clamp(speed, 0, 1);
   const safeCharge = clamp(charge, 0, 1);
-  const megaJumpBoost = springReady ? 0.95 : 0;
-  return -(1.72 + safeSpeed * 0.58 + safeCharge * safeCharge * 1.55 + megaJumpBoost);
+  const megaJumpBoost = springReady ? 1.05 : 0;
+  return -(1.95 + safeSpeed * 0.72 + safeCharge * safeCharge * 1.88 + megaJumpBoost);
 }
 
 export function towerScrollSpeed(floor: number, elapsed: number): number {

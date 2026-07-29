@@ -3,6 +3,7 @@ export type RealBugScanStatus =
   | "already_spotted"
   | "not_in_catalog"
   | "pending_review"
+  | "rejected_authenticity"
   | "rejected_no_bug"
   | "rejected_quality";
 
@@ -16,6 +17,8 @@ export type RealBugIdentification = {
   factEn: string;
   factFr: string;
   confidence: number;
+  captureAuthenticity?: "live" | "reproduction" | "uncertain";
+  authenticityReason?: string;
   reason: string;
   reasonEn: string;
   reasonFr: string;
@@ -36,6 +39,7 @@ export type RealBugIdentifyApiResponse = {
   status: Exclude<RealBugScanStatus, "already_spotted">;
   remainingScans: number;
   identification: RealBugIdentification;
+  receipt?: string;
 };
 
 export type RealBugScanResponse = {
@@ -44,6 +48,7 @@ export type RealBugScanResponse = {
   status: RealBugScanStatus;
   remainingScans: number;
   identification: RealBugIdentification;
+  receipt?: string;
   reward?: RealBugScanReward;
 };
 
@@ -52,6 +57,7 @@ const statuses = new Set<RealBugScanStatus>([
   "already_spotted",
   "not_in_catalog",
   "pending_review",
+  "rejected_authenticity",
   "rejected_no_bug",
   "rejected_quality"
 ]);
@@ -86,6 +92,10 @@ function normalizeIdentification(value: unknown): RealBugIdentification {
   if (!isNonEmptyString(value.reason)) invalidResponse();
   const reasonEn = typeof value.reasonEn === "string" ? value.reasonEn.trim() : value.reason.trim();
   const reasonFr = typeof value.reasonFr === "string" ? value.reasonFr.trim() : value.reason.trim();
+  const captureAuthenticity = value.captureAuthenticity === "live" || value.captureAuthenticity === "reproduction" || value.captureAuthenticity === "uncertain"
+    ? value.captureAuthenticity
+    : undefined;
+  const authenticityReason = typeof value.authenticityReason === "string" ? value.authenticityReason.trim() : undefined;
   return {
     bugId,
     commonName: value.commonName.trim(),
@@ -96,6 +106,8 @@ function normalizeIdentification(value: unknown): RealBugIdentification {
     factEn,
     factFr,
     confidence: value.confidence,
+    ...(captureAuthenticity ? { captureAuthenticity } : {}),
+    ...(authenticityReason !== undefined ? { authenticityReason } : {}),
     reason: value.reason.trim(),
     reasonEn,
     reasonFr
@@ -118,7 +130,8 @@ export function parseRealBugIdentifyApiResponse(value: unknown, fallbackRemainin
     scanId: value.scanId.trim(),
     status: value.status as RealBugIdentifyApiResponse["status"],
     remainingScans: Number(remainingScans),
-    identification: normalizeIdentification(value.identification)
+    identification: normalizeIdentification(value.identification),
+    ...(typeof value.receipt === "string" && value.receipt.length > 0 ? { receipt: value.receipt } : {})
   };
 }
 

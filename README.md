@@ -2,6 +2,10 @@
 
 Android-first Expo/React Native app voor interne bugmeldingen, statusopvolging, punten, ranglijst en BugDex.
 
+## Officiële 3.x-bron
+
+Vanaf release 3.0.1 is `C:\Users\thoma.THOMAS\Documents\Codex\CimPro BugBaas-3.0` de canonieke bronmap voor alle BugBaas 3.x APK-builds en deployments naar `bugbaasv3.vercel.app`.
+
 Uitgangspunt: Firebase Spark/free plan. Zie `FIREBASE_SPARK_PLAN.md`.
 Tierwerking staat in `TIERS.md`.
 

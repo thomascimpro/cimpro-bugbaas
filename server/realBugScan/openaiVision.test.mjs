@@ -10,6 +10,8 @@ const catalog = [
 const identification = {
   containsBug: true,
   imageQuality: "good",
+  captureAuthenticity: "live",
+  authenticityReason: "Natural depth, lighting, and physical surroundings.",
   catalogStatus: "matched",
   matchedBugId: "mier",
   commonName: "Mier",
@@ -58,12 +60,15 @@ test("sends the image and returns structured identification", async () => {
   assert.match(requestBody.input[0].content[0].text, /always name what is actually visible/i);
   assert.match(requestBody.input[0].content[0].text, /developer can review and add it later/i);
   assert.match(requestBody.input[0].content[0].text, /at most 140 characters per field/i);
-  assert.match(requestBody.input[0].content[0].text, /confidence around 0\.70 is acceptable/i);
-  assert.match(requestBody.input[0].content[0].text, /normal phone photo, crop, plain background, or imperfect composition is not poor/i);
+  assert.match(requestBody.input[0].content[0].text, /confidence of 0\.70 or higher is enough/i);
+  assert.match(requestBody.input[0].content[0].text, /normal phone photo, crop, cluttered or plain background, mild motion blur/i);
+  assert.match(requestBody.input[0].content[0].text, /body shape, wing structure, antennae, legs, markings, scale, and habitat/i);
   assert.ok(requestBody.text.format.schema.required.includes("factFr"));
   assert.ok(requestBody.text.format.schema.required.includes("reasonFr"));
   assert.equal(requestBody.text.format.type, "json_schema");
   assert.ok(requestBody.text.format.schema.required.includes("catalogStatus"));
+  assert.ok(requestBody.text.format.schema.required.includes("captureAuthenticity"));
+  assert.deepEqual(requestBody.text.format.schema.properties.captureAuthenticity.enum, ["live", "reproduction", "uncertain"]);
   assert.deepEqual(requestBody.text.format.schema.properties.catalogStatus.enum, ["matched", "not_in_catalog", "uncertain"]);
 });
 

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Animated, Easing, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { LastCatchSummary, LeaderboardRow } from "../components/LeaderboardRow";
@@ -13,6 +13,8 @@ import { currentDuelSeasonId, duelSeasonEndLabel, duelSeasonRank, duelSeasonRewa
 import { visibleRankUsers } from "../services/leaderboardRank";
 import { listLeaderboardUsers } from "../services/userService";
 import { User } from "../types";
+import { useResponsiveLayout } from "../theme/useResponsiveLayout";
+import { GameUiIcon } from "../components/ui/GameUiIcon";
 import { sharedStyles } from "./sharedStyles";
 
 type Props = {
@@ -26,20 +28,21 @@ const podiumStyles = [
   { border: "#b9c1c8", background: "#f3f6f7", shine: "#dfe5e8", text: "#4d5960", bugId: "boktor" },
   { border: "#b87842", background: "#fff0df", shine: "#e2a56d", text: "#6e3f1e", bugId: "duizendpoot" }
 ];
-type RankingMode = "score" | "duel";
+type RankingMode = "score" | "duel" | "bugs";
 
 const seasonRewardBadges = [
-  { color: "#f59f00", label: "#1 ★★★★" },
-  { color: "#9c36b5", label: "#2 ★★★ ×2" },
-  { color: "#9c36b5", label: "#3 ★★★" },
-  { color: "#228be6", label: "#4 ★★" },
-  { color: "#228be6", label: "#5 ★★" }
+  { color: "#ef4444", label: "#1 ★★★★★" },
+  { color: "#f59f00", label: "#2 ★★★★" },
+  { color: "#9c36b5", label: "#3 ★★★ ×2" },
+  { color: "#9c36b5", label: "#4 ★★★" },
+  { color: "#228be6", label: "#5 ★★ ×2" }
 ];
 
 const seasonRewardVisuals = {
   Zeldzaam: { color: "#228be6", stars: "★★" },
   Episch: { color: "#9c36b5", stars: "★★★" },
-  Legendarisch: { color: "#f59f00", stars: "★★★★" }
+  Legendarisch: { color: "#f59f00", stars: "★★★★" },
+  Mythisch: { color: "#ef4444", stars: "★★★★★" }
 };
 
 const rarityVisuals: Record<BugDexRarity, { color: string; stars: string }> = {
@@ -54,8 +57,10 @@ function duelRating(user: User): number {
   return effectiveDuelRating(user);
 }
 
-export function LeaderboardScreen({ currentUser, onBack: _onBack, onSelectUser }: Props) {
+export function LeaderboardScreen({ currentUser, onBack, onSelectUser }: Props) {
   const { t } = useI18n();
+  const layout = useResponsiveLayout();
+  const reveal = useRef(new Animated.Value(0)).current;
   const [users, setUsers] = useState<User[]>([]);
   const [lastCatches, setLastCatches] = useState<Record<string, LastCatchSummary>>({});
   const [loading, setLoading] = useState(true);
@@ -75,11 +80,19 @@ export function LeaderboardScreen({ currentUser, onBack: _onBack, onSelectUser }
   const filteredUsers = selectedOrganizationId === defaultOrganizationId
     ? scopedUsers
     : scopedUsers.filter((item) => organizationIdsForUser(item).includes(selectedOrganizationId));
-  const visibleUsers = [...filteredUsers].sort((a, b) => rankingMode === "duel" ? duelRating(b) - duelRating(a) : b.totalPoints - a.totalPoints);
+  const unlockedBugCount = (user: User) => Math.max(0, Math.floor(user.bugDexCount ?? 0));
+  const metricLabel = rankingMode === "duel"
+    ? t("leader.duelRating")
+    : rankingMode === "bugs"
+      ? t("leader.unlockedBugs")
+      : t("leader.score");
+  const metricValue = (user: User) => rankingMode === "duel" ? duelRating(user) : rankingMode === "bugs" ? unlockedBugCount(user) : user.totalPoints;
+  const visibleUsers = [...filteredUsers].sort((a, b) => {
+    const metricDifference = metricValue(b) - metricValue(a);
+    return metricDifference || b.totalPoints - a.totalPoints || a.displayName.localeCompare(b.displayName);
+  });
   const ownDuelRank = duelSeasonRank(filteredUsers, currentUser.uid, currentDuelSeasonId());
   const ownSeasonReward = ownDuelRank ? duelSeasonRewardForRank(ownDuelRank) : null;
-  const metricLabel = rankingMode === "duel" ? t("leader.duelRating") : t("leader.score");
-  const metricValue = (user: User) => rankingMode === "duel" ? duelRating(user) : user.totalPoints;
 
   useEffect(() => {
     let active = true;
@@ -101,17 +114,57 @@ export function LeaderboardScreen({ currentUser, onBack: _onBack, onSelectUser }
     };
   }, []);
 
+  useEffect(() => {
+    Animated.timing(reveal, {
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      toValue: 1,
+      useNativeDriver: true
+    }).start();
+  }, [reveal]);
+
   return (
-    <View style={sharedStyles.screen}>
-      <View style={styles.header}>
+    <View
+      style={[
+        sharedStyles.screen,
+        styles.screen,
+        {
+          maxWidth: layout.contentMaxWidth,
+          paddingHorizontal: layout.gutter
+        },
+        layout.isTablet && styles.screenWide
+      ]}
+    >
+      <Animated.View
+        style={[
+          styles.header,
+          layout.isTablet && styles.headerWide,
+          {
+            opacity: reveal,
+            transform: [{
+              translateY: reveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [16, 0]
+              })
+            }]
+          }
+        ]}
+      >
+        <Pressable accessibilityLabel={t("common.back")} accessibilityRole="button" onPress={onBack} style={({ pressed }) => [styles.headerBackButton, pressed && styles.controlPressed]}>
+          <GameUiIcon name="back" size={22} />
+        </Pressable>
         <View style={styles.headerText}>
+          <Text style={styles.headerKicker}>BUGBAAS LEAGUE</Text>
           <Text style={[sharedStyles.title, styles.headerTitle]}>{t("leaderboard.title")}</Text>
           <Text style={styles.headerSubtitle}>{t("leaderboard.subtitle")}</Text>
         </View>
         <View style={styles.headerBugWrap}>
-          <BugArtImage bugId="atlaskever" size={76} />
+          <MedalIcon index={0} size={layout.isTablet ? 84 : 70} />
+          <View style={styles.headerChampionBug}>
+            <BugArtImage bugId="atlaskever" size={layout.isTablet ? 42 : 36} />
+          </View>
         </View>
-      </View>
+      </Animated.View>
       {organizationIds.length > 0 && (
         <View style={styles.filterCard}>
           <Pressable style={styles.filterHeader} onPress={() => setOrganizationPickerOpen((current) => !current)}>
@@ -168,11 +221,11 @@ export function LeaderboardScreen({ currentUser, onBack: _onBack, onSelectUser }
         )}
       </View>
       <View style={styles.rankModeRow}>
-        {(["duel", "score"] as RankingMode[]).map((mode) => {
+        {(["duel", "score", "bugs"] as RankingMode[]).map((mode) => {
           const active = rankingMode === mode;
           return (
             <Pressable key={mode} style={[styles.rankModeButton, active && styles.rankModeButtonActive]} onPress={() => setRankingMode(mode)}>
-              <Text style={[styles.rankModeText, active && styles.rankModeTextActive]}>{mode === "duel" ? t("leaderboard.duelRank") : t("leaderboard.scoreRank")}</Text>
+              <Text adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={1} style={[styles.rankModeText, active && styles.rankModeTextActive]}>{mode === "duel" ? t("leaderboard.duelRank") : mode === "score" ? t("leaderboard.scoreRank") : t("leaderboard.bugsRank")}</Text>
             </Pressable>
           );
         })}
@@ -181,11 +234,33 @@ export function LeaderboardScreen({ currentUser, onBack: _onBack, onSelectUser }
         <FlatList
           data={visibleUsers.slice(3)}
           keyExtractor={(user) => user.uid}
-          ListHeaderComponent={visibleUsers.length ? <Podium lastCatches={lastCatches} metricLabel={metricLabel} metricValue={metricValue} users={visibleUsers.slice(0, 3)} onSelectUser={onSelectUser} /> : null}
+          ListHeaderComponent={visibleUsers.length ? (
+            <Animated.View
+              style={{
+                opacity: reveal,
+                transform: [{
+                  scale: reveal.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.96, 1]
+                  })
+                }]
+              }}
+            >
+              <Podium
+                lastCatches={lastCatches}
+                metricLabel={metricLabel}
+                metricValue={metricValue}
+                onSelectUser={onSelectUser}
+                users={visibleUsers.slice(0, 3)}
+                wide={layout.isTablet}
+              />
+            </Animated.View>
+          ) : null}
           ListEmptyComponent={visibleUsers.length ? null : <Text style={sharedStyles.subtitle}>{t("leaderboard.empty")}</Text>}
           renderItem={({ item, index }) => <LeaderboardRow metricLabel={metricLabel} metricValue={metricValue(item)} user={item} lastCatch={lastCatches[item.uid]} index={index + 3} onPress={() => onSelectUser(item)} />}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
+          style={styles.list}
         />
       )}
     </View>
@@ -210,17 +285,28 @@ async function latestCatchForUser(user: User): Promise<LastCatchSummary | null> 
   }
 }
 
-function Podium({ lastCatches, metricLabel, metricValue, users, onSelectUser }: { lastCatches: Record<string, LastCatchSummary>; metricLabel: string; metricValue: (user: User) => number; users: User[]; onSelectUser: (user: User) => void }) {
+function Podium({ lastCatches, metricLabel, metricValue, users, onSelectUser, wide }: { lastCatches: Record<string, LastCatchSummary>; metricLabel: string; metricValue: (user: User) => number; users: User[]; onSelectUser: (user: User) => void; wide: boolean }) {
   const { t } = useI18n();
   return (
-    <View style={styles.podium}>
+    <View style={[styles.podium, wide && styles.podiumWide]}>
       {users.map((user, index) => {
         const medal = podiumStyles[index] ?? podiumStyles[0];
         const lastCatch = lastCatches[user.uid];
         const lastCatchEntry = lastCatch ? entryByBugId(lastCatch.bugId) : null;
         const rarityVisual = lastCatch ? rarityVisuals[lastCatch.rarity] : null;
         return (
-          <Pressable key={user.uid} style={[styles.podiumCard, { backgroundColor: medal.background, borderColor: medal.border }, index === 0 && styles.podiumLeader]} onPress={() => onSelectUser(user)}>
+          <Pressable
+            accessibilityRole="button"
+            key={user.uid}
+            style={({ pressed }) => [
+              styles.podiumCard,
+              wide && styles.podiumCardWide,
+              { backgroundColor: medal.background, borderColor: medal.border },
+              index === 0 && styles.podiumLeader,
+              pressed && styles.controlPressed
+            ]}
+            onPress={() => onSelectUser(user)}
+          >
             <View style={[styles.podiumShine, { backgroundColor: medal.shine }]} />
             <MedalIcon index={index} size={index === 0 ? 76 : 58} />
             <CharacterAvatarImage characterId={user.characterId} size={index === 0 ? 66 : 56} />
@@ -252,42 +338,82 @@ function Podium({ lastCatches, metricLabel, metricValue, users, onSelectUser }: 
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    alignSelf: "center",
+    paddingBottom: 0,
+    paddingTop: 14,
+    width: "100%"
+  },
+  screenWide: {
+    paddingTop: 20
+  },
   header: {
     alignItems: "center",
-    backgroundColor: "#0d1d15",
-    borderColor: "#d7bd57",
-    borderRadius: 8,
-    borderWidth: 2,
+    backgroundColor: "#222743",
+    borderColor: "#e0ad4f",
+    borderRadius: 28,
+    borderWidth: 1,
     flexDirection: "row",
     gap: 12,
     marginBottom: 14,
-    padding: 14
+    minHeight: 122,
+    overflow: "hidden",
+    padding: 16
+  },
+  headerBackButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(12,34,50,0.96)",
+    borderColor: "#2c829b",
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44
+  },
+  headerWide: {
+    minHeight: 154,
+    paddingHorizontal: 26
   },
   headerText: {
     flex: 1
   },
+  headerKicker: {
+    color: "#ffcb67",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.4,
+    marginBottom: 3
+  },
   headerTitle: {
-    color: "#ffffff"
+    color: "#ffffff",
+    marginBottom: 4
   },
   headerSubtitle: {
-    color: "#dce9df",
+    color: "#d7ddf5",
     fontSize: 13,
     fontWeight: "800"
   },
   headerBugWrap: {
     alignItems: "center",
-    backgroundColor: "rgba(215,189,87,0.16)",
-    borderColor: "rgba(215,189,87,0.45)",
-    borderRadius: 8,
+    backgroundColor: "rgba(226,174,75,0.12)",
+    borderColor: "rgba(255,203,103,0.44)",
+    borderRadius: 24,
     borderWidth: 1,
-    height: 86,
+    height: 92,
     justifyContent: "center",
-    width: 86
+    width: 92
+  },
+  headerChampionBug: {
+    alignItems: "center",
+    bottom: -2,
+    justifyContent: "center",
+    position: "absolute",
+    right: -1
   },
   filterCard: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#c6d3cc",
-    borderRadius: 8,
+    backgroundColor: "#f2f6ff",
+    borderColor: "#c4d1eb",
+    borderRadius: 20,
     borderWidth: 1,
     marginBottom: 12,
     padding: 10
@@ -314,11 +440,11 @@ const styles = StyleSheet.create({
     marginTop: 2
   },
   filterAction: {
-    backgroundColor: "#eef4ed",
-    borderColor: "#c6d3cc",
-    borderRadius: 8,
+    backgroundColor: "#dfe8f8",
+    borderColor: "#b9c9e5",
+    borderRadius: 999,
     borderWidth: 1,
-    color: "#15724f",
+    color: "#3c5688",
     flexShrink: 0,
     fontSize: 12,
     fontWeight: "900",
@@ -331,16 +457,16 @@ const styles = StyleSheet.create({
     marginTop: 10
   },
   filterOption: {
-    backgroundColor: "#eef4ed",
-    borderColor: "#c6d3cc",
-    borderRadius: 8,
+    backgroundColor: "#ffffff",
+    borderColor: "#c4d1eb",
+    borderRadius: 14,
     borderWidth: 1,
     paddingHorizontal: 10,
     paddingVertical: 9
   },
   filterOptionActive: {
-    backgroundColor: "#15724f",
-    borderColor: "#15724f"
+    backgroundColor: "#3c5688",
+    borderColor: "#3c5688"
   },
   filterOptionText: {
     color: "#102018",
@@ -355,11 +481,14 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 14
   },
+  podiumWide: {
+    gap: 14
+  },
   podiumCard: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderColor: "#d9cbaa",
+    borderRadius: 20,
     borderWidth: 3,
     elevation: 3,
     flex: 1,
@@ -371,8 +500,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 8
   },
+  podiumCardWide: {
+    minHeight: 224,
+    padding: 14
+  },
   podiumLeader: {
     minHeight: 198
+  },
+  controlPressed: {
+    opacity: 0.84,
+    transform: [{ scale: 0.985 }]
   },
   podiumShine: {
     height: 40,
@@ -455,13 +592,17 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     lineHeight: 10
   },
+  list: {
+    flex: 1,
+    minHeight: 0
+  },
   listContent: {
     paddingBottom: 120
   },
   seasonCard: {
-    backgroundColor: "#f7faf6",
-    borderColor: "#d7bd57",
-    borderRadius: 12,
+    backgroundColor: "#fff8e8",
+    borderColor: "#e2bd68",
+    borderRadius: 18,
     borderWidth: 1,
     gap: 7,
     marginBottom: 10,
@@ -498,7 +639,7 @@ const styles = StyleSheet.create({
   },
   seasonOwnRankPill: {
     alignItems: "center",
-    backgroundColor: "#102018",
+    backgroundColor: "#222743",
     borderColor: "#d7bd57",
     borderRadius: 10,
     borderWidth: 1,
@@ -545,16 +686,16 @@ const styles = StyleSheet.create({
   },
   rankModeButton: {
     alignItems: "center",
-    backgroundColor: "#eef4ed",
-    borderColor: "#c6d3cc",
-    borderRadius: 8,
+    backgroundColor: "#f1f3fa",
+    borderColor: "#ccd2e2",
+    borderRadius: 14,
     borderWidth: 1,
     flex: 1,
     paddingVertical: 9
   },
   rankModeButtonActive: {
-    backgroundColor: "#102018",
-    borderColor: "#d7bd57"
+    backgroundColor: "#65458b",
+    borderColor: "#b89bd5"
   },
   rankModeRow: {
     flexDirection: "row",

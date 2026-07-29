@@ -2,7 +2,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 import { User } from "../types";
 
-export type DuelSeasonRewardRarity = "Episch" | "Legendarisch" | "Zeldzaam";
+export type DuelSeasonRewardRarity = "Episch" | "Legendarisch" | "Mythisch" | "Zeldzaam";
 
 export type DuelSeasonReward = {
   count: number;
@@ -53,10 +53,11 @@ export function duelSeasonEndLabel(date = new Date()): string {
 }
 
 export function duelSeasonRewardForRank(rank: number): DuelSeasonReward | null {
-  if (rank === 1) return { count: 1, label: "1 legendarische bug", rarity: "Legendarisch" };
-  if (rank === 2) return { count: 2, label: "2 epische bugs", rarity: "Episch" };
-  if (rank === 3) return { count: 1, label: "1 epische bug", rarity: "Episch" };
-  if (rank === 4 || rank === 5) return { count: 1, label: "1 zeldzame bug", rarity: "Zeldzaam" };
+  if (rank === 1) return { count: 1, label: "1 mythische bug", rarity: "Mythisch" };
+  if (rank === 2) return { count: 1, label: "1 legendarische bug", rarity: "Legendarisch" };
+  if (rank === 3) return { count: 2, label: "2 epische bugs", rarity: "Episch" };
+  if (rank === 4) return { count: 1, label: "1 epische bug", rarity: "Episch" };
+  if (rank === 5) return { count: 2, label: "2 zeldzame bugs", rarity: "Zeldzaam" };
   return null;
 }
 
@@ -122,7 +123,7 @@ function normalizeReward(value: unknown, rank: number): DuelSeasonReward {
   const fallback = duelSeasonRewardForRank(rank) ?? { count: 0, label: "Geen reward", rarity: "Zeldzaam" as const };
   if (!value || typeof value !== "object") return fallback;
   const reward = value as Partial<DuelSeasonReward>;
-  const rarity = reward.rarity === "Legendarisch" || reward.rarity === "Episch" || reward.rarity === "Zeldzaam" ? reward.rarity : fallback.rarity;
+  const rarity = reward.rarity === "Mythisch" || reward.rarity === "Legendarisch" || reward.rarity === "Episch" || reward.rarity === "Zeldzaam" ? reward.rarity : fallback.rarity;
   const count = typeof reward.count === "number" ? reward.count : fallback.count;
   return {
     count,

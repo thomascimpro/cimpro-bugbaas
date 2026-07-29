@@ -1,4 +1,3 @@
-import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query, setDoc, updateDoc } from "firebase/firestore";
@@ -17,17 +16,33 @@ export const defaultNotificationSettings: NotificationSettings = {
 };
 
 const demoNotifications = new Map<string, AppNotification[]>();
-
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true
-  })
-});
-
 const phoneNotificationChannelId = "bugbaas";
+type NotificationsModule = typeof import("expo-notifications");
+let notificationHandlerConfigured = false;
+
+function configureNotificationHandler(Notifications: NotificationsModule) {
+  if (notificationHandlerConfigured) return;
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true
+    })
+  });
+  notificationHandlerConfigured = true;
+}
+
+async function getPhoneNotifications(): Promise<NotificationsModule | null> {
+  if (Platform.OS === "web") return null;
+  const Notifications = await import("expo-notifications");
+  configureNotificationHandler(Notifications);
+  return Notifications;
+}
+
+if (Platform.OS !== "web") {
+  void getPhoneNotifications().catch(() => undefined);
+}
 
 function nowIso() {
   return new Date().toISOString();
@@ -50,6 +65,8 @@ export async function saveNotificationSettings(user: User, settings: Notificatio
 }
 
 export async function initializePhoneNotifications(): Promise<void> {
+  const Notifications = await getPhoneNotifications();
+  if (!Notifications) return;
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync(phoneNotificationChannelId, {
       name: "BugBaas",
@@ -68,15 +85,17 @@ export async function initializePhoneNotifications(): Promise<void> {
 }
 
 export async function registerPhoneNotificationsForUser(user: User): Promise<User | null> {
+  const Notifications = await getPhoneNotifications();
+  if (!Notifications) return null;
   await initializePhoneNotifications();
   const permissions = await Notifications.getPermissionsAsync();
   if (!permissions.granted) return null;
-  const token = await getExpoPushToken();
+  const token = await getExpoPushToken(Notifications);
   if (!token || token === user.notificationPushToken) return null;
   return updateUserNotificationPushToken(user, token);
 }
 
-async function getExpoPushToken(): Promise<string> {
+async function getExpoPushToken(Notifications: NotificationsModule): Promise<string> {
   const constants = Constants as typeof Constants & { easConfig?: { projectId?: string } };
   const projectId = constants.easConfig?.projectId ?? Constants.expoConfig?.extra?.eas?.projectId ?? Constants.expoConfig?.extra?.easProjectId;
   const token = projectId
@@ -86,6 +105,8 @@ async function getExpoPushToken(): Promise<string> {
 }
 
 export async function showPhoneNotification(notification: AppNotification): Promise<void> {
+  const Notifications = await getPhoneNotifications();
+  if (!Notifications) return;
   const permissions = await Notifications.getPermissionsAsync();
   if (!permissions.granted) return;
   await Notifications.scheduleNotificationAsync({
@@ -111,6 +132,8 @@ export async function showPhoneNotification(notification: AppNotification): Prom
 
 export async function scheduleBuddyTaskNotification(input: { actionLabel: string; body: string; endsAt: number; taskId: string; xp: number }): Promise<string> {
   if (Platform.OS !== "android") return "";
+  const Notifications = await getPhoneNotifications();
+  if (!Notifications) return "";
   await initializePhoneNotifications();
   const permissions = await Notifications.getPermissionsAsync();
   if (!permissions.granted) return "";
@@ -130,14 +153,14 @@ export async function scheduleBuddyTaskNotification(input: { actionLabel: string
       sticky: false,
       vibrate: [0, 250, 120, 250]
     },
-    trigger: Platform.OS === "android"
-      ? { channelId: phoneNotificationChannelId, seconds, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL }
-      : { seconds, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL }
+    trigger: { channelId: phoneNotificationChannelId, seconds, type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL }
   });
 }
 
 export async function dismissPhoneNotification(notificationRequestId: string): Promise<void> {
   if (!notificationRequestId) return;
+  const Notifications = await getPhoneNotifications();
+  if (!Notifications) return;
   await Notifications.dismissNotificationAsync(notificationRequestId).catch(() => undefined);
   await Notifications.cancelScheduledNotificationAsync(notificationRequestId).catch(() => undefined);
 }
@@ -145,6 +168,8 @@ export async function dismissPhoneNotification(notificationRequestId: string): P
 export async function dismissPresentedNotificationsForTarget(target: { bugId?: string; duelId?: string; notificationId?: string; type?: string }): Promise<void> {
   const entries = Object.entries(target).filter(([, value]) => Boolean(value));
   if (entries.length === 0) return;
+  const Notifications = await getPhoneNotifications();
+  if (!Notifications) return;
   const presented = await Notifications.getPresentedNotificationsAsync().catch(() => []);
   await Promise.all(presented
     .filter((notification) => {

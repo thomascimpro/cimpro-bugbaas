@@ -2,13 +2,27 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, BackHandler, GestureResponderEvent, Image, ImageSourcePropType, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import { createArcadeSeed, loadArcadeHighScore, saveArcadeHighScore, seededNumber } from "../../services/arcadeResultService";
 import { arcadeSquadAssistForUser } from "../../services/bugSquadGameBalance";
+import { frameScaleForTick, startArcadeFrameLoop } from "../../services/gameLoopTiming";
 import { playBugSound } from "../../services/soundService";
+import { swarmSiegeNestBalance } from "../../services/swarmSiegeGameBalance";
+import type { SwarmSiegeModifier } from "../../services/swarmSiegeService";
 import { ArcadeRunResult, User } from "../../types";
 import { BugArtImage } from "../BugArtImage";
+import { GameUiIcon } from "../ui/GameUiIcon";
 import { ArcadeSquadAssist } from "./ArcadeSquadAssist";
 import { SpriteCrop } from "./SpriteCrop";
 
-type Props = { onBack: () => void; onResult?: (result: ArcadeRunResult) => void; practice?: boolean; ranked?: boolean; seed?: string; user: User };
+type Props = {
+  eventLabel?: string;
+  eventModifier?: SwarmSiegeModifier;
+  onBack: () => void;
+  onResult?: (result: ArcadeRunResult) => void;
+  practice?: boolean;
+  ranked?: boolean;
+  recordHighScore?: boolean;
+  seed?: string;
+  user: User;
+};
 type State = "ready" | "result" | "running";
 type TowerKind = "heavy" | "rapid" | "slow";
 type TapUpgradeKind = "damage" | "speed";
@@ -19,7 +33,8 @@ type ManualImpact = { id: string; x: number; y: number };
 type SlowZone = { id: string; progress: number; until: number };
 
 const durationMs = 150000;
-const tickMs = 90;
+const simulationStepMs = 90;
+const tickMs = 16;
 const manualCooldownMs = 850;
 const maxTapUpgradeLevel = 4;
 const sprayCooldownMs = 12500;
@@ -29,7 +44,7 @@ const healerAuraRange = 0.13;
 const referenceFieldWidth = 360;
 const maxFieldScale = 2;
 const gameZoomScale = 0.82;
-const arcadeShowcaseImage = require("../../../assets/generated/ChatGPT Image 18 jun 2026, 22_34_06.png");
+const arcadeShowcaseImage = require("../../../assets/generated/ChatGPT Image 18 jun 2026, 22_34_06.jpg");
 const nestImage = require("../../../assets/minigames/extracted/nest_nest.png");
 const towerCost: Record<TowerKind, number> = { rapid: 45, slow: 65, heavy: 80 };
 const towerImage: Record<TowerKind, ImageSourcePropType> = {
@@ -55,7 +70,8 @@ const path = [
   { x: 104, y: 88 }
 ];
 
-export function NestDefenseGame({ onBack, onResult, practice = false, ranked = false, seed, user }: Props) {
+export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, practice = false, ranked = false, recordHighScore = true, seed, user }: Props) {
+  const eventBalance = useMemo(() => swarmSiegeNestBalance(eventModifier), [eventModifier]);
   const squadAssist = useMemo(() => arcadeSquadAssistForUser(user), [user.activeBugSquad]);
   const [state, setState] = useState<State>("ready");
   const [bestScore, setBestScore] = useState(0);
@@ -103,6 +119,7 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
   const finishedRef = useRef(false);
   const impactIdRef = useRef(0);
   const lastControlTapAtRef = useRef(0);
+  const lastFrameAtRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -112,8 +129,7 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
 
   useEffect(() => {
     if (state !== "running") return;
-    const id = setInterval(tick, tickMs);
-    return () => clearInterval(id);
+    return startArcadeFrameLoop(tick);
   }, [state, squadAssist.nestDefense.slowMultiplier]);
 
   useEffect(() => {
@@ -126,8 +142,10 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
     const startingHp = 13 + squadAssist.nestDefense.startingHpBonus;
     const startingCoins = 125 + squadAssist.nestDefense.extraCharges * 25;
     finishedRef.current = false;
-    seedRef.current = seed ?? createArcadeSeed("nest_defense", `${user.uid}:${Date.now()}`);
-    statsRef.current = { startAt: Date.now() };
+    const startedAt = Date.now();
+    seedRef.current = seed ?? createArcadeSeed("nest_defense", `${user.uid}:${startedAt}`);
+    statsRef.current = { startAt: startedAt };
+    lastFrameAtRef.current = startedAt;
     enemiesRef.current = [];
     towersRef.current = towerSlots;
     coinsRef.current = startingCoins;
@@ -176,6 +194,8 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
 
   function tick() {
     const now = Date.now();
+    const frameScale = frameScaleForTick(now, lastFrameAtRef.current, simulationStepMs);
+    lastFrameAtRef.current = now;
     const elapsed = now - statsRef.current.startAt;
     if (elapsed >= durationMs) return finish(true);
     setRemainingMs(durationMs - elapsed);
@@ -183,7 +203,7 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
     setWave(waveRef.current);
     slowZonesRef.current = slowZonesRef.current.filter((zone) => zone.until > now);
     setSlowZones(slowZonesRef.current);
-    let nextEnemies = moveEnemies(enemiesRef.current, now);
+    let nextEnemies = moveEnemies(enemiesRef.current, now, frameScale);
     nextEnemies = applyEnemyAuras(nextEnemies);
     nextEnemies = fireTowers(nextEnemies, now);
     nextEnemies = spawnEnemies(nextEnemies, elapsed);
@@ -196,12 +216,12 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
     if (hpRef.current <= 0) finish(false);
   }
 
-  function moveEnemies(current: Enemy[], now: number) {
+  function moveEnemies(current: Enemy[], now: number, frameScale: number) {
     const survivors: Enemy[] = [];
     for (const enemy of current) {
       const zoneSlow = slowZonesRef.current.some((zone) => Math.abs(zone.progress - enemy.progress) < 0.12) ? 0.44 : 1;
       const towerSlow = now < enemy.slowUntil ? 0.52 * squadAssist.nestDefense.slowMultiplier : 1;
-      const next = { ...enemy, progress: enemy.progress + enemy.speed * zoneSlow * towerSlow };
+      const next = { ...enemy, progress: enemy.progress + enemy.speed * zoneSlow * towerSlow * frameScale };
       if (next.progress >= 1) {
         hpRef.current -= leakDamage(enemy.kind, waveRef.current);
         leakRef.current += 1;
@@ -244,33 +264,63 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
     if (current.length > 38) return current;
     const wave = waveRef.current;
     const next = [...current];
-    if (isBossWave(wave) && !spawnedBossWavesRef.current.has(wave)) {
+    if (isBossWave(wave, eventBalance.bossWaveInterval) && !spawnedBossWavesRef.current.has(wave)) {
       spawnedBossWavesRef.current.add(wave);
-      const maxHp = bossHpForWave(wave);
-      next.push({ hp: maxHp, id: `boss:${wave}:${elapsed}`, kind: "boss", maxHp, progress: 0, slowUntil: 0, speed: bossSpeedForWave(wave) });
+      const maxHp = Math.max(1, Math.round(bossHpForWave(wave) * eventBalance.hpMultiplier));
+      next.push({
+        hp: maxHp,
+        id: `boss:${wave}:${elapsed}`,
+        kind: "boss",
+        maxHp,
+        progress: 0,
+        slowUntil: 0,
+        speed: bossSpeedForWave(wave) * eventBalance.speedMultiplier
+      });
     }
     const interval = Math.max(260, 900 - wave * 38);
     if (elapsed % interval >= tickMs) return next;
     const step = Math.floor(elapsed / interval);
     const roll = seededNumber(seedRef.current, step);
     const kind: EnemyKind = wave >= 7 && step % 13 === 0 ? "healer"
-      : wave >= 5 && step % 7 === 0 ? "armored"
+      : wave >= 5 && (step % 7 === 0 || roll < eventBalance.armoredWeightBonus) ? "armored"
       : wave >= 6 && roll < 0.16 ? "swarm"
       : wave >= 4 && step % 5 === 0 ? "tank"
-      : wave >= 2 && roll > 0.62 ? "fast"
+      : wave >= 2 && roll > 0.62 - eventBalance.fastWeightBonus ? "fast"
       : "normal";
-    const maxHp = kind === "healer" ? 8 + Math.floor(wave * 1.15)
+    const baseHp = kind === "healer" ? 8 + Math.floor(wave * 1.15)
       : kind === "armored" ? 11 + Math.floor(wave * 1.75)
       : kind === "tank" ? 10 + Math.floor(wave * 1.75)
       : kind === "swarm" ? 2 + Math.floor(wave * 0.28)
       : kind === "fast" ? 2 + Math.floor(wave * 0.42)
       : 3 + Math.floor(wave * 0.68);
-    const speed = kind === "swarm" ? 0.0071 + wave * 0.00028
+    const baseSpeed = kind === "swarm" ? 0.0071 + wave * 0.00028
       : kind === "fast" ? 0.0064 + wave * 0.00025
       : kind === "healer" ? 0.0035 + wave * 0.00013
       : kind === "tank" || kind === "armored" ? 0.0029 + wave * 0.00012
       : 0.0045 + wave * 0.00019;
-    return [...next, { hp: maxHp, id: `${elapsed}:${step}`, kind, maxHp, progress: 0, slowUntil: 0, speed }];
+    const maxHp = Math.max(1, Math.round(baseHp * eventBalance.hpMultiplier));
+    const spawned = [...next, {
+      hp: maxHp,
+      id: `${elapsed}:${step}`,
+      kind,
+      maxHp,
+      progress: 0,
+      slowUntil: 0,
+      speed: baseSpeed * eventBalance.speedMultiplier
+    }];
+    if (eventBalance.burstEveryWave > 0 && wave % eventBalance.burstEveryWave === 0 && step % 4 === 0) {
+      const burstHp = Math.max(1, Math.round((2 + Math.floor(wave * 0.28)) * eventBalance.hpMultiplier));
+      spawned.push({
+        hp: burstHp,
+        id: `burst:${elapsed}:${step}`,
+        kind: "swarm",
+        maxHp: burstHp,
+        progress: 0,
+        slowUntil: 0,
+        speed: (0.0071 + wave * 0.00028) * eventBalance.speedMultiplier
+      });
+    }
+    return spawned;
   }
 
   function buyOrUpgrade(slotId: string) {
@@ -425,9 +475,9 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
     const elapsed = Math.min(durationMs, Date.now() - statsRef.current.startAt);
     const finalScore = Math.max(0, scoreRef.current + waveRef.current * 45 + hpRef.current * 55 + killsRef.current * 7 + manualKillsRef.current * 22 + maxManualComboRef.current * 28 - leakRef.current * 30 + (won ? 180 : 0));
     playBugSound("arcade_finish");
-    const highScorePromise = practice ? Promise.resolve(bestScore) : saveArcadeHighScore(user.uid, "nest_defense", finalScore);
+    const highScorePromise = practice || !recordHighScore ? Promise.resolve(bestScore) : saveArcadeHighScore(user.uid, "nest_defense", finalScore);
     void highScorePromise.then((highScore) => {
-      if (!practice) setBestScore(highScore);
+      if (!practice && recordHighScore) setBestScore(highScore);
       const nextResult = { combo: waveRef.current, durationMs: elapsed, hits: leakRef.current, localHighScore: highScore, mode: "nest_defense" as const, pickups: killsRef.current, score: finalScore, streak: hpRef.current, timestamp: new Date().toISOString() };
       setResult(nextResult);
       onResult?.(nextResult);
@@ -455,11 +505,12 @@ export function NestDefenseGame({ onBack, onResult, practice = false, ranked = f
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}><View><Text style={styles.title}>Nest Defense</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>{(practice || state === "result") && <Pressable style={styles.closeButton} onPress={back}><Text style={styles.closeText}>x</Text></Pressable>}</View>
+      <View style={styles.header}><View><Text style={styles.title}>Nest Defense</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>{(practice || state === "result") && <Pressable accessibilityLabel="Back to games" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}</View>
+      {eventLabel ? <View style={styles.eventBanner}><Text style={styles.eventBannerText}>{eventLabel}</Text></View> : null}
       {state === "ready" && <Ready onStart={start} />}
       {state === "running" && (
         <View style={styles.game}>
-          <View style={styles.hud}><Text style={styles.hudText}>{Math.ceil(remainingMs / 1000)}s</Text><Text style={styles.hudText}>{score}</Text><Text style={styles.hudText}>Nest {hp}/{maxNestHp}</Text><Text style={styles.hudText}>Coins {coins}</Text><Text style={styles.hudText}>Wave {wave}{isBossWave(wave) ? " Boss" : ""}</Text></View>
+          <View style={styles.hud}><Text style={styles.hudText}>{Math.ceil(remainingMs / 1000)}s</Text><Text style={styles.hudText}>{score}</Text><Text style={styles.hudText}>Nest {hp}/{maxNestHp}</Text><Text style={styles.hudText}>Coins {coins}</Text><Text style={styles.hudText}>Wave {wave}{isBossWave(wave, eventBalance.bossWaveInterval) ? " Boss" : ""}</Text></View>
           <Pressable
             accessibilityLabel="Manual tap attack"
             ref={fieldRef}
@@ -633,8 +684,8 @@ function bossBugArtId(enemyId: string) {
   return bossBugIds[Math.max(0, Math.floor((wave - 6) / 5)) % bossBugIds.length];
 }
 
-function isBossWave(wave: number) {
-  return wave >= 6 && (wave - 6) % 5 === 0;
+function isBossWave(wave: number, interval = 5) {
+  return wave >= 6 && (wave - 6) % interval === 0;
 }
 
 function bossHpForWave(wave: number) {
@@ -721,6 +772,8 @@ const styles = StyleSheet.create({
   emptySlotMark: { alignItems: "center", borderColor: "rgba(215,189,87,0.75)", borderRadius: 999, borderWidth: 2, height: 28, justifyContent: "center", width: 28 },
   enemy: { alignItems: "center", height: 58, justifyContent: "center", marginLeft: -29, marginTop: -29, position: "absolute", width: 58, zIndex: 5 },
   enemyType: { backgroundColor: "rgba(16,32,24,0.82)", borderRadius: 999, color: "#d7bd57", fontSize: 7, fontWeight: "900", marginTop: -6, overflow: "hidden", paddingHorizontal: 4 },
+  eventBanner: { alignItems: "center", backgroundColor: "#d7bd57", borderBottomColor: "#fff0a8", borderBottomWidth: 1, minHeight: 28, paddingHorizontal: 12, paddingVertical: 5 },
+  eventBannerText: { color: "#102018", fontSize: 11, fontWeight: "900", letterSpacing: 0.7, textAlign: "center" },
   field: { flex: 1, minHeight: 0, overflow: "hidden" },
   fieldShade: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(7,29,18,0.2)" },
   game: { flex: 1, minHeight: 0, position: "relative" },

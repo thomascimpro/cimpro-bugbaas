@@ -6,6 +6,8 @@ import { bugLampStatus, shouldAwardBugLamp, withAwardedBugLamp } from "./bugLamp
 import { activeBugSquadBonuses } from "./bugSquadService";
 import { badgesForUser, BugDexEntry, BugDexRarity, bugDexEntries, isBugDexEntryUnlocked, titleForPoints } from "./pointsService";
 import { dailyLoginXp } from "./rewardBalanceService";
+import { legacyRewardPolicy } from "./legacyRewardPolicy";
+import { syncResearchProgress } from "./researchTargetService";
 import { starterBoostedXp } from "./starterBoostService";
 
 export type BugDexDropSource =
@@ -30,6 +32,7 @@ export type BugDexDropSource =
   | "buddy_common"
   | "buddy_rare"
   | "buddy_epic"
+  | "bug_brain_daily"
   | "real_bug_scan"
   | "combine";
 
@@ -90,6 +93,7 @@ const dropChances: Record<BugDexDropSource, number> = {
   buddy_common: 1,
   buddy_rare: 1,
   buddy_epic: 1,
+  bug_brain_daily: 1,
   real_bug_scan: 1,
   combine: 1
 };
@@ -116,6 +120,7 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   buddy_common: [["Gewoon", 100]],
   buddy_rare: [["Zeldzaam", 100]],
   buddy_epic: [["Episch", 100]],
+  bug_brain_daily: [["Zeldzaam", 100]],
   real_bug_scan: [["Gewoon", 100]],
   combine: [["Zeldzaam", 100]]
 };
@@ -406,7 +411,65 @@ export async function claimDailyLoginBug(user: User, preparedDrop?: BugDexDropRe
   return result;
 }
 
+async function grantLegacyPointReward(user: User, source: BugDexDropSource, points: number): Promise<BugDexDropResult | null> {
+  const safePoints = Math.max(0, Math.floor(points));
+  if (safePoints <= 0) return null;
+  const eventId = dailyLimitedRewardEventId(source);
+  const now = new Date().toISOString();
+
+  if (!isFirebaseConfigured) {
+    const demoEventId = eventId ? `${user.uid}:${eventId}` : null;
+    if (demoEventId && demoEvents.has(demoEventId)) return null;
+    if (demoEventId) demoEvents.add(demoEventId);
+    const totalPoints = Math.max(0, user.totalPoints + safePoints);
+    const updatedUser = { ...user, totalPoints, title: titleForPoints(totalPoints) };
+    updatedUser.badges = badgesForUser(updatedUser);
+    return { rewardType: "points", points: safePoints, isNew: false, source, updatedUser };
+  }
+
+  const userRef = doc(db, "users", user.uid);
+  const eventRef = eventId ? doc(db, "users", user.uid, "bugdexEvents", eventId) : null;
+  return runTransaction(db, async (transaction) => {
+    const userSnapshot = await transaction.get(userRef);
+    if (!userSnapshot.exists()) throw new Error("Gebruiker niet gevonden.");
+    if (eventRef) {
+      const eventSnapshot = await transaction.get(eventRef);
+      if (eventSnapshot.exists()) return null;
+    }
+    const currentUser = { ...user, ...(userSnapshot.data() as Partial<User>) } as User;
+    const totalPoints = Math.max(0, currentUser.totalPoints + safePoints);
+    const updatedUser = { ...currentUser, totalPoints, title: titleForPoints(totalPoints) };
+    updatedUser.badges = badgesForUser(updatedUser);
+    transaction.update(userRef, {
+      badges: updatedUser.badges,
+      title: updatedUser.title,
+      totalPoints: updatedUser.totalPoints
+    });
+    if (eventRef && eventId) {
+      transaction.set(eventRef, {
+        createdAt: now,
+        id: eventId,
+        rewardType: "points",
+        rewardValue: safePoints,
+        source
+      });
+    }
+    return { rewardType: "points", points: safePoints, isNew: false, source, updatedUser };
+  });
+}
+
 export async function rollBugDexDrop(user: User, source: BugDexDropSource): Promise<BugDexDropResult | null> {
+  const policy = legacyRewardPolicy(source);
+  if (policy.kind === "none") return null;
+  if (policy.kind === "points") {
+    const result = await grantLegacyPointReward(user, source, policy.points);
+    const evidenceId = dailyLimitedRewardEventId(source);
+    if (result?.updatedUser && policy.researchSource === "internal_contribution" && evidenceId) {
+      await syncResearchProgress(result.updatedUser, "internal_contribution", { eventId: evidenceId, kind: "legacy_event" }).catch(() => undefined);
+    }
+    return result;
+  }
+
   const bonuses = activeBugSquadBonuses(user);
   const chanceBoost = sourceChanceBoost(source, bonuses);
   if (Math.random() > Math.min(0.95, dropChances[source] * (1 + chanceBoost))) return null;
@@ -944,6 +1007,7 @@ const reportActionRewardSources = new Set<BugDexDropSource>(["bug_reported", "co
 
 function dailyLimitedRewardEventId(source: BugDexDropSource): string | null {
   if (source === "solo_campaign_clear") return `${source}-${localDayId()}`;
+  if (source === "bug_splat") return `${source}-${localDayId()}`;
   if (reportActionRewardSources.has(source)) return `report-action-${localDayId()}`;
   return null;
 }

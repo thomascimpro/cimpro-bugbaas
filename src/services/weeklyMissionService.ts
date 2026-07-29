@@ -1,10 +1,11 @@
 import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
-import { BugDexInventoryItem, BugReport, BugSmashDuel, User } from "../types";
-import { BugDexDropResult, BugDexDropSource, clearBugDexInventoryCache, pickBugDexRewardEntry, grantBugDexReward } from "./bugDexService";
-import { SoloCampaignBossProgress } from "./missionProgressService";
+import type { BugDexInventoryItem, BugReport, BugSmashDuel, User } from "../types";
+import { clearBugDexInventoryCache, grantBugDexReward, pickBugDexRewardEntry, type BugDexDropResult, type BugDexDropSource } from "./bugDexService";
+import type { SoloCampaignBossProgress } from "./missionProgressService";
 import { badgesForUser, titleForPoints } from "./pointsService";
 import { weeklyMissionBonusXp } from "./rewardBalanceService";
+import { soloCampaignMaxWave } from "./soloCampaignBalance";
 import { starterBoostedXp } from "./starterBoostService";
 
 export type WeeklyMission = {
@@ -41,36 +42,6 @@ const demoWeeklyClaims = new Set<string>();
 
 const weeklyMissionTemplates: MissionTemplate[] = [
   {
-    id: "walk-15k",
-    title: "mission.walk15Week",
-    target: 15,
-    reward: "mission.rewardXp15",
-    rewardSource: "weekly_mission",
-    rewardType: "xp",
-    rewardXp: 15,
-    progressFor: (user, _context, weekStart) => weeklyWalkingKm(user, weekStart)
-  },
-  {
-    id: "walk-30k",
-    title: "mission.walk30Week",
-    target: 30,
-    reward: "mission.rewardXp20",
-    rewardSource: "weekly_mission",
-    rewardType: "xp",
-    rewardXp: 20,
-    progressFor: (user, _context, weekStart) => weeklyWalkingKm(user, weekStart)
-  },
-  {
-    id: "walk-45k",
-    title: "mission.walk45Week",
-    target: 45,
-    reward: "mission.rewardXp25",
-    rewardSource: "weekly_mission",
-    rewardType: "xp",
-    rewardXp: 25,
-    progressFor: (user, _context, weekStart) => weeklyWalkingKm(user, weekStart)
-  },
-  {
     id: "walk-60k",
     title: "mission.walk60Week",
     target: 60,
@@ -91,41 +62,44 @@ const weeklyMissionTemplates: MissionTemplate[] = [
     progressFor: (user, { duels }, weekStart) => duels.filter((duel) => isUserDuel(duel, user) && isThisWeek(duel.scores?.[user.uid]?.submittedAt ?? "", weekStart)).length
   },
   {
-    id: "solo-bosses-10",
-    title: "mission.soloBosses10",
-    target: 10,
-    reward: "mission.rewardXp25",
-    rewardSource: "weekly_mission",
-    rewardType: "xp",
-    rewardXp: 25,
-    progressFor: (_user, { bossProgress }) => bossProgress.weekCount
+    id: "solo-finale",
+    title: "mission.soloCampaignFinale",
+    target: soloCampaignMaxWave,
+    reward: "mission.rewardEpicBugXp70",
+    rewardSource: "weekly_mission_epic",
+    rewardType: "bug",
+    rewardXp: 70,
+    progressFor: (_user, { soloCampaignWave }) => soloCampaignWave
   }
 ];
 
-export function weeklyMissionSet(user: User, bugs: BugReport[], options: { bossProgress?: SoloCampaignBossProgress; duels?: BugSmashDuel[]; inventory?: BugDexInventoryItem[]; now?: Date; soloCampaignWave?: number } = {}): WeeklyMission[] {
+export function weeklyMissionSet(user: User, bugs: BugReport[], options: {
+  bossProgress?: SoloCampaignBossProgress;
+  duels?: BugSmashDuel[];
+  inventory?: BugDexInventoryItem[];
+  now?: Date;
+  soloCampaignWave?: number;
+} = {}): WeeklyMission[] {
   const now = options.now ?? new Date();
   const weekStart = startOfIsoWeek(now);
   const seed = weekNumber(now);
   const context: WeeklyMissionContext = {
-    bugs,
     bossProgress: options.bossProgress ?? { dayCount: 0, dayId: "", updatedAt: "", weekCount: 0, weekId: "" },
+    bugs,
     duels: options.duels ?? [],
     inventory: options.inventory ?? [],
     soloCampaignWave: options.soloCampaignWave ?? 1
   };
-  return weeklyMissionTemplates.map((template) => {
-    const progress = Math.min(template.target, template.progressFor(user, context, weekStart));
-    return {
-      id: `weekly-v3-${template.id}-${seed}`,
-      title: template.title,
-      target: template.target,
-      progress,
-      reward: template.reward,
-      rewardSource: template.rewardSource,
-      rewardType: template.rewardType,
-      rewardXp: template.rewardXp
-    };
-  });
+  return weeklyMissionTemplates.map((template) => ({
+    id: `weekly-v3-${template.id}-${seed}`,
+    progress: Math.min(template.target, template.progressFor(user, context, weekStart)),
+    reward: template.reward,
+    rewardSource: template.rewardSource,
+    rewardType: template.rewardType,
+    rewardXp: template.rewardXp,
+    target: template.target,
+    title: template.title
+  }));
 }
 
 export function weeklyMissionLabel(now = new Date()): string {
@@ -134,9 +108,7 @@ export function weeklyMissionLabel(now = new Date()): string {
 
 export async function claimedWeeklyMissionIds(user: User, missionIds: string[]): Promise<Set<string>> {
   if (!missionIds.length) return new Set();
-  if (!isFirebaseConfigured) {
-    return new Set(missionIds.filter((id) => demoWeeklyClaims.has(`${user.uid}:${id}`)));
-  }
+  if (!isFirebaseConfigured) return new Set(missionIds.filter((id) => demoWeeklyClaims.has(`${user.uid}:${id}`)));
   const snapshots = await Promise.all(missionIds.map((id) => getDoc(doc(db, "users", user.uid, "weeklyMissionClaims", id))));
   return new Set(snapshots.map((snapshot, index) => snapshot.exists() ? missionIds[index] : "").filter(Boolean));
 }
@@ -332,7 +304,7 @@ export async function claimWeeklyMissionReward(user: User, mission: WeeklyMissio
       missionTitle: mission.title,
       rewardType: drop ? "bugdex_plus_xp" : mission.rewardType,
       rewardXp: mission.rewardXp,
-      claimedAt: now
+      claimedAt: now,
     };
     if (rewardEntry && mission.rewardSource) {
       claimData.rewardBugId = rewardEntry.id;
@@ -373,17 +345,9 @@ function weekNumber(date: Date): number {
   return Math.ceil((((next.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
-function isoWeekId(date = new Date()): string {
-  const next = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-  const day = next.getUTCDay() || 7;
-  next.setUTCDate(next.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(next.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((next.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  return `${next.getUTCFullYear()}-${String(week).padStart(2, "0")}`;
-}
-
 function weeklyWalkingKm(user: User, weekStart: Date): number {
-  return user.movementRegisteredWeek === isoWeekId(weekStart) ? Math.floor(((user.movementRegisteredWeekKm ?? 0) + 0.0001) * 10) / 10 : 0;
+  if (!user.movementRegisteredDay || !isThisWeek(user.movementRegisteredDay, weekStart)) return 0;
+  return Math.max(0, user.movementRegisteredDayKm ?? 0);
 }
 
 function isUserDuel(duel: BugSmashDuel, user: User): boolean {
@@ -391,9 +355,9 @@ function isUserDuel(duel: BugSmashDuel, user: User): boolean {
 }
 
 function isThisWeek(value: string, weekStart: Date): boolean {
-  if (!value) return false;
   const date = new Date(value);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
-  return date >= weekStart && date < weekEnd;
+  if (!Number.isFinite(date.getTime())) return false;
+  const end = new Date(weekStart);
+  end.setDate(end.getDate() + 7);
+  return date >= weekStart && date < end;
 }

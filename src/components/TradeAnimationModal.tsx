@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Easing, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { nativeDriver } from "../services/animationPlatform";
 import { entryByBugId } from "../services/bugDexService";
 import { bugDexEntryName, rarityLabel, useI18n } from "../services/i18n";
 import { BugDexRarity } from "../services/pointsService";
@@ -28,6 +29,7 @@ function tradeBugIds(trade: TradeRequest, side: "offer" | "request") {
 
 export function TradeAnimationModal({ currentUser, trade, onClose }: Props) {
   const { t } = useI18n();
+  const { height } = useWindowDimensions();
   const cardScale = useRef(new Animated.Value(0.94)).current;
   const swap = useRef(new Animated.Value(0)).current;
   const flash = useRef(new Animated.Value(0)).current;
@@ -40,33 +42,35 @@ export function TradeAnimationModal({ currentUser, trade, onClose }: Props) {
     flash.setValue(0);
     reveal.setValue(0);
 
-    Animated.sequence([
+    const animation = Animated.sequence([
       Animated.parallel([
         Animated.spring(cardScale, {
           friction: 6,
           tension: 85,
           toValue: 1,
-          useNativeDriver: true
+          useNativeDriver: nativeDriver
         }),
         Animated.timing(swap, {
           duration: 1450,
           easing: Easing.inOut(Easing.cubic),
           toValue: 1,
-          useNativeDriver: true
+          useNativeDriver: nativeDriver
         }),
         Animated.sequence([
           Animated.delay(860),
-          Animated.timing(flash, { duration: 150, toValue: 1, useNativeDriver: true }),
-          Animated.timing(flash, { duration: 460, toValue: 0, useNativeDriver: true })
+          Animated.timing(flash, { duration: 150, toValue: 1, useNativeDriver: nativeDriver }),
+          Animated.timing(flash, { duration: 460, toValue: 0, useNativeDriver: nativeDriver })
         ])
       ]),
       Animated.spring(reveal, {
         friction: 5,
         tension: 95,
         toValue: 1,
-        useNativeDriver: true
+        useNativeDriver: nativeDriver
       })
-    ]).start();
+    ]);
+    animation.start();
+    return () => animation.stop();
   }, [cardScale, flash, reveal, swap, trade]);
 
   if (!trade) return null;
@@ -92,11 +96,11 @@ export function TradeAnimationModal({ currentUser, trade, onClose }: Props) {
   return (
     <Modal transparent animationType="fade" visible={Boolean(trade)} statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <Animated.View style={[styles.card, { transform: [{ scale: cardScale }] }]}>
+        <Animated.View style={[styles.card, height < 720 && styles.cardCompact, { transform: [{ scale: cardScale }] }]}>
           <Text style={styles.kicker}>{t("trade.completed")}</Text>
           <Text style={styles.subtitle}>{t("trade.with", { name: partnerName })}</Text>
 
-          <View style={styles.stage}>
+          <View style={[styles.stage, height < 720 && styles.stageCompact]}>
             <Animated.View style={[styles.beam, { opacity: beamOpacity }]} />
             <Animated.View style={[styles.orbit, styles.orbitA, { opacity: beamOpacity, transform: [{ rotate }] }]} />
             <Animated.View style={[styles.orbit, styles.orbitB, { opacity: beamOpacity, transform: [{ rotate }] }]} />
@@ -121,7 +125,7 @@ export function TradeAnimationModal({ currentUser, trade, onClose }: Props) {
           </View>
 
           <Animated.View style={[styles.result, { opacity: reveal, transform: [{ scale: revealScale }] }]}>
-            <View style={styles.resultArt}>
+            <View style={[styles.resultArt, height < 720 && styles.resultArtCompact]}>
               <View style={styles.resultBugGrid}>
                 {receivedBugIds.slice(0, 6).map((bugId, index) => (
                   <BugArtImage key={`${bugId}-${index}`} bugId={bugId} size={receivedBugIds.length > 1 ? 46 : 116} />
@@ -147,23 +151,34 @@ export function TradeAnimationModal({ currentUser, trade, onClose }: Props) {
 const styles = StyleSheet.create({
   backdrop: {
     alignItems: "center",
-    backgroundColor: "rgba(6,18,14,0.68)",
+    backgroundColor: "rgba(8,12,28,0.8)",
     flex: 1,
     justifyContent: "center",
     padding: 22
   },
   card: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7bd57",
-    borderRadius: 8,
+    backgroundColor: "#fff9e9",
+    borderColor: "#d9ad50",
+    borderRadius: 28,
     borderWidth: 2,
+    elevation: 16,
+    maxHeight: "95%",
+    maxWidth: 480,
     overflow: "hidden",
     padding: 20,
+    shadowColor: "#050817",
+    shadowOffset: { height: 14, width: 0 },
+    shadowOpacity: 0.32,
+    shadowRadius: 22,
     width: "100%"
   },
+  cardCompact: {
+    paddingBottom: 14,
+    paddingTop: 14
+  },
   kicker: {
-    color: "#15724f",
+    color: "#6b3fc6",
     fontSize: 16,
     fontWeight: "900",
     textTransform: "uppercase"
@@ -182,6 +197,11 @@ const styles = StyleSheet.create({
     marginTop: 14,
     width: "100%"
   },
+  stageCompact: {
+    height: 142,
+    marginTop: 8,
+    transform: [{ scale: 0.88 }]
+  },
   beam: {
     backgroundColor: "#d7bd57",
     borderRadius: 8,
@@ -190,7 +210,7 @@ const styles = StyleSheet.create({
     width: 190
   },
   orbit: {
-    borderColor: "#15724f",
+    borderColor: "#6b3fc6",
     borderRadius: 75,
     borderStyle: "dashed",
     borderWidth: 2,
@@ -214,9 +234,9 @@ const styles = StyleSheet.create({
   },
   tradePod: {
     alignItems: "center",
-    backgroundColor: "#eef4ed",
-    borderColor: "#c6d3cc",
-    borderRadius: 8,
+    backgroundColor: "#f4efff",
+    borderColor: "#cbb8ed",
+    borderRadius: 18,
     borderWidth: 1,
     height: 112,
     justifyContent: "center",
@@ -252,9 +272,9 @@ const styles = StyleSheet.create({
   },
   result: {
     alignItems: "center",
-    backgroundColor: "#f7faf6",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#f8f2e5",
+    borderColor: "#dfca9d",
+    borderRadius: 20,
     borderWidth: 1,
     padding: 14,
     width: "100%"
@@ -263,11 +283,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff9df",
     borderColor: "#d7bd57",
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 1,
     height: 136,
     justifyContent: "center",
     width: 136
+  },
+  resultArtCompact: {
+    height: 100,
+    width: 100
   },
   resultBugGrid: {
     alignItems: "center",
@@ -285,7 +309,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase"
   },
   resultName: {
-    color: "#102018",
+    color: "#17182b",
     fontSize: 27,
     fontWeight: "900",
     marginTop: 2,
@@ -317,8 +341,9 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: "#15724f",
-    borderRadius: 8,
+    backgroundColor: "#6b3fc6",
+    borderRadius: 16,
+    elevation: 4,
     marginTop: 16,
     paddingHorizontal: 30,
     paddingVertical: 13

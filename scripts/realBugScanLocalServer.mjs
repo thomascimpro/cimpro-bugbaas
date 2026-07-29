@@ -6,9 +6,10 @@ import { createFirebaseTokenVerifier } from "../server/realBugScan/firebaseToken
 import { createFirebaseUsageStore } from "../server/realBugScan/firebaseUsageStore.mjs";
 import { createRealBugIdentifyHandler } from "../server/realBugScan/handler.mjs";
 import { createOpenAIImageIdentifier } from "../server/realBugScan/openaiVision.mjs";
+import receiptModule from "../shared/realBugScanReceipt.cjs";
 
-function loadLocalEnv() {
-  const file = resolve(process.cwd(), ".env.real-bug-scan.local");
+function loadEnvFile(filename) {
+  const file = resolve(process.cwd(), filename);
   if (!existsSync(file)) return;
   const lines = readFileSync(file, "utf8").split(/\r?\n/);
   for (const line of lines) {
@@ -40,7 +41,8 @@ function readBody(request, maxBytes = 6_500_000) {
   });
 }
 
-loadLocalEnv();
+loadEnvFile(".env");
+loadEnvFile(".env.real-bug-scan.local");
 
 const port = Number(process.env.BUG_SCAN_API_PORT || 8787);
 const allowedOrigins = String(process.env.BUG_SCAN_ALLOWED_ORIGINS || "http://localhost:8081,http://localhost:19006")
@@ -54,6 +56,7 @@ const handler = createRealBugIdentifyHandler({
   verifyIdToken: createFirebaseTokenVerifier({ apiKey: process.env.FIREBASE_API_KEY }),
   checkUsage: usageStore.check,
   reserveUsage: usageStore.reserve,
+  signReceipt: receiptModule.createScanReceiptSigner({ secret: process.env.BUG_SCAN_RECEIPT_SECRET }),
   identifyImage: createOpenAIImageIdentifier({
     apiKey: process.env.OPENAI_API_KEY,
     model: process.env.OPENAI_BUG_SCAN_MODEL || "gpt-5-mini"

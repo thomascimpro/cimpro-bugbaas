@@ -1,26 +1,44 @@
 import React, { useEffect, useRef, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert, Image, Modal, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from "react-native";
+import { Alert, Animated, Image, Modal, Pressable, ScrollView, StyleProp, StyleSheet, Text, TextInput, View, ViewStyle } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
+import { CrownGlow } from "../components/CrownGlow";
+import { CrownUpgradeModal } from "../components/CrownUpgradeModal";
 import { BugJarArt } from "../components/BugJarArt";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
+import {
+  BugDexCategoryEmblem,
+  LockedBugSilhouette,
+  RarityMarks,
+  SpecimenFrame,
+  specimenRarityAccent
+} from "../components/collection/SpecimenArchiveVisuals";
 import { MythicRarityFrame } from "../components/MythicRarityFrame";
 import { TradeAnimationModal } from "../components/TradeAnimationModal";
+import { GameUiIcon } from "../components/ui/GameUiIcon";
+import { nativeDriver } from "../services/animationPlatform";
 import { BugDexDropResult, DailyUpgradeUsage, bugDexInventoryMap, combineBugDexDuplicates, combineDifferentBugDexUpgrade, combineRequiredCount, differentUpgradeRequiredCount, entryByBugId, getDailyUpgradeUsage, listBugDexInventory, listBugDexUnlocks } from "../services/bugDexService";
 import { allBugDexSetId, bugDexSetById, bugDexSets } from "../services/bugDexSetService";
 import { bugMasteryLevelCap, bugMasteryNextUnlockLevel, bugMasterySessionSkill, bugMasterySkills, bugMasteryUnlockedSkills, bugMasteryXpForNextLevel, copyBugMasteryForTrade, listBugMastery, normalizeBugMastery } from "../services/bugMasteryService";
+import { bugCrownPowerMultiplier, bugCrownProgress, bugCrownRankForMastery, type BugCrownRank } from "../services/bugCrownService";
 import { activeBugSquadBonusList, maxActiveBugSquadSize, sanitizeActiveBugSquad, BugSquadBonusCategory } from "../services/bugSquadService";
+import { bugSquadHelperInfo, helperEffectDescription } from "../services/bugSquadHelperInfo";
 import { bugDexEntryName, bugDexEntryNote, bugDexEntryTitle, rarityLabel, useI18n } from "../services/i18n";
 import { notifyTradeAccepted, notifyTradeRequest } from "../services/notificationService";
 import { bugDexEntries, BugDexEntry, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
 import { cancelTradeRequest, createTradeRequest, listTradeRequests, markTradeRequesterSeen, respondToTradeRequest } from "../services/tradeService";
 import { listUsersLight, updateUserBugSquad } from "../services/userService";
+import { useReducedMotion } from "../theme/useReducedMotion";
+import { useResponsiveLayout } from "../theme/useResponsiveLayout";
 import { BugDexInventoryItem, BugDexUnlock, BugMastery, BugMasterySkill, TradeRequest, User } from "../types";
+import { sortCollectionEntriesByLatest } from "./CollectionScreenModel";
 import { sharedStyles } from "./sharedStyles";
 
 type Props = {
+  embedded?: boolean;
   openTradeRequest?: number;
+  onOpenMuseum?: () => void;
   onUserUpdated?: (user: User) => void;
   user: User;
   onBack: () => void;
@@ -31,13 +49,7 @@ type DexRarityFilter = BugDexRarity | "all";
 type TradeRoleFilter = BugMastery["role"] | "all";
 type TradeCopyOption = { bugId: string; copyNumber: number; item: BugDexInventoryItem; key: string; totalCopies: number };
 
-const rarityColors: Record<BugDexRarity, string> = {
-  Gewoon: "#2f9e44",
-  Zeldzaam: "#228be6",
-  Episch: "#9c36b5",
-  Legendarisch: "#f59f00",
-  Mythisch: "#ef4444"
-};
+const rarityColors: Record<BugDexRarity, string> = specimenRarityAccent;
 const rarityStars: Record<BugDexRarity, string> = {
   Gewoon: "★",
   Zeldzaam: "★★",
@@ -74,10 +86,12 @@ const emptyDailyUpgradeUsage: DailyUpgradeUsage = {
   "Legendarisch-Mythisch": false
 };
 const activeBugSquadHeroImage = require("../../assets/generated/active-bug-squad-selection-hd.jpg");
-const bugDexWorkshopImage = require("../../assets/generated/bugdex-workshop-shortcut.png");
-const bugDexUpgradeImage = require("../../assets/generated/bugdex-upgrades-button-hd.png");
+const bugDexWorkshopImage = require("../../assets/generated/bugdex-workshop-shortcut.webp");
+const bugDexUpgradeImage = require("../../assets/generated/bugdex-upgrades-button-hd.jpg");
 const rarityStarImage = require("../../assets/buddy/kenney/extracted/ui-pack/PNG/Yellow/Default/star.png");
 const maxTradeBugSelection = 6;
+const bugDexCardBatchSize = 24;
+const tradeOptionBatchSize = 24;
 
 const completedTradeStorageKey = (uid: string) => `bugbaas:seenCompletedTrades:${uid}`;
 
@@ -137,8 +151,10 @@ function RarityUpgradeRoute({ rarity, targetRarity, label }: { rarity: BugDexRar
   );
 }
 
-export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack }: Props) {
+export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMuseum, onUserUpdated, user, onBack }: Props) {
   const { t, tr } = useI18n();
+  const layout = useResponsiveLayout();
+  const reducedMotion = useReducedMotion();
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
   const [unlockHistory, setUnlockHistory] = useState<BugDexUnlock[]>([]);
   const [masteryByBugId, setMasteryByBugId] = useState<Record<string, BugMastery>>({});
@@ -179,8 +195,22 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   const [dailyUpgradeUsage, setDailyUpgradeUsage] = useState<DailyUpgradeUsage>(emptyDailyUpgradeUsage);
   const [upgradeSelections, setUpgradeSelections] = useState<Record<UpgradeRarity, string[]>>(emptyUpgradeSelections);
   const [selectedBugId, setSelectedBugId] = useState("");
+  const [crownUpgrade, setCrownUpgrade] = useState<{ bugId: string; rank: Exclude<BugCrownRank, "none"> } | null>(null);
+  const [visibleCardCount, setVisibleCardCount] = useState(bugDexCardBatchSize);
+  const [visibleTradeOfferCount, setVisibleTradeOfferCount] = useState(tradeOptionBatchSize);
+  const [visibleTradeRequestCount, setVisibleTradeRequestCount] = useState(tradeOptionBatchSize);
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+  const [inventoryError, setInventoryError] = useState("");
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [dashboardPage, setDashboardPage] = useState(0);
+  const dashboardIntro = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView | null>(null);
+  const squadSectionY = useRef(0);
   const tradeSectionY = useRef(0);
+  const upgradeSectionY = useRef(0);
+  const dexSectionY = useRef(0);
+  const previousCrownRanks = useRef<Record<string, BugCrownRank>>({});
+  const crownRanksInitialized = useRef(false);
   const inventoryById = bugDexInventoryMap(inventory);
   const unlockById = Object.fromEntries(unlockHistory.map((item) => [item.bugId, item]));
   const tier = getTierForPoints(user.totalPoints);
@@ -203,16 +233,23 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     counts[bugId] = (counts[bugId] ?? 0) + 1;
     return counts;
   }, {});
-  const headerEntry = unlockedEntries[unlockedEntries.length - 1];
+  const latestUnlockedEntries = sortCollectionEntriesByLatest(unlockedEntries, inventory, unlockHistory);
+  const headerEntry = latestUnlockedEntries[0];
   const dexCards = selectedEntries
     .filter((entry) => selectedRarityFilter === "all" || entry.rarity === selectedRarityFilter)
     .map((entry) => ({ entry, index: bugDexEntries.findIndex((item) => item.id === entry.id), inventoryItem: inventoryById[entry.id], unlockItem: unlockById[entry.id] }))
     .filter(({ inventoryItem }) => showLocked || Boolean(inventoryItem));
+  const visibleDexCards = dexCards.slice(0, visibleCardCount);
+  const dashboardEntries = latestUnlockedEntries;
+  const dashboardPageSize = layout.isCompact ? 2 : 4;
+  const dashboardPageCount = Math.max(1, Math.ceil(dashboardEntries.length / dashboardPageSize));
+  const dashboardCards = dashboardEntries.slice(dashboardPage * dashboardPageSize, (dashboardPage + 1) * dashboardPageSize);
   const tradeInventory = sortTradeInventory(inventory.filter((item) => item.count > 0));
   const tradeCopyOptions = tradeInventory
     .map((item) => tradeCopyOptionsForItem(item, spendableCountForItem(item))[0])
     .filter((option): option is TradeCopyOption => Boolean(option));
   const filteredTradeCopyOptions = filterTradeOptions(tradeCopyOptions, tradeOfferRarityFilter, tradeOfferRoleFilter, tradeOfferSearch, masteryByBugId);
+  const visibleTradeCopyOptions = filteredTradeCopyOptions.slice(0, visibleTradeOfferCount);
   const tradeOfferIds = tradeOfferCopyKeys.map(tradeCopyBugId);
   const squadChoiceInventory = [...tradeInventory].sort((a, b) => {
     const firstEntry = entryByBugId(a.bugId);
@@ -227,6 +264,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     .map((item) => tradeCopyOptionsForItem(item, item.count)[0])
     .filter((option): option is TradeCopyOption => Boolean(option));
   const filteredRecipientTradeCopyOptions = filterTradeOptions(recipientTradeCopyOptions, tradeRequestRarityFilter, tradeRequestRoleFilter, tradeRequestSearch, recipientMasteryMap);
+  const visibleRecipientTradeCopyOptions = filteredRecipientTradeCopyOptions.slice(0, visibleTradeRequestCount);
   const tradeRequestIds = tradeRequestCopyKeys.map(tradeCopyBugId);
   const recipientUnlockedTradeBugIds = new Set([...recipientInventory.map((item) => item.bugId), ...recipientUnlockHistory.map((item) => item.bugId)]);
   const upgradeOptions = upgradeRarities.map((rarity) => {
@@ -285,8 +323,25 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   }, [user.uid]);
 
   useEffect(() => {
+    dashboardIntro.setValue(reducedMotion ? 1 : 0);
+    if (reducedMotion) return;
+    Animated.timing(dashboardIntro, {
+      duration: 360,
+      toValue: 1,
+      useNativeDriver: nativeDriver
+    }).start();
+  }, [dashboardIntro, reducedMotion]);
+
+  useEffect(() => {
+    setDashboardPage((current) => Math.min(current, dashboardPageCount - 1));
+  }, [dashboardPageCount]);
+
+  useEffect(() => {
     if (openTradeRequest <= 0) return;
+    setWorkspaceOpen(true);
+    setSquadExpanded(false);
     setTradeExpanded(true);
+    setUpgradeExpanded(false);
     const timer = setTimeout(() => {
       scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, tradeSectionY.current - 16) });
     }, 80);
@@ -341,6 +396,18 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   }, [activeSquadIds, inventory]);
 
   useEffect(() => {
+    setVisibleCardCount(bugDexCardBatchSize);
+  }, [selectedRarityFilter, selectedSetId, showLocked]);
+
+  useEffect(() => {
+    setVisibleTradeOfferCount(tradeOptionBatchSize);
+  }, [tradeOfferRarityFilter, tradeOfferRoleFilter, tradeOfferSearch]);
+
+  useEffect(() => {
+    setVisibleTradeRequestCount(tradeOptionBatchSize);
+  }, [tradeRecipientId, tradeRequestRarityFilter, tradeRequestRoleFilter, tradeRequestSearch]);
+
+  useEffect(() => {
     const validKeys = new Set(tradeCopyOptions.map((item) => item.key));
     const nextOfferKeys = tradeOfferCopyKeys.filter((key) => validKeys.has(key));
     if (nextOfferKeys.length === tradeOfferCopyKeys.length) return;
@@ -359,22 +426,54 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     setMasteryByBugId(Object.fromEntries(items.map((item) => [item.bugId, item])));
   }
 
+  useEffect(() => {
+    previousCrownRanks.current = {};
+    crownRanksInitialized.current = false;
+    setCrownUpgrade(null);
+  }, [user.uid]);
+
+  useEffect(() => {
+    const nextRanks = Object.fromEntries(Object.entries(masteryByBugId).map(([bugId, mastery]) => {
+      const entry = entryByBugId(bugId);
+      return [bugId, entry ? bugCrownRankForMastery(entry, mastery) : "none"];
+    })) as Record<string, BugCrownRank>;
+    if (!crownRanksInitialized.current) {
+      previousCrownRanks.current = nextRanks;
+      crownRanksInitialized.current = true;
+      return;
+    }
+    const rankOrder: BugCrownRank[] = ["none", "crowned", "elite", "master", "legend"];
+    const upgraded = Object.entries(nextRanks).find(([bugId, rank]) => rankOrder.indexOf(rank) > rankOrder.indexOf(previousCrownRanks.current[bugId] ?? "none"));
+    if (upgraded && upgraded[1] !== "none") {
+      setCrownUpgrade({ bugId: upgraded[0], rank: upgraded[1] as Exclude<BugCrownRank, "none"> });
+    }
+    previousCrownRanks.current = nextRanks;
+  }, [masteryByBugId]);
+
   async function refreshTradeUsers() {
     const tradeUsers = (await listUsersLight()).filter((item) => item.uid !== user.uid);
     setUsers(tradeUsers);
   }
 
   async function refreshInventory() {
-    const items = await listBugDexInventory(user);
-    const unlocks = await listBugDexUnlocks(user).catch(() => []);
-    setInventory(items);
-    setUnlockHistory(unlocks);
-    const storedSquad = sanitizeActiveBugSquad(user.activeBugSquad);
-    const availableSquad = sanitizeActiveBugSquad(storedSquad, items);
-    setActiveSquadIds(availableSquad);
-    if (storedSquad.join("|") !== availableSquad.join("|")) {
-      const updated = await updateUserBugSquad({ ...user, activeBugSquad: storedSquad }, availableSquad);
-      onUserUpdated?.(updated);
+    setInventoryLoading(true);
+    setInventoryError("");
+    try {
+      const items = await listBugDexInventory(user);
+      const unlocks = await listBugDexUnlocks(user).catch(() => []);
+      setInventory(items);
+      setUnlockHistory(unlocks);
+      const storedSquad = sanitizeActiveBugSquad(user.activeBugSquad);
+      const availableSquad = sanitizeActiveBugSquad(storedSquad, items);
+      setActiveSquadIds(availableSquad);
+      if (storedSquad.join("|") !== availableSquad.join("|")) {
+        const updated = await updateUserBugSquad({ ...user, activeBugSquad: storedSquad }, availableSquad);
+        onUserUpdated?.(updated);
+      }
+    } catch (error) {
+      setInventoryError(error instanceof Error ? error.message : t("bugdex.archiveLoadError"));
+    } finally {
+      setInventoryLoading(false);
     }
   }
 
@@ -672,8 +771,40 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     ]);
   }
 
+  function openCollectionWorkspace(section: "squad" | "trade" | "upgrade" | "dex") {
+    setWorkspaceOpen(true);
+    if (section === "squad") {
+      setSquadExpanded(true);
+      setTradeExpanded(false);
+      setUpgradeExpanded(false);
+    }
+    if (section === "trade") {
+      setSquadExpanded(false);
+      setTradeExpanded(true);
+      setUpgradeExpanded(false);
+    }
+    if (section === "upgrade") {
+      setSquadExpanded(false);
+      setTradeExpanded(false);
+      setUpgradeExpanded(true);
+    }
+    setTimeout(() => {
+      const targetY = section === "squad"
+        ? squadSectionY.current
+        : section === "trade"
+          ? tradeSectionY.current
+          : section === "upgrade"
+            ? upgradeSectionY.current
+            : dexSectionY.current;
+      scrollRef.current?.scrollTo({ animated: false, y: Math.max(0, targetY - 12) });
+    }, 120);
+  }
+
   function openTradeWorkshop() {
+    setWorkspaceOpen(true);
+    setSquadExpanded(false);
     setTradeExpanded(true);
+    setUpgradeExpanded(false);
     setTimeout(() => {
       scrollRef.current?.scrollTo({ animated: true, y: Math.max(0, tradeSectionY.current - 16) });
     }, 80);
@@ -710,6 +841,25 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
 
   function squadBonusValue(category: BugSquadBonusCategory, value: number): string {
     return `+${Math.round(value * 100)}%`;
+  }
+
+  function bugDexSourceLabel(source: string) {
+    const keyBySource: Record<string, string> = {
+      bug_fixed: "bugdex.source.fixed",
+      bug_reported: "bugdex.source.report",
+      bug_splat: "bugdex.source.arcade",
+      combine: "bugdex.source.combine",
+      comment: "bugdex.source.teamwork",
+      daily_login: "bugdex.source.daily",
+      duel_reward: "bugdex.source.duel",
+      rank_up: "bugdex.source.rank",
+      rank_unlock: "bugdex.source.rank",
+      real_bug_scan: "bugdex.source.scan",
+      status_update: "bugdex.source.teamwork",
+      upvote_given: "bugdex.source.teamwork",
+      walking: "bugdex.source.exploration"
+    };
+    return t(keyBySource[source] ?? "bugdex.source.other");
   }
 
   function serviceErrorText(message: string) {
@@ -820,6 +970,14 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
   const dexList = (
     <>
       <View style={styles.setCard}>
+        <View style={styles.setEmblemWrap}>
+          <BugDexCategoryEmblem
+            badgeId={selectedSet?.badgeId ?? "bugdex-set-all"}
+            completed={selectedSetProgress >= 100}
+            progress={selectedSetProgress}
+            size={62}
+          />
+        </View>
         <Pressable
           accessibilityRole="button"
           style={styles.setPickerButton}
@@ -900,26 +1058,46 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
         </View>
       </View>
 
-      {dexCards.length ? (
+      {inventoryLoading ? (
+        <View style={styles.emptyDexCard}>
+          <LockedBugSilhouette size={78} />
+          <Text style={styles.emptyDexTitle}>{t("bugdex.archiveLoading")}</Text>
+          <Text style={styles.emptyDexText}>{t("bugdex.archiveLoadingMeta")}</Text>
+        </View>
+      ) : inventoryError ? (
+        <View style={[styles.emptyDexCard, styles.errorDexCard]}>
+          <LockedBugSilhouette size={78} />
+          <Text style={styles.emptyDexTitle}>{t("bugdex.archiveLoadError")}</Text>
+          <Text style={styles.emptyDexText}>{inventoryError}</Text>
+          <Pressable style={styles.loadMoreButton} onPress={() => void refreshInventory()}>
+            <Text style={styles.loadMoreButtonText}>{t("bugdex.archiveRetry")}</Text>
+          </Pressable>
+        </View>
+      ) : dexCards.length ? (
         <View style={styles.grid}>
-          {dexCards.map(({ entry, index, inventoryItem, unlockItem }) => {
+          {visibleDexCards.map(({ entry, index, inventoryItem, unlockItem }) => {
             const color = rarityColors[entry.rarity];
             const owned = Boolean(inventoryItem);
             const everHad = !owned && Boolean(unlockItem);
             const revealed = owned || everHad;
             const isMythic = owned && entry.rarity === "Mythisch";
             const mastery = masteryForEntry(entry);
+            const crownRank = bugCrownRankForMastery(entry, mastery);
             return (
               <Pressable key={entry.id} disabled={!revealed} style={[styles.card, !revealed && styles.lockedCard, everHad && styles.everHadCard, isMythic && styles.mythicCard, { borderColor: revealed ? color : "#cbd8d1" }]} onPress={() => setSelectedBugId(entry.id)}>
                 <View style={styles.cardTop}>
                   <View style={[styles.numberPill, { backgroundColor: revealed ? color : "#87958e" }]}>
                     <Text style={styles.numberText}>{String(index + 1).padStart(2, "0")}</Text>
                   </View>
-                  {revealed ? <RarityStars rarity={entry.rarity} compact /> : <Text style={[styles.rarity, { color: "#87958e" }]}>???</Text>}
+                  {revealed ? <RarityMarks compact rarity={entry.rarity} /> : <RarityMarks compact rarity="Gewoon" />}
                 </View>
-                <View style={[styles.bugWrap, !revealed && styles.lockedBugWrap, everHad && styles.everHadBugWrap, isMythic && styles.mythicBugWrap]}>
-                  {revealed ? <BugArtImage bugId={entry.id} size={92} /> : <Text style={styles.lockedMark}>?</Text>}
-                </View>
+                <SpecimenFrame rarity={entry.rarity} style={styles.bugWrap}>
+                  {revealed ? (
+                    <CrownGlow rank={crownRank} size={92}>
+                      <BugArtImage bugId={entry.id} size={92} />
+                    </CrownGlow>
+                  ) : <LockedBugSilhouette size={82} />}
+                </SpecimenFrame>
                 <View style={styles.nameRow}>
                   <Text style={[styles.name, !revealed && styles.lockedName, everHad && styles.everHadText]} numberOfLines={1}>{revealed ? bugDexEntryName(entry, t) : t("bugdex.unknown")}</Text>
                   {owned && inventoryItem.count > 1 && <Text style={styles.countPill}>x{inventoryItem.count}</Text>}
@@ -942,6 +1120,11 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
               </Pressable>
             );
           })}
+          {visibleDexCards.length < dexCards.length ? (
+            <Pressable style={styles.loadMoreButton} onPress={() => setVisibleCardCount((count) => count + bugDexCardBatchSize)}>
+              <Text style={styles.loadMoreButtonText}>{t("bugdex.archiveShowMore", { count: Math.min(bugDexCardBatchSize, dexCards.length - visibleDexCards.length) })}</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : (
         <View style={styles.emptyDexCard}>
@@ -952,7 +1135,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     </>
   );
 
-  return (
+  const collectionWorkspace = (
     <ScrollView ref={scrollRef} contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.headerText}>
@@ -965,12 +1148,25 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
           </View>
         ) : (
           <View style={styles.headerEmptyIcon}>
-            <Text style={styles.headerEmptyText}>?</Text>
+            <LockedBugSilhouette size={62} />
           </View>
         )}
       </View>
+      {!embedded ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="Open museum" onPress={onOpenMuseum} style={styles.museumFeature}>
+          <Image source={require("../../assets/generated/museum-gallery-v2.jpg")} style={styles.museumFeatureArt} />
+          <View style={styles.museumFeatureCopy}><Text style={styles.museumKicker}>BUGBAAS 3.0</Text><Text style={styles.museumTitle}>Museum</Text><Text style={styles.museumMeta}>Bekijk je collectie als levende terrariums.</Text></View>
+          <Text style={styles.museumArrow}>›</Text>
+        </Pressable>
+      ) : null}
 
-      <Pressable style={[styles.squadFeatureCard, squadExpanded && styles.squadFeatureCardActive]} onPress={() => setSquadExpanded((current) => !current)}>
+      <Pressable
+        style={[styles.squadFeatureCard, squadExpanded && styles.squadFeatureCardActive]}
+        onLayout={(event) => {
+          squadSectionY.current = event.nativeEvent.layout.y;
+        }}
+        onPress={() => setSquadExpanded((current) => !current)}
+      >
         <Image source={activeBugSquadHeroImage} style={styles.squadFeatureImage} />
         <View style={styles.squadFeatureOverlay}>
           <View style={styles.squadFeatureCopy}>
@@ -1035,6 +1231,29 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
             })}
           </View>
           <Text style={styles.tradeHint}>{t("bugdex.activeSquadHint")}</Text>
+          <View style={styles.helperInfoPanel}>
+            <View style={styles.helperInfoHeader}>
+              <Text style={styles.helperInfoTitle}>{t("duel.helperInfoTitle")}</Text>
+              <Text style={styles.helperInfoIntro}>{t("duel.helperInfoIntro")}</Text>
+            </View>
+            {activeBugSquadBonusList(activeSquadIds).map((bonus) => {
+              const entry = entryByBugId(bonus.bugId);
+              const info = bugSquadHelperInfo(bonus);
+              return (
+                <View key={bonus.bugId} style={styles.helperInfoRow}>
+                  <BugArtImage bugId={bonus.bugId} size={42} />
+                  <View style={styles.helperInfoCopy}>
+                    <View style={styles.helperInfoNameRow}>
+                      <Text numberOfLines={1} style={styles.helperInfoName}>{entry ? bugDexEntryName(entry, t) : bonus.bugId}</Text>
+                      <Text style={styles.helperInfoKind}>{t(`duel.helper.${info.kind}`)}</Text>
+                    </View>
+                    <Text style={styles.helperInfoBody}>{helperEffectDescription(bonus, t)}</Text>
+                    <Text style={styles.helperInfoStats}>{info.cooldownSeconds}s · {info.hits} hit{info.hits === 1 ? "" : "s"}{info.kind === "splash" ? ` · ${info.targets} targets` : ""}</Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
           <View style={styles.chipRow}>
             {squadChoiceInventory.map((item) => {
               const entry = entryByBugId(item.bugId);
@@ -1095,7 +1314,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
             <Text style={styles.tradeLabel}>{t("bugdex.offerBug")}</Text>
             {renderTradeFilters(tradeOfferRarityFilter, toggleTradeOfferRarityFilter, tradeOfferRoleFilter, toggleTradeOfferRoleFilter, tradeOfferSearch, setTradeOfferSearch)}
             <View style={styles.chipRow}>
-              {filteredTradeCopyOptions.map((option) => {
+              {visibleTradeCopyOptions.map((option) => {
                 const item = option.item;
                 const rarity = bugRarity(option.bugId);
                 const selected = tradeOfferCopyKeys.includes(option.key);
@@ -1121,6 +1340,11 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                 );
               })}
             </View>
+            {visibleTradeCopyOptions.length < filteredTradeCopyOptions.length ? (
+              <Pressable style={styles.loadMoreButton} onPress={() => setVisibleTradeOfferCount((count) => count + tradeOptionBatchSize)}>
+                <Text style={styles.loadMoreButtonText}>{t("bugdex.archiveShowMore", { count: Math.min(tradeOptionBatchSize, filteredTradeCopyOptions.length - visibleTradeCopyOptions.length) })}</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <Text style={styles.tradeEmpty}>{t("bugdex.noTradeBugs")}</Text>
@@ -1143,25 +1367,31 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
             <Text style={styles.tradeLabel}>{t("bugdex.requestBug")}</Text>
             {renderTradeFilters(tradeRequestRarityFilter, toggleTradeRequestRarityFilter, tradeRequestRoleFilter, toggleTradeRequestRoleFilter, tradeRequestSearch, setTradeRequestSearch)}
             {recipientTradeCopyOptions.length ? (
-              <View style={styles.chipRow}>
-                {filteredRecipientTradeCopyOptions.map((option) => {
-                  const recipientMastery = tradeRecipientId ? masteryMapForUser(tradeRecipientId) : {};
-                  const selected = tradeRequestCopyKeys.includes(option.key);
-                  const maxSelected = !selected && tradeRequestCopyKeys.length >= maxTradeBugSelection;
-                  return (
-                    <Pressable key={option.key} disabled={maxSelected} style={[styles.tradeBugChip, selected && styles.tradeChipActive, maxSelected && styles.activeSquadLockedChip]} onPress={() => setTradeRequestCopyKeys((current) => current.includes(option.key) ? current.filter((key) => key !== option.key) : [...current, option.key])}>
-                      <BugJarArt bugId={option.bugId} rarity={bugRarity(option.bugId)} size={48} unlocked />
-                      <Text style={[styles.tradeChipText, selected && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(option.bugId)}</Text>
-                      <RarityStars rarity={bugRarity(option.bugId)} compact />
-                      {option.totalCopies > 1 && <Text style={[styles.tradeCopyMeta, selected && styles.tradeChipTextActive]}>x{option.totalCopies}</Text>}
-                      {!unlockedBugIds.has(option.bugId) && (
-                        <Text style={[styles.tradeNeedPill, selected && styles.tradeNeedPillActive]}>{t("bugdex.youNeedThis")}</Text>
-                      )}
-                      <Text style={[styles.bugBuffMeta, selected && styles.tradeChipTextActive]} numberOfLines={2}>{tradeMasteryText(option.bugId, recipientMastery)}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <>
+                <View style={styles.chipRow}>
+                  {visibleRecipientTradeCopyOptions.map((option) => {
+                    const selected = tradeRequestCopyKeys.includes(option.key);
+                    const maxSelected = !selected && tradeRequestCopyKeys.length >= maxTradeBugSelection;
+                    return (
+                      <Pressable key={option.key} disabled={maxSelected} style={[styles.tradeBugChip, selected && styles.tradeChipActive, maxSelected && styles.activeSquadLockedChip]} onPress={() => setTradeRequestCopyKeys((current) => current.includes(option.key) ? current.filter((key) => key !== option.key) : [...current, option.key])}>
+                        <BugJarArt bugId={option.bugId} rarity={bugRarity(option.bugId)} size={48} unlocked />
+                        <Text style={[styles.tradeChipText, selected && styles.tradeChipTextActive]} numberOfLines={1}>{bugName(option.bugId)}</Text>
+                        <RarityStars rarity={bugRarity(option.bugId)} compact />
+                        {option.totalCopies > 1 && <Text style={[styles.tradeCopyMeta, selected && styles.tradeChipTextActive]}>x{option.totalCopies}</Text>}
+                        {!unlockedBugIds.has(option.bugId) && (
+                          <Text style={[styles.tradeNeedPill, selected && styles.tradeNeedPillActive]}>{t("bugdex.youNeedThis")}</Text>
+                        )}
+                        <Text style={[styles.bugBuffMeta, selected && styles.tradeChipTextActive]} numberOfLines={2}>{tradeMasteryText(option.bugId, recipientMasteryMap)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {visibleRecipientTradeCopyOptions.length < filteredRecipientTradeCopyOptions.length ? (
+                  <Pressable style={styles.loadMoreButton} onPress={() => setVisibleTradeRequestCount((count) => count + tradeOptionBatchSize)}>
+                    <Text style={styles.loadMoreButtonText}>{t("bugdex.archiveShowMore", { count: Math.min(tradeOptionBatchSize, filteredRecipientTradeCopyOptions.length - visibleRecipientTradeCopyOptions.length) })}</Text>
+                  </Pressable>
+                ) : null}
+              </>
             ) : (
               <Text style={styles.tradeEmpty}>{t("bugdex.colleagueNoBugs")}</Text>
             )}
@@ -1231,6 +1461,9 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
 
       <Pressable
         style={[styles.workshopFeatureCard, upgradeExpanded && styles.workshopFeatureCardActive]}
+        onLayout={(event) => {
+          upgradeSectionY.current = event.nativeEvent.layout.y;
+        }}
         onPress={() => setUpgradeExpanded((current) => !current)}
       >
         <Image resizeMode="cover" source={bugDexUpgradeImage} style={styles.workshopFeatureImage} />
@@ -1390,15 +1623,172 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
         </View>
       </View>
 
-      {dexList}
+      <View
+        onLayout={(event) => {
+          dexSectionY.current = event.nativeEvent.layout.y;
+        }}
+      >
+        {dexList}
+      </View>
 
-      <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
-        <Text style={sharedStyles.secondaryButtonText}>{t("common.back")}</Text>
+      <Pressable style={sharedStyles.secondaryButton} onPress={() => setWorkspaceOpen(false)}>
+        <Text style={sharedStyles.secondaryButtonText}>{t("common.close")}</Text>
       </Pressable>
+    </ScrollView>
+  );
+
+  return (
+    <View style={[
+      sharedStyles.screen,
+      styles.dashboard,
+      {
+        paddingBottom: embedded ? 8 : layout.navigationMode === "rail" ? 20 : layout.bottomNavHeight + layout.bottomNavInset + 48,
+        paddingHorizontal: layout.gutter
+      }
+    ]}>
+      <Animated.View
+        style={[
+          styles.dashboardInner,
+          { maxWidth: layout.contentMaxWidth },
+          {
+            opacity: embedded ? 1 : dashboardIntro,
+            transform: [{
+              translateY: embedded ? 0 : dashboardIntro.interpolate({
+                inputRange: [0, 1],
+                outputRange: [12, 0]
+              })
+            }]
+          }
+        ]}
+      >
+        <View style={[styles.dashboardHeader, layout.isCompact && styles.dashboardHeaderCompact]}>
+          <Image accessibilityIgnoresInvertColors source={require("../../assets/generated/bugdex-collection-view-hd.jpg")} style={styles.dashboardHeaderArt} />
+          <View style={styles.dashboardHeaderShade} />
+          <View style={styles.dashboardHeaderCopy}>
+            <Text style={styles.dashboardEyebrow}>{t("bugdex.dashboardKicker")}</Text>
+            <Text style={styles.dashboardTitle}>BugDex</Text>
+            <Text style={styles.dashboardMeta}>{t("bugdex.dashboardProgress", { owned: everUnlockedCount, total: totalCount, progress })}</Text>
+          </View>
+          <View style={styles.dashboardHeroBug}>
+            {headerEntry ? <BugArtImage bugId={headerEntry.id} size={74} /> : <LockedBugSilhouette size={58} />}
+          </View>
+        </View>
+
+        {!embedded ? <View style={styles.dashboardProgress}>
+          <View style={styles.dashboardProgressTrack}>
+            <View style={[styles.dashboardProgressFill, { width: `${progress}%` }]} />
+          </View>
+          <View style={styles.dashboardStats}>
+            <Text style={styles.dashboardStat}><Text style={styles.dashboardStatValue}>{unlockedCount}</Text> gevangen</Text>
+            <Text style={styles.dashboardStat}><Text style={styles.dashboardStatValue}>{totalCount - everUnlockedCount}</Text> te gaan</Text>
+          </View>
+        </View> : null}
+
+        <View style={styles.dashboardActionRail}>
+          {!embedded ? (
+            <Pressable accessibilityRole="button" onPress={onOpenMuseum} style={[styles.dashboardAction, layout.isCompact && styles.dashboardActionCompact]}>
+              <Image source={require("../../assets/generated/museum-gallery-v2.jpg")} style={styles.dashboardActionImage} />
+              <Text style={styles.dashboardActionLabel}>Museum</Text>
+            </Pressable>
+          ) : null}
+          <Pressable accessibilityRole="button" onPress={() => openCollectionWorkspace("squad")} style={[styles.dashboardAction, layout.isCompact && styles.dashboardActionCompact]}>
+            <Image source={activeBugSquadHeroImage} style={styles.dashboardActionImage} />
+            <Text style={styles.dashboardActionLabel}>{t("bugdex.dashboardSquad")}</Text>
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => openCollectionWorkspace("trade")} style={[styles.dashboardAction, layout.isCompact && styles.dashboardActionCompact]}>
+            <Image source={bugDexWorkshopImage} style={styles.dashboardActionImage} />
+            <Text style={styles.dashboardActionLabel}>{t("bugdex.trade")}</Text>
+            {incomingTrades.length > 0 ? <Text style={styles.dashboardActionBadge}>{incomingTrades.length}</Text> : null}
+          </Pressable>
+          <Pressable accessibilityRole="button" onPress={() => openCollectionWorkspace("upgrade")} style={[styles.dashboardAction, layout.isCompact && styles.dashboardActionCompact]}>
+            <Image source={bugDexUpgradeImage} style={styles.dashboardActionImage} />
+            <Text style={styles.dashboardActionLabel}>{t("bugdex.upgrades")}</Text>
+          </Pressable>
+        </View>
+
+        <View style={[styles.dashboardCollection, layout.isCompact && styles.dashboardCollectionCompact]}>
+          <View style={styles.dashboardCollectionHeader}>
+            <View>
+              <Text style={styles.dashboardCollectionTitle}>{t("bugdex.dashboardLatest")}</Text>
+              <Text style={styles.dashboardCollectionMeta}>{t("bugdex.dashboardLatestHint")}</Text>
+            </View>
+            <Text style={styles.dashboardPageCount}>{dashboardPage + 1}/{dashboardPageCount}</Text>
+          </View>
+          {dashboardCards.length ? (
+            <View style={styles.dashboardBugGrid}>
+              {dashboardCards.map((entry) => {
+                const item = inventoryById[entry.id];
+                const mastery = masteryForEntry(entry);
+                return (
+                  <Pressable
+                    accessibilityRole="button"
+                    key={entry.id}
+                    onPress={() => setSelectedBugId(entry.id)}
+                    style={[
+                      styles.dashboardBugCard,
+                      layout.isTablet && styles.dashboardBugCardWide,
+                      { borderColor: rarityColors[entry.rarity] }
+                    ]}
+                  >
+                    <SpecimenFrame rarity={entry.rarity} style={styles.dashboardBugFrame}>
+                      <CrownGlow rank={bugCrownRankForMastery(entry, mastery)} size={58}>
+                        <BugArtImage bugId={entry.id} size={58} />
+                      </CrownGlow>
+                    </SpecimenFrame>
+                    <View style={styles.dashboardBugCopy}>
+                      <Text numberOfLines={1} style={styles.dashboardBugName}>{bugDexEntryName(entry, t)}</Text>
+                      <Text numberOfLines={1} style={styles.dashboardBugMeta}>{rarityLabel(entry.rarity, t)}{item && item.count > 1 ? ` · x${item.count}` : ""}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.dashboardEmpty}>
+              <LockedBugSilhouette size={52} />
+              <Text style={styles.dashboardEmptyText}>Ontdek je eerste echte insect om je collectie te starten.</Text>
+            </View>
+          )}
+          <View style={styles.dashboardPager}>
+            <Pressable disabled={dashboardPage <= 0} onPress={() => setDashboardPage((page) => Math.max(0, page - 1))} style={[styles.dashboardPagerButton, dashboardPage <= 0 && styles.dashboardPagerButtonDisabled]}>
+              <GameUiIcon name="back" size={16} />
+            </Pressable>
+            <Pressable disabled={dashboardPage >= dashboardPageCount - 1} onPress={() => setDashboardPage((page) => Math.min(dashboardPageCount - 1, page + 1))} style={[styles.dashboardPagerButton, dashboardPage >= dashboardPageCount - 1 && styles.dashboardPagerButtonDisabled]}>
+              <GameUiIcon name="next" size={16} />
+            </Pressable>
+          </View>
+        </View>
+
+        <Pressable accessibilityRole="button" onPress={() => openCollectionWorkspace("dex")} style={styles.dashboardPrimaryButton}>
+          <Text style={styles.dashboardPrimaryButtonText}>{t("bugdex.dashboardOpen")}</Text>
+          <GameUiIcon name="next" size={20} />
+        </Pressable>
+        {!embedded ? (
+          <Pressable accessibilityRole="button" onPress={onBack} style={styles.dashboardBackButton}>
+            <Text style={styles.dashboardBackText}>{t("common.back")}</Text>
+          </Pressable>
+        ) : null}
+      </Animated.View>
+
+      <Modal animationType="slide" visible={workspaceOpen} onRequestClose={() => setWorkspaceOpen(false)}>
+        <View style={styles.workspaceShell}>
+          <View style={styles.workspaceTopBar}>
+            <View>
+              <Text style={styles.workspaceEyebrow}>COLLECTION WORKSPACE</Text>
+              <Text style={styles.workspaceTitle}>BugDex beheren</Text>
+            </View>
+            <Pressable accessibilityLabel={t("common.close")} accessibilityRole="button" onPress={() => setWorkspaceOpen(false)} style={styles.workspaceClose}>
+              <Text style={styles.workspaceCloseText}>×</Text>
+            </Pressable>
+          </View>
+          {collectionWorkspace}
+        </View>
+      </Modal>
       {renderBugMasteryModal()}
+      {crownUpgrade ? <CrownUpgradeModal bugId={crownUpgrade.bugId} rank={crownUpgrade.rank} onClose={() => setCrownUpgrade(null)} /> : null}
       <BugDexUnlockModal drop={drop} onClose={() => setDrop(null)} />
       <TradeAnimationModal currentUser={user} trade={completedTrade} onClose={closeTradeResult} />
-    </ScrollView>
+    </View>
   );
 
   function renderBugMasteryModal() {
@@ -1407,6 +1797,7 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
     const inventoryItem = inventoryById[entry.id];
     const unlockItem = unlockById[entry.id];
     const mastery = masteryForEntry(entry);
+    const crown = bugCrownProgress(entry.rarity, mastery.level, mastery.battleWins);
     const color = rarityColors[entry.rarity];
     const xpNeeded = mastery.level >= bugMasteryLevelCap ? 0 : bugMasteryXpForNextLevel(mastery.level, entry.rarity);
     const xpProgress = xpNeeded > 0 ? Math.min(100, Math.round((mastery.xp / xpNeeded) * 100)) : 100;
@@ -1427,10 +1818,14 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                   {entry.rarity === "Mythisch" ? (
                     <>
                       <MythicRarityFrame size={136} style={styles.modalMythicFrame} />
-                      <BugArtImage bugId={entry.id} size={116} />
+                      <CrownGlow rank={bugCrownRankForMastery(entry, mastery)} size={116}>
+                        <BugArtImage bugId={entry.id} size={116} />
+                      </CrownGlow>
                     </>
                   ) : (
-                    <BugArtImage bugId={entry.id} size={124} />
+                    <CrownGlow rank="none" size={124}>
+                      <BugArtImage bugId={entry.id} size={124} />
+                    </CrownGlow>
                   )}
                 </View>
                 <View style={styles.modalTitleBlock}>
@@ -1454,6 +1849,31 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
                 </View>
                 <Text style={styles.masteryNext}>{nextSkills.length ? t("bugdex.mastery.nextSkill", { level: nextLevel ?? 20, skill: nextSkills.map((skill) => masterySkillLabel(skill.id)).join(" + ") }) : masteryNextText(mastery)}</Text>
               </View>
+
+              {entry.rarity === "Mythisch" ? (
+                <View style={styles.crownPanel}>
+                  <View style={styles.crownHeaderRow}>
+                    <View>
+                      <Text style={styles.crownKicker}>{t("bugdex.crown.kicker")}</Text>
+                      <Text style={styles.crownTitle}>{t(`bugdex.crown.rank.${crown.rank}`)}</Text>
+                    </View>
+                    <Text style={styles.crownMultiplier}>+{Math.round((bugCrownPowerMultiplier(crown.rank) - 1) * 1000) / 10}% PvE</Text>
+                  </View>
+                  <Text style={styles.crownWins}>{t("bugdex.crown.wins", { wins: mastery.battleWins })}</Text>
+                  {crown.complete ? (
+                    <Text style={styles.crownComplete}>{t("bugdex.crown.complete")}</Text>
+                  ) : crown.next ? (
+                    <>
+                      <Text style={styles.crownNext}>{t("bugdex.crown.next", { rank: t(`bugdex.crown.rank.${crown.next.rank}`) })}</Text>
+                      <Text style={styles.crownRequirement}>{t("bugdex.crown.requirement", { level: crown.next.level, wins: crown.next.battleWins })}</Text>
+                      <View style={styles.crownRequirementRow}>
+                        <Text style={[styles.crownRequirementPill, crown.levelReady && styles.crownRequirementPillReady]}>{crown.levelReady ? "✓" : "•"} {t("bugdex.crown.levelCondition", { level: crown.next.level })}</Text>
+                        <Text style={[styles.crownRequirementPill, crown.winsReady && styles.crownRequirementPillReady]}>{crown.winsReady ? "✓" : "•"} {t("bugdex.crown.winsCondition", { wins: crown.next.battleWins })}</Text>
+                      </View>
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
 
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>{t("bugdex.mastery.whatDoesItDo")}</Text>
@@ -1512,7 +1932,9 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
 
               <View style={styles.modalSection}>
                 <Text style={styles.modalSectionTitle}>{t("bugdex.mastery.sources")}</Text>
-                <Text style={styles.modalMuted}>{sources.length ? sources.join(" + ") : t("bugdex.mastery.noSources")}</Text>
+                <View style={styles.sourceLabels}>
+                  {sources.length ? sources.map((source) => <Text key={source} style={styles.sourceLabel}>{bugDexSourceLabel(source)}</Text>) : <Text style={styles.modalMuted}>{t("bugdex.mastery.noSources")}</Text>}
+                </View>
               </View>
 
               <Pressable style={styles.modalCloseButton} onPress={() => setSelectedBugId("")}>
@@ -1527,6 +1949,351 @@ export function BugDexScreen({ openTradeRequest = 0, onUserUpdated, user, onBack
 }
 
 const styles = StyleSheet.create({
+  dashboard: {
+    backgroundColor: "#f5f0e5",
+    paddingVertical: 8
+  },
+  dashboardInner: {
+    alignSelf: "center",
+    flex: 1,
+    gap: 8,
+    minHeight: 0,
+    width: "100%"
+  },
+  dashboardHeader: {
+    alignItems: "center",
+    backgroundColor: "#171735",
+    borderColor: "#504b85",
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 82,
+    overflow: "hidden",
+    paddingHorizontal: 15,
+    paddingVertical: 10
+  },
+  dashboardHeaderCompact: {
+    minHeight: 68,
+    paddingVertical: 6
+  },
+  dashboardHeaderArt: {
+    ...StyleSheet.absoluteFillObject,
+    height: "100%",
+    opacity: 0.44,
+    width: "100%"
+  },
+  dashboardHeaderShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(20,19,51,0.72)"
+  },
+  dashboardHeaderCopy: {
+    flex: 1,
+    minWidth: 0
+  },
+  dashboardEyebrow: {
+    color: "#d7bd57",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.1
+  },
+  dashboardTitle: {
+    color: "#ffffff",
+    fontSize: 25,
+    fontWeight: "900",
+    lineHeight: 28
+  },
+  dashboardMeta: {
+    color: "#d9d5e9",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 1
+  },
+  dashboardHeroBug: {
+    alignItems: "center",
+    backgroundColor: "rgba(242,197,101,0.15)",
+    borderColor: "rgba(215,189,87,0.46)",
+    borderRadius: 34,
+    borderWidth: 1,
+    height: 66,
+    justifyContent: "center",
+    width: 66
+  },
+  dashboardProgress: {
+    backgroundColor: "#fffaf0",
+    borderColor: "#ddd0b5",
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  dashboardProgressTrack: {
+    backgroundColor: "#e6dfd3",
+    borderRadius: 6,
+    height: 8,
+    overflow: "hidden"
+  },
+  dashboardProgressFill: {
+    backgroundColor: "#d39b35",
+    borderRadius: 6,
+    height: "100%"
+  },
+  dashboardStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 5
+  },
+  dashboardStat: {
+    color: "#6e6a7b",
+    fontSize: 10,
+    fontWeight: "800"
+  },
+  dashboardStatValue: {
+    color: "#292450",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  dashboardActionRail: {
+    flexDirection: "row",
+    gap: 7
+  },
+  dashboardAction: {
+    alignItems: "center",
+    backgroundColor: "#242047",
+    borderColor: "#5d5796",
+    borderRadius: 14,
+    borderWidth: 1,
+    flex: 1,
+    height: 72,
+    justifyContent: "flex-end",
+    minWidth: 0,
+    overflow: "hidden",
+    padding: 7
+  },
+  dashboardActionCompact: {
+    height: 58
+  },
+  dashboardActionImage: {
+    height: "100%",
+    left: 0,
+    opacity: 0.56,
+    position: "absolute",
+    top: 0,
+    width: "100%"
+  },
+  dashboardActionLabel: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "900",
+    textAlign: "center"
+  },
+  dashboardActionBadge: {
+    backgroundColor: "#ec5a45",
+    borderRadius: 10,
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "900",
+    minWidth: 18,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    position: "absolute",
+    right: 5,
+    textAlign: "center",
+    top: 5
+  },
+  dashboardCollection: {
+    backgroundColor: "#fffaf0",
+    borderColor: "#ddd0b5",
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 250,
+    padding: 10
+  },
+  dashboardCollectionCompact: {
+    minHeight: 168
+  },
+  dashboardCollectionHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 7
+  },
+  dashboardCollectionTitle: {
+    color: "#292450",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  dashboardCollectionMeta: {
+    color: "#746f80",
+    fontSize: 9,
+    fontWeight: "700",
+    marginTop: 1
+  },
+  dashboardPageCount: {
+    backgroundColor: "#eee8f7",
+    borderRadius: 10,
+    color: "#4f46a5",
+    fontSize: 10,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 4
+  },
+  dashboardBugGrid: {
+    flex: 1,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7
+  },
+  dashboardBugCard: {
+    alignItems: "center",
+    backgroundColor: "#fbf7ed",
+    borderRadius: 12,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 76,
+    padding: 6,
+    width: "48.8%"
+  },
+  dashboardBugCardWide: {
+    width: "24%"
+  },
+  dashboardBugFrame: {
+    height: 62,
+    overflow: "visible",
+    width: 62
+  },
+  dashboardBugCopy: {
+    flex: 1,
+    marginLeft: 5,
+    minWidth: 0
+  },
+  dashboardBugName: {
+    color: "#292450",
+    fontSize: 10,
+    fontWeight: "900"
+  },
+  dashboardBugMeta: {
+    color: "#716c7c",
+    fontSize: 8,
+    fontWeight: "800",
+    marginTop: 2
+  },
+  dashboardEmpty: {
+    alignItems: "center",
+    flex: 1,
+    justifyContent: "center",
+    padding: 12
+  },
+  dashboardEmptyText: {
+    color: "#607067",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 6,
+    maxWidth: 240,
+    textAlign: "center"
+  },
+  dashboardPager: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    marginTop: 7
+  },
+  dashboardPagerButton: {
+    alignItems: "center",
+    backgroundColor: "#4f46a5",
+    borderRadius: 12,
+    height: 48,
+    justifyContent: "center",
+    width: 48
+  },
+  dashboardPagerButtonDisabled: {
+    backgroundColor: "#cbd6cf"
+  },
+  dashboardPagerText: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "900",
+    lineHeight: 24
+  },
+  dashboardPrimaryButton: {
+    alignItems: "center",
+    backgroundColor: "#d39b35",
+    borderRadius: 14,
+    elevation: 3,
+    flexDirection: "row",
+    minHeight: 48,
+    justifyContent: "center",
+    shadowColor: "#302457",
+    shadowOffset: { height: 3, width: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 7
+  },
+  dashboardPrimaryButtonText: {
+    color: "#241f46",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  dashboardPrimaryButtonArrow: {
+    color: "#241f46",
+    fontSize: 24,
+    fontWeight: "900",
+    marginLeft: 8
+  },
+  dashboardBackButton: {
+    alignItems: "center",
+    height: 26,
+    justifyContent: "center"
+  },
+  dashboardBackText: {
+    color: "#635e70",
+    fontSize: 11,
+    fontWeight: "900"
+  },
+  workspaceShell: {
+    backgroundColor: "#f5f0e5",
+    flex: 1
+  },
+  workspaceTopBar: {
+    alignItems: "center",
+    backgroundColor: "#171735",
+    borderBottomColor: "#504b85",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 70,
+    paddingHorizontal: 18,
+    paddingVertical: 10
+  },
+  workspaceEyebrow: {
+    color: "#d7bd57",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1
+  },
+  workspaceTitle: {
+    color: "#ffffff",
+    fontSize: 19,
+    fontWeight: "900",
+    marginTop: 1
+  },
+  workspaceClose: {
+    alignItems: "center",
+    backgroundColor: "#302b59",
+    borderColor: "#665f9b",
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: "center",
+    width: 36
+  },
+  workspaceCloseText: {
+    color: "#ffffff",
+    fontSize: 24,
+    fontWeight: "700",
+    lineHeight: 26
+  },
   content: {
     paddingBottom: 120
   },
@@ -1534,7 +2301,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#102018",
     borderColor: "#294338",
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 1,
     flexDirection: "row",
     gap: 12,
@@ -1939,6 +2706,26 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12
   },
+  helperInfoPanel: {
+    backgroundColor: "#eef5f0",
+    borderColor: "#c6d3cc",
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 12,
+    marginTop: 10,
+    padding: 10
+  },
+  helperInfoHeader: { gap: 3 },
+  helperInfoTitle: { color: "#102018", fontSize: 14, fontWeight: "900" },
+  helperInfoIntro: { color: "#52665d", fontSize: 10, fontWeight: "700", lineHeight: 14 },
+  helperInfoRow: { alignItems: "center", backgroundColor: "#ffffff", borderColor: "#d7e1d9", borderRadius: 9, borderWidth: 1, flexDirection: "row", gap: 9, padding: 8 },
+  helperInfoCopy: { flex: 1, minWidth: 0 },
+  helperInfoNameRow: { alignItems: "center", flexDirection: "row", gap: 6, justifyContent: "space-between" },
+  helperInfoName: { color: "#102018", flex: 1, fontSize: 11, fontWeight: "900" },
+  helperInfoKind: { backgroundColor: "#173126", borderRadius: 999, color: "#ffffff", fontSize: 8, fontWeight: "900", overflow: "hidden", paddingHorizontal: 7, paddingVertical: 3 },
+  helperInfoBody: { color: "#344a3e", fontSize: 9.5, fontWeight: "700", lineHeight: 13, marginTop: 3 },
+  helperInfoStats: { color: "#6c4d00", fontSize: 8.5, fontWeight: "900", marginTop: 4 },
   squadJarBugs: {
     flexDirection: "row",
     gap: 8,
@@ -2919,6 +3706,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     padding: 12
   },
+  setEmblemWrap: {
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginBottom: 9
+  },
   setPickerButton: {
     alignItems: "center",
     flexDirection: "row",
@@ -3089,7 +3881,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 8,
-    minHeight: 112
+    minHeight: 112,
+    overflow: "visible"
   },
   mythicBugWrap: {
     minHeight: 112
@@ -3284,6 +4077,81 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 8
   },
+  crownPanel: {
+    backgroundColor: "#fff8df",
+    borderColor: "#d7bd57",
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 12
+  },
+  crownHeaderRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  crownKicker: {
+    color: "#9c7420",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1,
+    textTransform: "uppercase"
+  },
+  crownTitle: {
+    color: "#5e4310",
+    fontSize: 16,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  crownMultiplier: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900"
+  },
+  crownWins: {
+    color: "#6f5b2e",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 8
+  },
+  crownNext: {
+    color: "#5e4310",
+    fontSize: 12,
+    fontWeight: "900",
+    marginTop: 8
+  },
+  crownRequirement: {
+    color: "#6f5b2e",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 3
+  },
+  crownRequirementRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 8
+  },
+  crownRequirementPill: {
+    backgroundColor: "#efe4bd",
+    borderRadius: 999,
+    color: "#6f5b2e",
+    fontSize: 10,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 7,
+    paddingVertical: 4
+  },
+  crownRequirementPillReady: {
+    backgroundColor: "#d9f0dc",
+    color: "#15724f"
+  },
+  crownComplete: {
+    color: "#15724f",
+    fontSize: 12,
+    fontWeight: "900",
+    marginTop: 8
+  },
   modalSection: {
     marginBottom: 12
   },
@@ -3429,6 +4297,23 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textAlign: "center"
   },
+  sourceLabels: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6
+  },
+  sourceLabel: {
+    backgroundColor: "#eee2c8",
+    borderColor: "#c7b899",
+    borderRadius: 7,
+    borderWidth: 1,
+    color: "#4f493d",
+    fontSize: 10,
+    fontWeight: "900",
+    overflow: "hidden",
+    paddingHorizontal: 8,
+    paddingVertical: 5
+  },
   modalMuted: {
     color: "#52665d",
     fontSize: 12,
@@ -3452,6 +4337,26 @@ const styles = StyleSheet.create({
   },
   everHadText: {
     color: "#64746c"
+  },
+  loadMoreButton: {
+    alignItems: "center",
+    backgroundColor: "#173426",
+    borderColor: "#d7bd57",
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+    width: "100%"
+  },
+  loadMoreButtonText: {
+    color: "#fff6d2",
+    fontSize: 11,
+    fontWeight: "900"
+  },
+  errorDexCard: {
+    backgroundColor: "#f4e3dc",
+    borderColor: "#b97e69"
   },
   emptyDexCard: {
     alignItems: "center",
@@ -3490,5 +4395,44 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 12,
     fontWeight: "900"
+  },
+  museumFeature: {
+    alignItems: "center",
+    backgroundColor: "#102018",
+    borderColor: "#d7bd57",
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    minHeight: 104,
+    overflow: "hidden",
+    padding: 14,
+    position: "relative"
+  },
+  museumFeatureArt: { height: "100%", opacity: 0.48, position: "absolute", right: 0, top: 0, width: "100%" },
+  museumFeatureCopy: { flex: 1, zIndex: 1 },
+  museumKicker: {
+    color: "#d7bd57",
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1
+  },
+  museumTitle: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  museumMeta: {
+    color: "#c9d9cf",
+    fontSize: 12,
+    marginTop: 3
+  },
+  museumArrow: {
+    color: "#d7bd57",
+    fontSize: 34,
+    fontWeight: "400",
+    zIndex: 1
   }
 });

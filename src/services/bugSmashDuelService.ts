@@ -11,6 +11,7 @@ const demoDuels = new Map<string, BugSmashDuel>();
 const demoDuelRewardEvents = new Map<string, { bugId?: string; minimumCount?: number; result: BugSmashDuelClaimResult["result"] }>();
 
 export const bugSmashDuelDurationMs = 30000;
+export const butterflyCatchDuelDurationMs = 60000;
 export const bugSmashDuelStartDelayMs = 5000;
 export const bugSmashDuelBugCount = 56;
 const defaultDuelRating = 1000;
@@ -25,6 +26,10 @@ type CreateDuelOptions = {
   arcadeMode?: ArcadeMode;
   arcadeVersion?: number;
 };
+
+export function bugSmashDuelDurationForMode(mode: ArcadeMode): number {
+  return mode === "butterfly_catch" ? butterflyCatchDuelDurationMs : bugSmashDuelDurationMs;
+}
 
 const scoreByRarity = {
   Gewoon: 1,
@@ -114,7 +119,7 @@ function buildBugSmashDuel(params: {
     createdAt: nowIso(),
     ...(params.startAt ? { startAt: params.startAt } : {}),
     updatedAt: nowIso(),
-    durationMs: bugSmashDuelDurationMs,
+    durationMs: bugSmashDuelDurationForMode(arcadeMode),
     scores: {},
     rewardClaimedBy: [],
     resultSeenBy: []

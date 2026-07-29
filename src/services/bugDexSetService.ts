@@ -29,7 +29,7 @@ export const bugDexSets: BugDexSet[] = [
     labelKey: "bugdex.set.beetle_brigade",
     descriptionKey: "bugdex.set.beetle_brigade.description",
     badgeBugIds: ["snuitkever", "boktor", "tapijtkever", "mestkever", "neushoornkever", "atlaskever", "herculeskever", "goliathkever", "kniptor", "loopkever", "waterkever", "goudtor", "tijgerkever", "doodgraver", "vliegend-hert", "juweelkever", "goudschildkever", "rozekever", "kardinaalkever", "gouden-tor", "soldaatje", "doodgraverkever", "olifantskever", "regenboogmestkever", "titanus-kever", "langsprietboktor", "schildpadkever", "vuurkever", "wespboktor", "groene-zandloopkever", "giraffekevertje", "glorieuze-scarabee", "groene-junikever", "meikever", "lieveheersbeestje"],
-    extraBugIds: ["leliehaantje"]
+    extraBugIds: ["leliehaantje", "broodkever", "gewone-houtwormkever", "muskusboktor"]
   }),
   badgeSet({
     id: "wings_of_color",
@@ -37,7 +37,7 @@ export const bugDexSets: BugDexSet[] = [
     labelKey: "bugdex.set.wings_of_color",
     descriptionKey: "bugdex.set.wings_of_color.description",
     badgeBugIds: ["mot", "doodshoofdvlinder", "kolibrievlinder", "koninginnenpage", "atalanta", "dagpauwoog", "eikenprocessierups", "pijlstaartrups", "gespikkelde-houtvlinder", "glasvleugelvlinder", "komeetmot", "maanmot", "atlasvlinder", "rouwmantelvlinder", "keizersmantel", "koningin-alexandravlinder", "zonsondergangsmot", "roze-esdoornmot", "kleermot", "voorraadmot", "witte-tijger"],
-    extraBugIds: ["klein-koolwitje", "klein-geaderd-witje", "citroenvlinder", "bont-zandoogje", "icarusblauwtje", "kleine-vos", "landkaartje", "boomblauwtje", "buxusmot", "buxusrups", "gamma-uil", "huismoeder", "agaatvlinder", "windevedermot", "jakobsvlinder", "jakobsvlinderrups", "distelvlinder", "groot-koolwitje", "hooibeestje", "koevinkje"]
+    extraBugIds: ["klein-koolwitje", "klein-geaderd-witje", "citroenvlinder", "bont-zandoogje", "icarusblauwtje", "kleine-vos", "landkaartje", "boomblauwtje", "buxusmot", "buxusrups", "gamma-uil", "huismoeder", "agaatvlinder", "windevedermot", "jakobsvlinder", "jakobsvlinderrups", "distelvlinder", "groot-koolwitje", "hooibeestje", "koevinkje", "argusvlinder", "spaanse-vlag", "eikenpage"]
   }),
   badgeSet({
     id: "buzz_squad",
@@ -53,7 +53,7 @@ export const bugDexSets: BugDexSet[] = [
     labelKey: "bugdex.set.sting_team",
     descriptionKey: "bugdex.set.sting_team.description",
     badgeBugIds: ["mier", "wesp", "hoornaar", "faraomier", "houtmier", "juweelwesp", "dolksteekwesp", "goudwesp", "sluipwesp", "fluweelmier", "blauwe-ertsbij", "hommel"],
-    extraBugIds: ["geelpoothoornaar", "rosse-metselbij", "blauwzwarte-houtbij"]
+    extraBugIds: ["geelpoothoornaar", "rosse-metselbij", "blauwzwarte-houtbij", "steenhommel", "aardhommel", "akkerhommel", "boomhommel", "heidehommel", "tuinhommel", "weidehommel", "veldhommel"]
   }),
   badgeSet({
     id: "pattern_warnings",
@@ -69,7 +69,7 @@ export const bugDexSets: BugDexSet[] = [
     labelKey: "bugdex.set.web_and_sting",
     descriptionKey: "bugdex.set.web_and_sting.description",
     badgeBugIds: ["schorpioen", "duizendpoot", "vogelspin", "reuzen-duizendpoot", "wespspin", "kruisspin", "springspin", "pauwspin", "vioolspin", "zebra-springspin", "waterschorpioen", "zweepschorpioen", "schorpioenvlieg"],
-    extraBugIds: ["spintmijt", "grote-huisspin", "trilspin", "miljoenpoot", "gewone-wolfspin", "venstersectorspin"]
+    extraBugIds: ["spintmijt", "grote-huisspin", "trilspin", "miljoenpoot", "gewone-wolfspin", "venstersectorspin", "gewone-kogelspin", "kruipende-kogelspin", "nachtkaardespin"]
   }),
   badgeSet({
     id: "jump_and_hide",
@@ -84,7 +84,8 @@ export const bugDexSets: BugDexSet[] = [
     badgeId: "bugdex-set-water-hunters",
     labelKey: "bugdex.set.water_hunters",
     descriptionKey: "bugdex.set.water_hunters.description",
-    badgeBugIds: ["waterkever", "schrijvertje", "schaatsenrijder", "waterschorpioen", "libel", "waterjuffer", "smaragdlibel", "helikopterjuffer", "azuren-waterjuffer", "reuzenwaterwants"]
+    badgeBugIds: ["waterkever", "schrijvertje", "schaatsenrijder", "waterschorpioen", "libel", "waterjuffer", "smaragdlibel", "helikopterjuffer", "azuren-waterjuffer", "reuzenwaterwants"],
+    extraBugIds: ["weidebeekjuffer"]
   }),
   badgeSet({
     id: "house_raiders",
@@ -92,7 +93,7 @@ export const bugDexSets: BugDexSet[] = [
     labelKey: "bugdex.set.house_raiders",
     descriptionKey: "bugdex.set.house_raiders.description",
     badgeBugIds: ["zilvervisje", "bladluis", "mug", "mot", "mier", "vlo", "pissebed", "kakkerlak", "oorworm", "termiet", "boekluis", "stofluis", "teek", "fluweelmijt", "tapijtkever", "reuzenkakkerlak", "bromvlieg", "huisvlieg", "kleermot", "voorraadmot", "whitefly"],
-    extraBugIds: ["papiervisje", "ovenvisje", "bedwants", "varenrouwmug", "trips", "spintmijt", "wolluis", "schildluis", "grote-huisspin", "trilspin", "springstaart", "miljoenpoot", "kelderpissebed", "oprolpissebed", "venstersectorspin"]
+    extraBugIds: ["papiervisje", "ovenvisje", "bedwants", "varenrouwmug", "trips", "spintmijt", "wolluis", "schildluis", "grote-huisspin", "trilspin", "springstaart", "miljoenpoot", "kelderpissebed", "oprolpissebed", "venstersectorspin", "broodkever", "gewone-houtwormkever", "gewone-kogelspin", "kruipende-kogelspin", "nachtkaardespin"]
   }),
   badgeSet({
     id: "mythic_showcase",
@@ -107,19 +108,19 @@ export const bugDexSets: BugDexSet[] = [
     labelKey: "bugdex.set.night_crew",
     descriptionKey: "bugdex.set.night_crew.description",
     badgeBugIds: ["mot", "kakkerlak", "oorworm", "schorpioen", "vogelspin", "reuzenkakkerlak", "doodshoofdvlinder", "vioolspin", "komeetmot", "maanmot", "rouwmantelvlinder", "zweepschorpioen", "kleermot", "voorraadmot"],
-    extraBugIds: ["papiervisje", "ovenvisje", "bedwants", "grote-huisspin", "trilspin", "gamma-uil", "huismoeder", "agaatvlinder", "windevedermot", "gewone-wolfspin", "venstersectorspin", "grote-wegslak", "segrijnslak"]
+    extraBugIds: ["papiervisje", "ovenvisje", "bedwants", "grote-huisspin", "trilspin", "gamma-uil", "huismoeder", "agaatvlinder", "windevedermot", "gewone-wolfspin", "venstersectorspin", "grote-wegslak", "segrijnslak", "gewone-kogelspin", "kruipende-kogelspin", "nachtkaardespin"]
   }),
   {
     id: "dutch_home",
     labelKey: "bugdex.set.dutch_home",
     descriptionKey: "bugdex.set.dutch_home.description",
-    bugIds: ["papiervisje", "ovenvisje", "bedwants", "varenrouwmug", "trips", "spintmijt", "wolluis", "schildluis", "grote-huisspin", "trilspin", "springstaart", "miljoenpoot", "kelderpissebed", "oprolpissebed", "venstersectorspin"]
+    bugIds: ["papiervisje", "ovenvisje", "bedwants", "varenrouwmug", "trips", "spintmijt", "wolluis", "schildluis", "grote-huisspin", "trilspin", "springstaart", "miljoenpoot", "kelderpissebed", "oprolpissebed", "venstersectorspin", "broodkever", "gewone-houtwormkever", "gewone-kogelspin", "kruipende-kogelspin", "nachtkaardespin"]
   },
   {
     id: "dutch_garden",
     labelKey: "bugdex.set.dutch_garden",
     descriptionKey: "bugdex.set.dutch_garden.description",
-    bugIds: ["varenrouwmug", "trips", "spintmijt", "wolluis", "schildluis", "klein-koolwitje", "klein-geaderd-witje", "citroenvlinder", "bont-zandoogje", "icarusblauwtje", "kleine-vos", "landkaartje", "boomblauwtje", "springstaart", "miljoenpoot", "kelderpissebed", "oprolpissebed", "buxusmot", "buxusrups", "leliehaantje", "engerling", "emelt", "gamma-uil", "huismoeder", "agaatvlinder", "windevedermot", "jakobsvlinder", "jakobsvlinderrups", "distelvlinder", "groot-koolwitje", "hooibeestje", "koevinkje", "geelpoothoornaar", "daas", "stadsreus", "bijvlieg", "rosse-metselbij", "blauwzwarte-houtbij", "gewone-wolfspin", "venstersectorspin", "grote-wegslak", "segrijnslak", "regenworm"]
+    bugIds: ["varenrouwmug", "trips", "spintmijt", "wolluis", "schildluis", "klein-koolwitje", "klein-geaderd-witje", "citroenvlinder", "bont-zandoogje", "icarusblauwtje", "kleine-vos", "landkaartje", "boomblauwtje", "springstaart", "miljoenpoot", "kelderpissebed", "oprolpissebed", "buxusmot", "buxusrups", "leliehaantje", "engerling", "emelt", "gamma-uil", "huismoeder", "agaatvlinder", "windevedermot", "jakobsvlinder", "jakobsvlinderrups", "distelvlinder", "groot-koolwitje", "hooibeestje", "koevinkje", "geelpoothoornaar", "daas", "stadsreus", "bijvlieg", "rosse-metselbij", "blauwzwarte-houtbij", "gewone-wolfspin", "venstersectorspin", "grote-wegslak", "segrijnslak", "regenworm", "argusvlinder", "gewone-kogelspin", "kruipende-kogelspin", "nachtkaardespin", "spaanse-vlag", "weidebeekjuffer", "steenhommel", "aardhommel", "akkerhommel", "boomhommel", "heidehommel", "tuinhommel", "weidehommel", "veldhommel", "muskusboktor", "eikenpage", "grote-beervlinder", "zandkrekel", "boskrekel", "sikkelsprinkhaan", "krasser", "roofvlieg-groot", "dambordzweefvlieg", "klein-avondrood", "watermijt", "zwarte-waterschorpioen", "bergveldwesp", "sierlijke-sprinkhaan"]
   }
 ];
 

@@ -1,9 +1,12 @@
 import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
-import { ArcadeMode, BugDexInventoryItem, BugSmashDuel, User } from "../types";
-import { BugDexDropResult, BugDexDropSource, clearBugDexInventoryCache, grantBugDexReward, grantBugDexRewardInTransaction, pickBugDexRewardEntry } from "./bugDexService";
-import { localDayId, SoloCampaignBossProgress } from "./missionProgressService";
+import type { ArcadeMode, BugSmashDuel, User } from "../types";
+import type { BugDexDropResult, BugDexDropSource } from "./bugDexService";
+import { dailyMissionClaimPayload } from "./dailyMissionClaimModel";
+import { localDayId, type SoloCampaignBossProgress } from "./missionProgressService";
+import { advanceMomentum } from "./momentumModel";
 import { badgesForUser, titleForPoints } from "./pointsService";
+import { syncResearchProgress } from "./researchTargetService";
 import { starterBoostedXp } from "./starterBoostService";
 
 export type DailyMission = {
@@ -32,9 +35,10 @@ type DailyMissionContext = {
   realBugScanProgress: number;
 };
 
-const dailyMissionXp = 10;
-const allArcadeModes: ArcadeMode[] = ["tap_duel", "web_runner", "nest_defense", "bug_glide", "bug_tower", "bubble_swarm"];
 const demoDailyClaims = new Set<string>();
+const dailyMissionXp = 10;
+const dailyBonusXp = 15;
+const allArcadeModes: ArcadeMode[] = ["tap_duel", "web_runner", "nest_defense", "bug_glide", "butterfly_catch", "bug_tower", "bubble_swarm"];
 
 const dailyMissionTemplates: DailyMissionTemplate[] = [
   {
@@ -58,7 +62,7 @@ const dailyMissionTemplates: DailyMissionTemplate[] = [
   {
     id: "play-all-game-types",
     title: "mission.dailyPlayAllGameTypes",
-    target: allArcadeModes.length,
+    target: 4,
     reward: "mission.rewardXp20",
     rewardSource: "daily_mission_bonus",
     rewardXp: 20,
@@ -69,10 +73,9 @@ const dailyMissionTemplates: DailyMissionTemplate[] = [
     ).size
   },
   {
-    // Keep the legacy id so claims already made today remain idempotent when the target changes.
     id: "duel-play-5",
-    title: "mission.dailySevenDuels",
-    target: 7,
+    title: "mission.dailyFiveDuels",
+    target: 5,
     reward: "mission.rewardXp25",
     rewardSource: "daily_mission_bonus",
     rewardXp: 25,
@@ -98,25 +101,27 @@ const dailyMissionTemplates: DailyMissionTemplate[] = [
   }
 ];
 
-export function dailyMissionSet(user: User, options: { bossProgress: SoloCampaignBossProgress; duels?: BugSmashDuel[]; now?: Date; realBugScanProgress?: number }): DailyMission[] {
+export function dailyMissionSet(user: User, options: {
+  bossProgress: SoloCampaignBossProgress;
+  duels?: BugSmashDuel[];
+  now?: Date;
+  realBugScanProgress?: number;
+}): DailyMission[] {
   const day = localDayId(options.now);
   const context: DailyMissionContext = {
     bossProgress: options.bossProgress,
     duels: options.duels ?? [],
     realBugScanProgress: Math.max(0, Math.min(1, Math.floor(options.realBugScanProgress ?? 0)))
   };
-  return dailyMissionTemplates.map((template) => {
-    const progress = Math.min(template.target, template.progressFor(user, context, day));
-    return {
-      id: `daily-v1-${template.id}-${day}`,
-      title: template.title,
-      target: template.target,
-      progress,
-      reward: template.reward,
-      rewardSource: template.rewardSource,
-      rewardXp: template.rewardXp
-    };
-  });
+  return dailyMissionTemplates.map((template) => ({
+    id: `daily-v1-${template.id}-${day}`,
+    progress: Math.min(template.target, template.progressFor(user, context, day)),
+    reward: template.reward,
+    rewardSource: template.rewardSource,
+    rewardXp: template.rewardXp,
+    target: template.target,
+    title: template.title
+  }));
 }
 
 export async function claimedDailyMissionIds(user: User, missionIds: string[]): Promise<Set<string>> {
@@ -142,96 +147,101 @@ export async function isDailyMissionBonusClaimed(user: User): Promise<boolean> {
 
 export async function claimDailyMissionReward(user: User, mission: DailyMission): Promise<{ drop: BugDexDropResult; user: User } | null> {
   if (mission.progress < mission.target) return null;
-  const now = new Date().toISOString();
-  const day = localDayId();
-  const claimKey = `${user.uid}:${mission.id}`;
-
-  if (!isFirebaseConfigured) {
-    if (demoDailyClaims.has(claimKey)) return null;
-    demoDailyClaims.add(claimKey);
-    const totalPoints = Math.max(0, user.totalPoints + starterBoostedXp(user, mission.rewardXp));
-    const updated = { ...user, totalPoints, title: titleForPoints(totalPoints) };
-    updated.badges = badgesForUser(updated);
-    const drop = await grantBugDexReward(updated, mission.rewardSource);
-    return { drop, user: updated };
-  }
-
-  const userRef = doc(db, "users", user.uid);
-  const claimRef = doc(db, "users", user.uid, "dailyMissionClaims", mission.id);
-  const rewardEntry = pickBugDexRewardEntry(user, mission.rewardSource);
-  const result = await runTransaction(db, async (transaction) => {
-    const userSnapshot = await transaction.get(userRef);
-    const claimSnapshot = await transaction.get(claimRef);
-    if (!userSnapshot.exists() || claimSnapshot.exists()) return null;
-    const current = userSnapshot.data() as User;
-    const drop = await grantBugDexRewardInTransaction(transaction, current, rewardEntry.id, mission.rewardSource, now);
-    const totalPoints = Math.max(0, current.totalPoints + starterBoostedXp(current, mission.rewardXp));
-    const updated = { ...current, totalPoints, title: titleForPoints(totalPoints) };
-    updated.badges = badgesForUser(updated);
-    transaction.update(userRef, {
-      badges: updated.badges,
-      title: updated.title,
-      totalPoints: updated.totalPoints
-    });
-    transaction.set(claimRef, {
-      id: mission.id,
-      claimedAt: now,
-      localDay: day,
-      missionTitle: mission.title,
-      rewardBugId: rewardEntry.id,
-      rewardGrantedAt: now,
-      rewardRarity: rewardEntry.rarity,
-      rewardSource: mission.rewardSource,
-      rewardType: "bugdex_plus_xp",
-      rewardXp: mission.rewardXp
-    });
-    return { drop, user: updated };
+  return claimDailyPoints(user, mission.id, mission.rewardXp, mission.rewardSource, {
+    localDay: localDayId(),
+    missionTitle: mission.title,
+    rewardType: "xp"
   });
-  if (result?.drop) clearBugDexInventoryCache(user.uid);
-  return result;
 }
 
 export async function claimDailyMissionBonusWithReward(user: User, missions: DailyMission[]): Promise<{ drop: BugDexDropResult; user: User } | null> {
   if (!dailyMissionSetComplete(missions)) return null;
-  const bonusId = dailyMissionBonusId();
+  const claimId = dailyMissionBonusId();
+  const result = await claimDailyPoints(user, claimId, dailyBonusXp, "daily_mission_bonus", {
+    localDay: localDayId(),
+    missionIds: missions.filter((mission) => mission.progress >= mission.target).map((mission) => mission.id),
+    rewardType: "xp_bonus"
+  }, true);
+  if (result) {
+    await syncResearchProgress(result.user, "daily_route", { claimId }).catch(() => undefined);
+    if (result.user.momentumSegments === 5 && result.user.momentumLastActiveDay === localDayId()) {
+      await syncResearchProgress(result.user, "momentum_cycle", { cycle: result.user.momentumCycle ?? 0 }).catch(() => undefined);
+    }
+  }
+  return result;
+}
+
+async function claimDailyPoints(
+  user: User,
+  claimId: string,
+  basePoints: number,
+  source: BugDexDropSource,
+  claimData: Record<string, unknown>,
+  updateMomentum = false
+): Promise<{ drop: BugDexDropResult; user: User } | null> {
+  const claimKey = `${user.uid}:${claimId}`;
+  const awardedPoints = starterBoostedXp(user, Math.max(0, Math.floor(basePoints)));
   const now = new Date().toISOString();
-  const day = localDayId();
-  const claimKey = `${user.uid}:${bonusId}`;
 
   if (!isFirebaseConfigured) {
     if (demoDailyClaims.has(claimKey)) return null;
     demoDailyClaims.add(claimKey);
-    const entry = pickBugDexRewardEntry(user, "daily_mission_bonus");
-    const item: BugDexInventoryItem = { bugId: entry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: entry.rarity, sources: ["daily_mission_bonus"] };
-    return { drop: { rewardType: "bug", entry, item, isNew: true, source: "daily_mission_bonus" }, user };
+    const updated = updateMomentum ? userWithMomentum(userWithPoints(user, awardedPoints), localDayId()) : userWithPoints(user, awardedPoints);
+    return { drop: pointDrop(source, awardedPoints, updated), user: updated };
   }
 
-  const claimRef = doc(db, "users", user.uid, "dailyMissionClaims", bonusId);
-  const rewardEntry = pickBugDexRewardEntry(user, "daily_mission_bonus");
-  const rewardRef = doc(db, "users", user.uid, "bugdex", rewardEntry.id);
+  const userRef = doc(db, "users", user.uid);
+  const claimRef = doc(db, "users", user.uid, "dailyMissionClaims", claimId);
   return runTransaction(db, async (transaction) => {
-    const claimSnapshot = await transaction.get(claimRef);
-    const rewardSnapshot = await transaction.get(rewardRef);
-    if (claimSnapshot.exists()) return null;
-    const existingReward = rewardSnapshot.exists() ? rewardSnapshot.data() as BugDexInventoryItem : null;
-    const item: BugDexInventoryItem = existingReward
-      ? { ...existingReward, count: existingReward.count + 1, lastUnlockedAt: now, sources: Array.from(new Set([...existingReward.sources, "daily_mission_bonus"])) }
-      : { bugId: rewardEntry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: rewardEntry.rarity, sources: ["daily_mission_bonus"] };
-    transaction.set(rewardRef, item);
-    transaction.set(claimRef, {
-      id: bonusId,
-      claimedAt: now,
-      localDay: day,
-      missionIds: missions.map((mission) => mission.id),
-      rewardBugId: rewardEntry.id,
-      rewardGrantedAt: now,
-      rewardRarity: rewardEntry.rarity,
-      rewardSource: "daily_mission_bonus",
-      rewardType: "bug",
-      rewardXp: 0
+    const [userSnapshot, claimSnapshot] = await Promise.all([transaction.get(userRef), transaction.get(claimRef)]);
+    if (!userSnapshot.exists() || claimSnapshot.exists()) return null;
+    const current = userSnapshot.data() as User;
+    const actualPoints = starterBoostedXp(current, Math.max(0, Math.floor(basePoints)));
+    const updated = updateMomentum ? userWithMomentum(userWithPoints(current, actualPoints), localDayId()) : userWithPoints(current, actualPoints);
+    transaction.update(userRef, {
+      badges: updated.badges,
+      ...(updateMomentum ? {
+        momentumCycle: updated.momentumCycle ?? 0,
+        momentumLastActiveDay: updated.momentumLastActiveDay ?? localDayId(),
+        momentumSegments: updated.momentumSegments ?? 0
+      } : {}),
+      title: updated.title,
+      totalPoints: updated.totalPoints
     });
-    return { drop: { rewardType: "bug", entry: rewardEntry, item, isNew: !existingReward, source: "daily_mission_bonus" }, user };
+    transaction.set(claimRef, dailyMissionClaimPayload({
+      claimData,
+      claimId,
+      claimedAt: now,
+      rewardSource: source,
+      rewardXp: actualPoints
+    }));
+    return { drop: pointDrop(source, actualPoints, updated), user: updated };
   });
+}
+
+function userWithMomentum(user: User, day: string): User {
+  const next = advanceMomentum({
+    cycle: user.momentumCycle ?? 0,
+    lastActiveDay: user.momentumLastActiveDay,
+    segments: user.momentumSegments ?? 0
+  }, day);
+  return {
+    ...user,
+    momentumCycle: next.cycle,
+    momentumLastActiveDay: next.lastActiveDay,
+    momentumSegments: next.segments
+  };
+}
+
+function userWithPoints(user: User, points: number): User {
+  const totalPoints = Math.max(0, user.totalPoints + points);
+  const updated = { ...user, totalPoints, title: titleForPoints(totalPoints) };
+  updated.badges = badgesForUser(updated);
+  return updated;
+}
+
+function pointDrop(source: BugDexDropSource, points: number, updatedUser: User): BugDexDropResult {
+  return { isNew: false, points, rewardType: "points", source, updatedUser };
 }
 
 function isUserDuel(duel: BugSmashDuel, user: User): boolean {

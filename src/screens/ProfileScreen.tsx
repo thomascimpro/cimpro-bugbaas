@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Animated, Easing, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
 import { BugArtImage } from "../components/BugArtImage";
+import { GameUiIcon } from "../components/ui/GameUiIcon";
 import { DisplayNameModal } from "../components/DisplayNameModal";
 import { SeverityBadge } from "../components/SeverityBadge";
 import { StatusBadge } from "../components/StatusBadge";
-import { TierBadge } from "../components/TierBadge";
 import { getBadgeArtSource } from "../services/badgeArt";
 import { listBugs } from "../services/bugService";
 import { entryByBugId, listBugDexInventory, listBugDexUnlocks } from "../services/bugDexService";
@@ -39,15 +39,21 @@ import { BadgeDefinition, badgeDefinitions, BugDexEntry, BugDexRarity, bugDexEnt
 import { bestUnlockedCharacterId, CharacterId, CharacterUnlockContext, characterOptions, isCharacterUnlocked, safeCharacterId } from "../services/characterService";
 import { getUserById, listUsersLight, upvotePointValue } from "../services/userService";
 import { BugDexInventoryItem, BugDexUnlock, BugMastery, BugReport, Organization, OrganizationInvite, User } from "../types";
+import { useResponsiveLayout } from "../theme/useResponsiveLayout";
 import { sharedStyles } from "./sharedStyles";
 
 const bugDexCollectionImage = require("../../assets/generated/bugdex-collection-view-hd.jpg");
+const profileIdentityArt = require("../../assets/new/ChatGPT Image 25 jul 2026, 20_59_14 (5).webp");
+
+type CharacterFilter = "unlocked" | "points" | "badges";
 
 type Props = {
   user: User;
   isOwnProfile?: boolean;
   onBack: () => void;
   onLogout?: () => void;
+  onOpenSettings?: () => void;
+  onOpenReports?: () => void;
   onUpdateCharacter?: (characterId: CharacterId, context?: CharacterUnlockContext) => Promise<void>;
   onUpdateDisplayName?: (displayName: string) => Promise<void>;
   onCreateOrganization?: (organizationName: string) => Promise<void>;
@@ -58,16 +64,20 @@ type Props = {
 
 const bugSmashDuelImage = require("../../assets/generated/bug-smash-duel-concept.jpg");
 
-export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onUpdateCharacter, onUpdateDisplayName, onCreateOrganization, onUserUpdated, onSelectBug, onChallengeDuel }: Props) {
+export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onOpenReports, onOpenSettings, onUpdateCharacter, onUpdateDisplayName, onCreateOrganization, onUserUpdated, onSelectBug, onChallengeDuel }: Props) {
   const { t, tr } = useI18n();
+  const layout = useResponsiveLayout();
+  const heroReveal = useRef(new Animated.Value(0)).current;
   const tier = getTierForPoints(user.totalPoints);
-  const userPresence = presenceLabel(user, t);
   const [bugs, setBugs] = useState<BugReport[]>([]);
   const [editNameVisible, setEditNameVisible] = useState(false);
   const [characterBusy, setCharacterBusy] = useState("");
   const [characterPickerOpen, setCharacterPickerOpen] = useState(false);
+  const [characterFilter, setCharacterFilter] = useState<CharacterFilter>("unlocked");
   const [badgeInfoVisible, setBadgeInfoVisible] = useState(false);
+  const [rankInfoVisible, setRankInfoVisible] = useState(false);
   const [bugDexVisible, setBugDexVisible] = useState(false);
+  const [organizationWorkspaceOpen, setOrganizationWorkspaceOpen] = useState(false);
   const [organizationName, setOrganizationName] = useState("");
   const [organizationRenameName, setOrganizationRenameName] = useState("");
   const [organizationBusy, setOrganizationBusy] = useState(false);
@@ -116,6 +126,15 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   const storedCharacterId = safeCharacterId(user.characterId);
   const selectedCharacterId = isCharacterUnlocked(storedCharacterId, user.totalPoints, selectedCharacterUnlockContext) ? storedCharacterId : bestUnlockedCharacterId(user.totalPoints, characterUnlockContext);
   const selectedCharacter = characterOptions.find((item) => item.id === selectedCharacterId) ?? characterOptions[0];
+  const currentTierIndex = Math.max(0, userTiers.findIndex((item) => item.title === tier.title));
+  const nextTier = userTiers[currentTierIndex + 1] ?? null;
+  const tierRange = nextTier ? Math.max(1, nextTier.minPoints - tier.minPoints) : 1;
+  const tierProgress = nextTier ? Math.min(1, Math.max(0, (user.totalPoints - tier.minPoints) / tierRange)) : 1;
+  const filteredCharacterOptions = characterOptions.filter((option) => {
+    if (characterFilter === "points") return !option.unlockBadgeId;
+    if (characterFilter === "badges") return Boolean(option.unlockBadgeId);
+    return isCharacterUnlocked(option.id, user.totalPoints, characterUnlockContext);
+  });
   const unlockedBadges = badgeDefinitions.filter((badge) => badgeUnlocked(user, badge, unlockedBugDexIds, unlockedBugDexStats));
   const bugDexItems = inventory
     .map((item) => {
@@ -130,6 +149,15 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   const activeSquadEntries = activeSquadIds
     .map((bugId) => entryByBugId(bugId))
     .filter((entry): entry is BugDexEntry => Boolean(entry));
+
+  useEffect(() => {
+    Animated.timing(heroReveal, {
+      duration: 520,
+      easing: Easing.out(Easing.cubic),
+      toValue: 1,
+      useNativeDriver: true
+    }).start();
+  }, [heroReveal]);
 
   useEffect(() => {
     setLoadingBugs(true);
@@ -378,7 +406,21 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
   const pendingInvite = incomingInvites[0] ?? null;
 
   return (
-    <ScrollView contentContainerStyle={styles.content} style={sharedStyles.screen} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.content,
+        {
+          maxWidth: layout.contentMaxWidth,
+          paddingBottom: isOwnProfile
+            ? layout.bottomNavHeight + layout.bottomNavInset + 48
+            : 160,
+          paddingHorizontal: layout.gutter
+        },
+        layout.isTablet && styles.contentWide
+      ]}
+      style={[sharedStyles.screen, styles.screen]}
+      showsVerticalScrollIndicator={false}
+    >
       <Modal animationType="fade" transparent visible={Boolean(isOwnProfile && pendingInvite)}>
         <View style={styles.inviteModalBackdrop}>
           {pendingInvite && (
@@ -398,44 +440,168 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
           )}
         </View>
       </Modal>
-      <View style={styles.hero}>
+      <Animated.View
+        style={[
+          styles.hero,
+          layout.isTablet && styles.heroWide,
+          {
+            opacity: heroReveal,
+            transform: [{
+              translateY: heroReveal.interpolate({
+                inputRange: [0, 1],
+                outputRange: [18, 0]
+              })
+            }]
+          }
+        ]}
+      >
+        <Image accessibilityIgnoresInvertColors resizeMode="contain" source={profileIdentityArt} style={styles.profileIdentityArt} />
+        <Animated.View
+          style={[
+            styles.heroArt,
+            layout.isTablet && styles.heroArtWide,
+            {
+              transform: [{
+                translateY: heroReveal.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [24, 0]
+                })
+              }]
+            }
+          ]}
+        >
+          {isOwnProfile && onUpdateCharacter ? (
+            <Pressable
+              accessibilityLabel={t("profile.changeCharacter")}
+              accessibilityRole="button"
+              onPress={() => setCharacterPickerOpen(true)}
+            >
+              <CharacterAvatarImage characterId={selectedCharacterId} variant="hero" size={154} />
+            </Pressable>
+          ) : (
+            <CharacterAvatarImage characterId={selectedCharacterId} variant="hero" size={154} />
+          )}
+        </Animated.View>
         <View style={styles.heroText}>
           <Text style={styles.kicker}>{isOwnProfile ? t("profile.own") : t("profile.colleague")}</Text>
           <Text style={styles.name} numberOfLines={1}>{user.displayName}</Text>
-          {isOwnProfile && <Text style={styles.email} numberOfLines={1}>{user.email}</Text>}
-          <Text style={styles.presence} numberOfLines={1}>{userPresence}</Text>
-          {isOwnProfile && onUpdateDisplayName && (
-            <Pressable style={styles.nameButton} onPress={() => setEditNameVisible(true)}>
-              <Text style={styles.nameButtonText}>{t("profile.changeName")}</Text>
-            </Pressable>
-          )}
+          <View style={styles.titleBadge}>
+            <Text style={styles.titleBadgeText} numberOfLines={1}>{tr(user.title)}</Text>
+          </View>
+          <Text style={styles.tierName} numberOfLines={1}>{tr(tier.title)}</Text>
+          <View style={styles.rankTrack}>
+            <View style={[styles.rankFill, { backgroundColor: tier.color, width: `${Math.round(tierProgress * 100)}%` }]} />
+          </View>
+          <Text style={styles.rankMeta} numberOfLines={1}>
+            {nextTier ? t("profile.rankProgress", { current: user.totalPoints, next: nextTier.minPoints }) : t("profile.rankComplete")}
+          </Text>
         </View>
-        <CharacterAvatarImage characterId={selectedCharacterId} size={112} />
-      </View>
+      </Animated.View>
 
-      <View style={styles.stats}>
-        <View style={styles.stat}>
+      <View style={[styles.stats, layout.isTablet && styles.statsWide]}>
+        <Pressable
+          accessibilityLabel={t("profile.viewRank")}
+          accessibilityRole="button"
+          style={[styles.stat, styles.statPoints]}
+          onPress={() => setRankInfoVisible(true)}
+        >
           <Text style={styles.value}>{user.totalPoints}</Text>
           <Text style={styles.label}>{t("profile.points")}</Text>
-        </View>
-        <View style={styles.stat}>
+        </Pressable>
+        <View style={[styles.stat, styles.statReports]}>
           <Text style={styles.value}>{user.bugCount}</Text>
           <Text style={styles.label}>{t("home.bugs")}</Text>
         </View>
-        <View style={styles.stat}>
+        <View style={[styles.stat, styles.statCollection]}>
           <Text style={styles.value}>{visibleBugDexCount}/{bugDexEntries.length}</Text>
           <Text style={styles.label}>BugDex</Text>
         </View>
       </View>
 
-      <TierBadge points={user.totalPoints} />
+      {isOwnProfile && (
+        <View style={styles.primaryActions}>
+          {onUpdateCharacter && (
+            <Pressable style={styles.primaryAction} onPress={() => setCharacterPickerOpen(true)}>
+              <GameUiIcon name="profile" size={25} />
+              <Text style={styles.primaryActionText}>{t("profile.customize")}</Text>
+            </Pressable>
+          )}
+          <Pressable style={styles.secondaryAction} onPress={() => setBadgeInfoVisible(true)}>
+            <GameUiIcon name="badge" size={25} />
+            <Text style={styles.secondaryActionText}>{t("profile.badges")}</Text>
+          </Pressable>
+        </View>
+      )}
 
       {isOwnProfile && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t("profile.organization")}</Text>
+        <View style={styles.profileNav}>
+          <Pressable style={styles.profileNavRow} onPress={() => setOrganizationWorkspaceOpen(true)}>
+            <View style={styles.profileNavIcon}><GameUiIcon name="profile" size={28} /></View>
+            <View style={styles.profileNavText}>
+              <Text style={styles.profileNavTitle}>{t("profile.organization")}</Text>
+              <Text style={styles.profileNavMeta} numberOfLines={1}>{isPublicUser ? t("profile.organizationPublic") : currentOrganizationName}</Text>
+            </View>
+            <GameUiIcon name="next" size={22} />
+          </Pressable>
+          {onOpenSettings && (
+            <Pressable style={styles.profileNavRow} onPress={onOpenSettings}>
+              <View style={styles.profileNavIcon}><GameUiIcon name="settings" size={28} /></View>
+              <View style={styles.profileNavText}>
+                <Text style={styles.profileNavTitle}>{t("profile.settings")}</Text>
+                <Text style={styles.profileNavMeta}>{t("profile.settingsMeta")}</Text>
+              </View>
+              <GameUiIcon name="next" size={22} />
+            </Pressable>
+          )}
+          {onOpenReports && (
+            <Pressable style={styles.profileNavRow} onPress={onOpenReports}>
+              <View style={styles.profileNavIcon}><GameUiIcon name="report" size={28} /></View>
+              <View style={styles.profileNavText}>
+                <Text style={styles.profileNavTitle}>{t("home.reportTitle")}</Text>
+                <Text style={styles.profileNavMeta}>{t("home.reportBody")}</Text>
+              </View>
+              <GameUiIcon name="next" size={22} />
+            </Pressable>
+          )}
+          {onUpdateDisplayName && (
+            <Pressable style={styles.profileNavRow} onPress={() => setEditNameVisible(true)}>
+              <View style={styles.profileNavIcon}><GameUiIcon name="profile" size={28} /></View>
+              <View style={styles.profileNavText}>
+                <Text style={styles.profileNavTitle}>{t("profile.account")}</Text>
+                <Text style={styles.profileNavMeta} numberOfLines={1}>{user.email}</Text>
+              </View>
+              <GameUiIcon name="next" size={22} />
+            </Pressable>
+          )}
+          {onLogout && (
+            <Pressable style={styles.profileNavRow} onPress={onLogout}>
+              <View style={styles.profileNavIcon}><GameUiIcon name="back" size={24} /></View>
+              <View style={styles.profileNavText}>
+                <Text style={[styles.profileNavTitle, styles.profileNavDanger]}>{t("profile.logout")}</Text>
+                <Text style={styles.profileNavMeta}>{t("profile.account")}</Text>
+              </View>
+            </Pressable>
+          )}
+        </View>
+      )}
+
+      <Modal animationType="slide" visible={isOwnProfile && organizationWorkspaceOpen} onRequestClose={() => setOrganizationWorkspaceOpen(false)}>
+        <View style={styles.organizationWorkspace}>
+          <View style={styles.organizationWorkspaceHeader}>
+            <View>
+              <Text style={styles.organizationWorkspaceKicker}>BUGBAAS SOCIAL</Text>
+              <Text style={styles.organizationWorkspaceTitle}>{t("profile.organization")}</Text>
+            </View>
+            <Pressable accessibilityLabel={t("common.close")} accessibilityRole="button" onPress={() => setOrganizationWorkspaceOpen(false)} style={styles.organizationWorkspaceClose}>
+              <Text style={styles.organizationWorkspaceCloseText}>×</Text>
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={[styles.organizationWorkspaceContent, { paddingHorizontal: layout.gutter }]} showsVerticalScrollIndicator={false}>
+            <View style={styles.card}>
           <Text style={styles.organizationCurrent}>
             {t("profile.organizationCurrent", { name: isPublicUser ? t("profile.organizationPublic") : currentOrganizationName })}
           </Text>
+          <Text style={styles.organizationHelp}>{t("profile.organizationIntro")}</Text>
           {userOrganizationIds.length > 0 && (
             <>
             <Text style={styles.organizationSectionTitle}>{t("profile.organizationExisting")}</Text>
@@ -601,8 +767,10 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
             </>
           )}
           {!!organizationError && <Text style={sharedStyles.error}>{tr(organizationError)}</Text>}
+            </View>
+          </ScrollView>
         </View>
-      )}
+      </Modal>
 
       {!isOwnProfile && onChallengeDuel && (
         <View style={styles.card}>
@@ -645,7 +813,7 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
         </View>
       )}
 
-      <View style={styles.card}>
+      {!isOwnProfile && <View style={styles.card}>
         <Pressable style={styles.bugDexFeatureButton} onPress={() => setBugDexVisible(true)}>
           <Image accessibilityIgnoresInvertColors resizeMode="cover" source={bugDexCollectionImage} style={styles.bugDexFeatureImage} />
           <View style={styles.bugDexFeatureOverlay}>
@@ -661,89 +829,10 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
             </View>
           </View>
         </Pressable>
-      </View>
+      </View>}
 
-      <View style={styles.card}>
-        <View style={styles.characterHeader}>
-          <View>
-            <Text style={styles.cardTitle}>{t("profile.character")}</Text>
-            <Text style={styles.characterSubtitle}>{t("profile.characterSubtitle")}</Text>
-          </View>
-          <CharacterAvatarImage characterId={selectedCharacterId} size={74} />
-        </View>
-        {isOwnProfile && onUpdateCharacter ? (
-          <>
-            <Pressable style={[styles.characterDropdown, characterPickerOpen && styles.characterDropdownOpen]} onPress={() => setCharacterPickerOpen((current) => !current)}>
-              <View style={styles.characterDropdownText}>
-                <Text style={[styles.characterDropdownTitle, characterPickerOpen && styles.characterDropdownTitleOpen]}>{selectedCharacter.label}</Text>
-                <Text style={[styles.characterDropdownMeta, characterPickerOpen && styles.characterDropdownMetaOpen]}>{t("profile.changeCharacter")}</Text>
-              </View>
-            </Pressable>
-            {characterPickerOpen && (
-              <View style={styles.characterGrid}>
-                {characterOptions.map((option) => {
-                  const selected = option.id === selectedCharacterId;
-                  const unlocked = isCharacterUnlocked(option.id, user.totalPoints, characterUnlockContext);
-                  return (
-                    <Pressable
-                      key={option.id}
-                      style={[styles.characterOption, !unlocked && styles.characterOptionLocked, selected && { borderColor: option.accent, backgroundColor: "#fff9df" }]}
-                      disabled={Boolean(characterBusy) || !unlocked}
-                      onPress={async () => {
-                        setCharacterBusy(option.id);
-                        try {
-                          await onUpdateCharacter(option.id, characterUnlockContext);
-                        } finally {
-                          setCharacterBusy("");
-                        }
-                      }}
-                    >
-                      <CharacterAvatarImage characterId={option.id} selected={selected} size={66} />
-                      <Text style={styles.characterName} numberOfLines={2}>{characterBusy === option.id ? "..." : option.label}</Text>
-                      {!unlocked && <Text style={styles.characterLockText} numberOfLines={1}>{option.unlockLabel ?? t("profile.characterUnlock", { points: option.unlockPoints })}</Text>}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-          </>
-        ) : (
-          <Text style={styles.characterSubtitle}>{selectedCharacter.label}</Text>
-        )}
-      </View>
 
-      <View style={styles.stage}>
-        {userTiers.map((item) => {
-          const current = item.title === tier.title;
-          return (
-            <View key={item.title} style={[styles.stageItem, { backgroundColor: item.frameBackground, borderColor: item.frameColor }, current && styles.stageItemActive]}>
-              <View style={[styles.stageShine, { backgroundColor: item.frameAccent }]} />
-              <BugArtImage bugId={item.bugArtId} fallbackLevel={item.evolutionLevel} fallbackVariant={item.insect} size={Math.max(34, item.bugSize * 0.54)} />
-              <View style={[styles.stageMedal, { backgroundColor: item.frameAccent, borderColor: item.frameColor }]}>
-                <Text style={[styles.stageStar, { color: item.frameColor }]}>★</Text>
-              </View>
-            </View>
-          );
-        })}
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>{t("profile.status")}</Text>
-        <View style={styles.statusLine}>
-          <Text style={styles.statusLabel}>{t("profile.title")}</Text>
-          <Text style={styles.statusValue}>{tr(user.title)}</Text>
-        </View>
-        <View style={styles.statusLine}>
-          <Text style={styles.statusLabel}>{t("profile.tier")}</Text>
-          <Text style={[styles.statusValue, { color: tier.color }]}>{tr(tier.title)}</Text>
-        </View>
-        <View style={styles.statusLine}>
-          <Text style={styles.statusLabel}>{t("profile.splats")}</Text>
-          <Text style={styles.statusValue}>{user.splatCount ?? 0}</Text>
-        </View>
-      </View>
-
-      <View style={styles.card}>
+      {!isOwnProfile && <View style={styles.card}>
         <View style={styles.badgeHeader}>
           <View style={styles.badgeHeaderText}>
             <Text style={styles.cardTitle}>{t("profile.badges")}</Text>
@@ -756,9 +845,9 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
         <View style={styles.badges}>
           {unlockedBadges.length ? unlockedBadges.map(renderBadge) : <Text style={styles.emptyText}>{t("profile.noBadges")}</Text>}
         </View>
-      </View>
+      </View>}
 
-      <View style={styles.card}>
+      {!isOwnProfile && <View style={styles.card}>
         <Text style={styles.cardTitle}>{t("home.bugs")}</Text>
         {loadingBugs ? <ActivityIndicator /> : (
           <View style={styles.bugList}>
@@ -777,16 +866,11 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
             )) : <Text style={styles.emptyText}>{t("profile.noBugs")}</Text>}
           </View>
         )}
-      </View>
+      </View>}
 
-      {isOwnProfile && onLogout && (
-        <Pressable style={sharedStyles.dangerButton} onPress={onLogout}>
-          <Text style={sharedStyles.buttonText}>{t("profile.logout")}</Text>
-        </Pressable>
-      )}
-      <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
+      {!isOwnProfile && <Pressable style={sharedStyles.secondaryButton} onPress={onBack}>
         <Text style={sharedStyles.secondaryButtonText}>{t("common.back")}</Text>
-      </Pressable>
+      </Pressable>}
       {isOwnProfile && onUpdateDisplayName && (
         <DisplayNameModal
           user={user}
@@ -798,6 +882,87 @@ export function ProfileScreen({ user, isOwnProfile = true, onBack, onLogout, onU
           }}
         />
       )}
+      <Modal animationType="slide" visible={characterPickerOpen} onRequestClose={() => setCharacterPickerOpen(false)}>
+        <View style={styles.characterPickerScreen}>
+          <View style={styles.characterPickerTopBar}>
+            <View>
+              <Text style={styles.characterPickerKicker}>{t("profile.customize")}</Text>
+              <Text style={styles.characterPickerTitle}>{t("profile.chooseCharacter")}</Text>
+            </View>
+            <Pressable style={styles.characterPickerClose} onPress={() => setCharacterPickerOpen(false)}>
+              <Text style={styles.characterPickerCloseText}>×</Text>
+            </Pressable>
+          </View>
+          <View style={styles.characterPreview}>
+            <CharacterAvatarImage characterId={selectedCharacterId} variant="hero" size={176} selected />
+            <Text style={styles.characterPreviewName}>{selectedCharacter.label}</Text>
+            <Text style={styles.characterPreviewMeta}>{tr(tier.title)}</Text>
+          </View>
+          <View style={styles.characterFilters}>
+            {(["unlocked", "points", "badges"] as CharacterFilter[]).map((filter) => (
+              <Pressable key={filter} style={[styles.characterFilter, characterFilter === filter && styles.characterFilterActive]} onPress={() => setCharacterFilter(filter)}>
+                <Text style={[styles.characterFilterText, characterFilter === filter && styles.characterFilterTextActive]}>{t(`profile.characterFilter.${filter}`)}</Text>
+              </Pressable>
+            ))}
+          </View>
+          <ScrollView contentContainerStyle={styles.characterPickerGrid} showsVerticalScrollIndicator={false}>
+            {filteredCharacterOptions.map((option) => {
+              const selected = option.id === selectedCharacterId;
+              const unlocked = isCharacterUnlocked(option.id, user.totalPoints, characterUnlockContext);
+              return (
+                <Pressable
+                  key={option.id}
+                  style={[styles.characterPickerOption, !unlocked && styles.characterOptionLocked, selected && { borderColor: option.accent, backgroundColor: "#fff9df" }]}
+                  disabled={Boolean(characterBusy) || !unlocked || !onUpdateCharacter}
+                  onPress={async () => {
+                    if (!onUpdateCharacter) return;
+                    setCharacterBusy(option.id);
+                    try {
+                      await onUpdateCharacter(option.id, characterUnlockContext);
+                      setCharacterPickerOpen(false);
+                    } finally {
+                      setCharacterBusy("");
+                    }
+                  }}
+                >
+                  <CharacterAvatarImage characterId={option.id} selected={selected} locked={!unlocked} size={92} />
+                  <Text style={styles.characterName} numberOfLines={2}>{characterBusy === option.id ? "..." : option.label}</Text>
+                  <Text style={styles.characterLockText} numberOfLines={2}>
+                    {unlocked ? (selected ? t("profile.characterSelected") : t("profile.characterReady")) : option.unlockLabel ?? t("profile.characterUnlock", { points: option.unlockPoints })}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      </Modal>
+      <Modal transparent animationType="fade" visible={rankInfoVisible} onRequestClose={() => setRankInfoVisible(false)}>
+        <View style={styles.badgeModalBackdrop}>
+          <View style={styles.badgeModalCard}>
+            <Text style={styles.badgeModalTitle}>{t("profile.rankOverview")}</Text>
+            <Text style={styles.badgeModalIntro}>{user.totalPoints} {t("profile.points")} · {tr(tier.title)}</Text>
+            <ScrollView style={styles.badgeModalList} showsVerticalScrollIndicator={false}>
+              {userTiers.map((rank) => {
+                const active = rank.title === tier.title;
+                const unlocked = user.totalPoints >= rank.minPoints;
+                return (
+                  <View key={rank.title} style={[styles.rankOverviewRow, active && styles.rankOverviewRowActive]}>
+                    <View style={[styles.rankOverviewDot, { backgroundColor: rank.color }]} />
+                    <View style={styles.rankOverviewText}>
+                      <Text style={styles.rankOverviewTitle}>{tr(rank.title)}</Text>
+                      <Text style={styles.rankOverviewMeta}>{rank.minPoints} {t("profile.points")}</Text>
+                    </View>
+                    <Text style={styles.rankOverviewStatus}>{active ? t("profile.currentRank") : unlocked ? "✓" : "🔒"}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <Pressable style={styles.badgeModalButton} onPress={() => setRankInfoVisible(false)}>
+              <Text style={styles.badgeModalButtonText}>{t("common.close")}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <Modal transparent animationType="fade" visible={badgeInfoVisible} onRequestClose={() => setBadgeInfoVisible(false)}>
         <View style={styles.badgeModalBackdrop}>
           <View style={styles.badgeModalCard}>
@@ -918,25 +1083,62 @@ function badgeRequirementText(badge: BadgeDefinition, t: (key: string, params?: 
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    padding: 0,
+    paddingBottom: 0
+  },
   content: {
-    paddingBottom: 160
+    paddingBottom: 160,
+    paddingTop: 14,
+    width: "100%"
+  },
+  contentWide: {
+    alignSelf: "center",
+    paddingTop: 20
   },
   hero: {
     alignItems: "center",
-    backgroundColor: "#102018",
-    borderColor: "#294338",
-    borderRadius: 8,
+    backgroundColor: "#17233f",
+    borderColor: "#e5ba58",
+    borderRadius: 28,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 14,
+    gap: 12,
     marginBottom: 12,
+    minHeight: 190,
+    overflow: "hidden",
     padding: 16
   },
+  heroWide: {
+    minHeight: 228,
+    paddingHorizontal: 28
+  },
+  profileIdentityArt: {
+    height: 190,
+    opacity: 0.1,
+    position: "absolute",
+    right: -18,
+    top: -8,
+    width: 190
+  },
+  heroArt: {
+    alignItems: "center",
+    alignSelf: "stretch",
+    justifyContent: "flex-end",
+    marginBottom: -16,
+    marginLeft: -12,
+    width: 146
+  },
+  heroArtWide: {
+    marginLeft: 4,
+    width: 190
+  },
   heroText: {
-    flex: 1
+    flex: 1,
+    minWidth: 0
   },
   kicker: {
-    color: "#d7bd57",
+    color: "#ffcb67",
     fontSize: 12,
     fontWeight: "900",
     marginBottom: 4
@@ -952,10 +1154,50 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginTop: 5
   },
+  titleBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,203,103,0.14)",
+    borderColor: "rgba(255,203,103,0.52)",
+    borderRadius: 999,
+    borderWidth: 1,
+    marginTop: 6,
+    maxWidth: "100%",
+    paddingHorizontal: 9,
+    paddingVertical: 4
+  },
+  titleBadgeText: {
+    color: "#ffe5a7",
+    fontSize: 11,
+    fontWeight: "900"
+  },
+  tierName: {
+    color: "#ffffff",
+    fontSize: 13,
+    fontWeight: "900",
+    marginTop: 10
+  },
+  rankTrack: {
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderRadius: 999,
+    height: 9,
+    marginTop: 6,
+    overflow: "hidden",
+    width: "100%"
+  },
+  rankFill: {
+    borderRadius: 999,
+    height: "100%"
+  },
+  rankMeta: {
+    color: "#c9d9f4",
+    fontSize: 10,
+    fontWeight: "800",
+    marginTop: 5
+  },
   presence: {
     alignSelf: "flex-start",
-    backgroundColor: "#d7bd57",
-    borderRadius: 8,
+    backgroundColor: "#d2a43b",
+    borderRadius: 999,
     color: "#102018",
     fontSize: 11,
     fontWeight: "900",
@@ -966,8 +1208,8 @@ const styles = StyleSheet.create({
   },
   nameButton: {
     alignSelf: "flex-start",
-    backgroundColor: "#fdfefb",
-    borderRadius: 8,
+    backgroundColor: "#fffaf0",
+    borderRadius: 999,
     marginTop: 10,
     paddingHorizontal: 10,
     paddingVertical: 7
@@ -1193,11 +1435,14 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 12
   },
+  statsWide: {
+    gap: 14
+  },
   stat: {
     alignItems: "center",
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffaf2",
+    borderColor: "#dfd4be",
+    borderRadius: 20,
     borderWidth: 1,
     elevation: 2,
     flex: 1,
@@ -1209,6 +1454,18 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     justifyContent: "center"
   },
+  statPoints: {
+    borderTopColor: "#e29a3d",
+    borderTopWidth: 4
+  },
+  statReports: {
+    borderTopColor: "#5596d8",
+    borderTopWidth: 4
+  },
+  statCollection: {
+    borderTopColor: "#9b6bc2",
+    borderTopWidth: 4
+  },
   value: {
     color: "#17211c",
     fontSize: 22,
@@ -1218,6 +1475,153 @@ const styles = StyleSheet.create({
     color: "#53645d",
     fontWeight: "700",
     marginTop: 4
+  },
+  primaryActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12
+  },
+  primaryAction: {
+    alignItems: "center",
+    backgroundColor: "#d9683e",
+    borderColor: "#f19a64",
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    minHeight: 52,
+    paddingHorizontal: 14
+  },
+  primaryActionIcon: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900"
+  },
+  primaryActionText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  secondaryAction: {
+    alignItems: "center",
+    backgroundColor: "#eef3ff",
+    borderColor: "#8da9dd",
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    minHeight: 52,
+    paddingHorizontal: 14
+  },
+  secondaryActionIcon: {
+    color: "#7252a4",
+    fontSize: 17,
+    fontWeight: "900"
+  },
+  secondaryActionText: {
+    color: "#3f3268",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  profileNav: {
+    backgroundColor: "#f8f6ff",
+    borderColor: "#d7d4e8",
+    borderRadius: 20,
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: "hidden"
+  },
+  profileNavRow: {
+    alignItems: "center",
+    borderBottomColor: "#e4e1ef",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    minHeight: 58,
+    paddingHorizontal: 14,
+    paddingVertical: 10
+  },
+  profileNavIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 32
+  },
+  profileNavText: {
+    flex: 1,
+    minWidth: 0
+  },
+  profileNavTitle: {
+    color: "#102018",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  profileNavMeta: {
+    color: "#65756e",
+    fontSize: 11,
+    fontWeight: "700",
+    marginTop: 2
+  },
+  profileNavChevron: {
+    color: "#8a9891",
+    fontSize: 24,
+    fontWeight: "700"
+  },
+  profileNavDanger: {
+    color: "#c75143"
+  },
+  organizationWorkspace: {
+    backgroundColor: "#f3efe5",
+    flex: 1
+  },
+  organizationWorkspaceHeader: {
+    alignItems: "center",
+    backgroundColor: "#171735",
+    borderBottomColor: "#d7bd57",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 76,
+    paddingHorizontal: 18,
+    paddingVertical: 10
+  },
+  organizationWorkspaceKicker: {
+    color: "#d7bd57",
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.1
+  },
+  organizationWorkspaceTitle: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  organizationWorkspaceClose: {
+    alignItems: "center",
+    backgroundColor: "#302b59",
+    borderColor: "#665f9b",
+    borderRadius: 18,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: "center",
+    width: 40
+  },
+  organizationWorkspaceCloseText: {
+    color: "#ffffff",
+    fontSize: 26,
+    fontWeight: "700",
+    lineHeight: 28
+  },
+  organizationWorkspaceContent: {
+    alignSelf: "center",
+    maxWidth: 760,
+    paddingBottom: 36,
+    paddingTop: 14,
+    width: "100%"
   },
   stage: {
     alignItems: "center",
@@ -1275,9 +1679,9 @@ const styles = StyleSheet.create({
     lineHeight: 14
   },
   card: {
-    backgroundColor: "#fdfefb",
-    borderColor: "#d7e1d9",
-    borderRadius: 8,
+    backgroundColor: "#fffdf8",
+    borderColor: "#dfd6c6",
+    borderRadius: 20,
     borderWidth: 1,
     marginTop: 12,
     padding: 14
@@ -1343,7 +1747,7 @@ const styles = StyleSheet.create({
   bugDexFeatureButton: {
     backgroundColor: "#102018",
     borderColor: "#d7bd57",
-    borderRadius: 8,
+    borderRadius: 18,
     borderWidth: 1,
     minHeight: 172,
     overflow: "hidden"
@@ -1404,7 +1808,7 @@ const styles = StyleSheet.create({
   duelFeatureButton: {
     backgroundColor: "#102018",
     borderColor: "#b83227",
-    borderRadius: 8,
+    borderRadius: 18,
     borderWidth: 1,
     minHeight: 154,
     overflow: "hidden"
@@ -1455,6 +1859,110 @@ const styles = StyleSheet.create({
     color: "#53645d",
     fontSize: 10,
     fontWeight: "900"
+  },
+  characterPickerScreen: {
+    backgroundColor: "#f5f0e4",
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 18
+  },
+  characterPickerTopBar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between"
+  },
+  characterPickerKicker: {
+    color: "#15724f",
+    fontSize: 11,
+    fontWeight: "900",
+    textTransform: "uppercase"
+  },
+  characterPickerTitle: {
+    color: "#102018",
+    fontSize: 24,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  characterPickerClose: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#d7e1d9",
+    borderRadius: 999,
+    borderWidth: 1,
+    height: 42,
+    justifyContent: "center",
+    width: 42
+  },
+  characterPickerCloseText: {
+    color: "#102018",
+    fontSize: 28,
+    lineHeight: 30
+  },
+  characterPreview: {
+    alignItems: "center",
+    backgroundColor: "#143f36",
+    borderColor: "#d2a43b",
+    borderRadius: 22,
+    borderWidth: 1,
+    marginTop: 14,
+    paddingBottom: 14,
+    paddingTop: 4
+  },
+  characterPreviewName: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "900",
+    marginTop: 4
+  },
+  characterPreviewMeta: {
+    color: "#d7bd57",
+    fontSize: 12,
+    fontWeight: "900",
+    marginTop: 2
+  },
+  characterFilters: {
+    flexDirection: "row",
+    gap: 8,
+    marginVertical: 12
+  },
+  characterFilter: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#d7e1d9",
+    borderRadius: 999,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 40,
+    justifyContent: "center",
+    paddingHorizontal: 8
+  },
+  characterFilterActive: {
+    backgroundColor: "#15724f",
+    borderColor: "#15724f"
+  },
+  characterFilterText: {
+    color: "#53645d",
+    fontSize: 11,
+    fontWeight: "900"
+  },
+  characterFilterTextActive: {
+    color: "#ffffff"
+  },
+  characterPickerGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    paddingBottom: 36
+  },
+  characterPickerOption: {
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderColor: "#d7e1d9",
+    borderRadius: 16,
+    borderWidth: 2,
+    minHeight: 146,
+    padding: 10,
+    width: "31%"
   },
   characterHeader: {
     alignItems: "center",
@@ -1663,6 +2171,46 @@ const styles = StyleSheet.create({
   badgeModalButtonText: {
     color: "#ffffff",
     fontSize: 13,
+    fontWeight: "900"
+  },
+  rankOverviewRow: {
+    alignItems: "center",
+    borderBottomColor: "#dbe3dd",
+    borderBottomWidth: 1,
+    flexDirection: "row",
+    gap: 10,
+    minHeight: 54,
+    paddingHorizontal: 8,
+    paddingVertical: 8
+  },
+  rankOverviewRowActive: {
+    backgroundColor: "#fff4c7",
+    borderColor: "#d7bd57",
+    borderRadius: 8,
+    borderWidth: 1
+  },
+  rankOverviewDot: {
+    borderRadius: 8,
+    height: 16,
+    width: 16
+  },
+  rankOverviewText: {
+    flex: 1
+  },
+  rankOverviewTitle: {
+    color: "#102018",
+    fontSize: 14,
+    fontWeight: "900"
+  },
+  rankOverviewMeta: {
+    color: "#64736c",
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 2
+  },
+  rankOverviewStatus: {
+    color: "#7a5a00",
+    fontSize: 12,
     fontWeight: "900"
   },
   bugDexModalBackdrop: {

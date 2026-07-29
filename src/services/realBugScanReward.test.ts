@@ -13,3 +13,8 @@ test("every unique real bug scan grants one additional owned copy", () => {
   assert.match(bugDexServiceSource, /awardedCopy:\s*true/);
   assert.match(realBugScanServiceSource, /const eventId = `real-bug-scan-\$\{scanId\}`/);
 });
+
+test("successful scan returns the exact granted drop for unlock presentation", () => {
+  assert.match(realBugScanServiceSource, /drop = granted/);
+  assert.match(realBugScanServiceSource, /return \{ result, drop \}/);
+});

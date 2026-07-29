@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { imageSize } from "image-size";
 import { bugDexSets, bugDexSetBadgeBugIds } from "./bugDexSetService.ts";
 import { bugDexEntries, bugDexFacts } from "./pointsService.ts";
 
@@ -8,11 +9,11 @@ const addedEntries = bugDexEntries.filter((entry) => entry.unlockMode === "drop"
 const addedIds = new Set(addedEntries.map((entry) => entry.id));
 const catalogIds = new Set(bugDexEntries.map((entry) => entry.id));
 
-test("Dutch BugDex expansion contains the approved 48 drop-only entries", () => {
-  assert.equal(addedEntries.length, 48);
+test("Dutch BugDex expansion contains all approved drop-only entries", () => {
+  assert.equal(addedEntries.length, 66);
   assert.deepEqual(
     Object.fromEntries(["Gewoon", "Zeldzaam", "Episch", "Legendarisch", "Mythisch"].map((rarity) => [rarity, addedEntries.filter((entry) => entry.rarity === rarity).length])),
-    { Gewoon: 13, Zeldzaam: 16, Episch: 13, Legendarisch: 6, Mythisch: 0 }
+    { Gewoon: 17, Zeldzaam: 22, Episch: 20, Legendarisch: 7, Mythisch: 0 }
   );
   assert.ok(addedEntries.every((entry) => entry.minPoints === 0 && entry.minBugs === 0));
 });
@@ -20,12 +21,19 @@ test("Dutch BugDex expansion contains the approved 48 drop-only entries", () => 
 test("every added entry has transparent raster art and a fact", () => {
   const bugArtSource = readFileSync("src/services/bugArt.ts", "utf8");
   for (const entry of addedEntries) {
-    const assetPath = `assets/bugdex/${entry.id}.png`;
-    const png = readFileSync(assetPath);
-    assert.ok(bugArtSource.includes(`"${entry.id}": require("../../${assetPath}")`), `missing raster mapping for ${entry.id}`);
-    assert.equal(png.subarray(1, 4).toString("ascii"), "PNG", `${entry.id} is not a PNG`);
-    assert.equal(png[25], 6, `${entry.id} PNG is missing an alpha channel`);
-    assert.ok(png.readUInt32BE(16) <= 768 && png.readUInt32BE(20) <= 768, `${entry.id} exceeds 768px`);
+    const mapping = bugArtSource.match(new RegExp(`"${entry.id}": require\\("../../([^"]+)"\\)`));
+    assert.ok(mapping, `missing raster mapping for ${entry.id}`);
+    const assetPath = mapping[1];
+    const raster = readFileSync(assetPath);
+    const isPng = raster.subarray(1, 4).toString("ascii") === "PNG";
+    const isWebp = raster.subarray(0, 4).toString("ascii") === "RIFF" && raster.subarray(8, 12).toString("ascii") === "WEBP";
+    assert.ok(isPng || isWebp, `${entry.id} is not PNG or WebP`);
+    const hasAlpha = isPng
+      ? raster[25] === 4 || raster[25] === 6 || (raster[25] === 3 && raster.includes(Buffer.from("tRNS")))
+      : raster.includes(Buffer.from("ALPH"));
+    assert.ok(hasAlpha, `${entry.id} raster is missing transparency`);
+    const dimensions = imageSize(raster);
+    assert.ok((dimensions.width ?? Infinity) <= 768 && (dimensions.height ?? Infinity) <= 768, `${entry.id} exceeds 768px`);
     assert.ok(bugDexFacts[entry.id]?.length > 20, `missing useful fact for ${entry.id}`);
   }
 });

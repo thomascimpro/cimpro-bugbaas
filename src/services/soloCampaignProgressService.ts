@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "../firebase";
 import { soloCampaignMaxWave } from "./soloCampaignBalance";
+import { carrySoloCampaignProgressIntoWeek } from "./soloCampaignProgressModel";
 
 export type SoloCampaignProgress = {
   lives: number;
@@ -94,13 +95,7 @@ function normalize(value: Partial<SoloCampaignProgress>): SoloCampaignProgress {
 }
 
 function resetIfExpired(progress: SoloCampaignProgress): SoloCampaignProgress {
-  if (progress.weekId === currentWeekId()) return progress;
-  return {
-    lives: soloCampaignStartingLives,
-    updatedAt: new Date().toISOString(),
-    wave: 1,
-    weekId: currentWeekId()
-  };
+  return carrySoloCampaignProgressIntoWeek(progress, currentWeekId(), new Date().toISOString());
 }
 
 function currentWeekId(): string {

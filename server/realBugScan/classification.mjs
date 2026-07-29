@@ -54,6 +54,10 @@ export function normalizeIdentification(
   const catalogMap = new Map(catalog.map((entry) => [entry.id, entry]));
   const containsBug = raw?.containsBug === true;
   const imageQuality = raw?.imageQuality === "poor" ? "poor" : "good";
+  const captureAuthenticity = ["live", "reproduction", "uncertain"].includes(raw?.captureAuthenticity)
+    ? raw.captureAuthenticity
+    : "live";
+  const authenticityReason = cleanString(raw?.authenticityReason);
   const catalogStatus = ["matched", "not_in_catalog", "uncertain"].includes(raw?.catalogStatus)
     ? raw.catalogStatus
     : "uncertain";
@@ -74,7 +78,9 @@ export function normalizeIdentification(
     && normalizedTaxonName(commonName) === normalizedTaxonName(matchedEntry.name);
 
   let status;
-  if (!containsBug) status = "rejected_no_bug";
+  if (captureAuthenticity === "reproduction") status = "rejected_authenticity";
+  else if (!containsBug) status = "rejected_no_bug";
+  else if (captureAuthenticity === "uncertain") status = "pending_review";
   else if (imageQuality === "poor") status = "rejected_quality";
   else if (catalogStatus === "matched" && exactCatalogNameMatch && confidence >= autoAwardThreshold) status = "matched";
   else if (
@@ -97,6 +103,8 @@ export function normalizeIdentification(
       factEn,
       factFr,
       confidence,
+      captureAuthenticity,
+      authenticityReason,
       reason,
       reasonEn,
       reasonFr

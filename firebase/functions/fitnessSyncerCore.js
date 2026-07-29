@@ -1,17 +1,30 @@
 const { createHash } = require("node:crypto");
 
 const supportedActivities = ["walk", "walking", "hike", "hiking", "run", "running", "cycle", "cycling", "bike", "biking"];
+const approvedReturnHosts = new Set([
+  "bugbaas.vercel.app",
+  "bugbaasv3.vercel.app",
+  "bugbaasv3-6dnlxq9d8-thomas-cim-pro.vercel.app"
+]);
 
 function activityItem(value) {
   return value && typeof value === "object" && value.item && typeof value.item === "object" ? value.item : value;
 }
 
+function activityDistanceValue(item) {
+  return Number(item?.distanceKM ?? item?.distanceKm ?? item?.distance_km);
+}
+
+function isActivityItem(item) {
+  return String(item?.type || "").trim().toLowerCase() === "activity";
+}
+
 function activityDistanceKm(value) {
   const item = activityItem(value);
-  if (!item || item.type !== "Activity" || item.summary === true || item.manual === true) return 0;
+  if (!item || !isActivityItem(item) || item.summary === true || item.manual === true) return 0;
   const activity = String(item.fitnessSyncerActivity || item.activity || "").trim().toLowerCase();
   if (!supportedActivities.some((candidate) => activity === candidate || activity.includes(candidate))) return 0;
-  const distance = Number(item.distanceKM);
+  const distance = activityDistanceValue(item);
   return Number.isFinite(distance) && distance > 0 ? Math.round(distance * 1000) / 1000 : 0;
 }
 
@@ -23,11 +36,11 @@ function activityTimestamp(value) {
 
 function activityMovement(value) {
   const item = activityItem(value);
-  if (!item || item.type !== "Activity" || item.manual === true) return null;
+  if (!item || !isActivityItem(item) || item.manual === true) return null;
   const summary = item.summary === true;
   const activity = String(item.fitnessSyncerActivity || item.activity || "").trim().toLowerCase();
   if (!summary && !supportedActivities.some((candidate) => activity === candidate || activity.includes(candidate))) return null;
-  const distance = Number(item.distanceKM);
+  const distance = activityDistanceValue(item);
   const steps = Number(item.steps);
   const distanceKm = Number.isFinite(distance) && distance > 0 ? Math.round(distance * 1000) / 1000 : 0;
   const safeSteps = Number.isFinite(steps) && steps > 0 ? Math.round(steps) : 0;
@@ -109,10 +122,24 @@ function fitnessUserConfigurationStatus(credentials = {}) {
   return { configured: missingConfiguration.length === 0, missingConfiguration };
 }
 
+function normalizeFitnessSyncerReturnUrl(value, fallback) {
+  const safeFallback = String(fallback || "https://bugbaas.vercel.app/");
+  if (!value) return safeFallback;
+  try {
+    const url = new URL(String(value));
+    const isApprovedWeb = url.protocol === "https:" && approvedReturnHosts.has(url.hostname);
+    const isBugBaasApp = url.protocol === "bugbaas:";
+    const isLocalWeb = url.protocol === "http:" && ["localhost", "127.0.0.1"].includes(url.hostname);
+    return isApprovedWeb || isBugBaasApp || isLocalWeb ? url.toString() : safeFallback;
+  } catch {
+    return safeFallback;
+  }
+}
+
 function tokenExpiryMs(expiresIn, now = Date.now()) {
   const value = Number(expiresIn);
   if (!Number.isFinite(value) || value <= 0) return now + 3600000;
   return value > Math.floor(now / 2000) ? value * 1000 : now + value * 1000;
 }
 
-module.exports = { activityDistanceKm, activityImportId, activityMovement, activityTimestamp, aggregateActivityMovement, fitnessServerConfigurationStatus, fitnessUserConfigurationStatus, tokenExpiryMs };
+module.exports = { activityDistanceKm, activityImportId, activityMovement, activityTimestamp, aggregateActivityMovement, fitnessServerConfigurationStatus, fitnessUserConfigurationStatus, normalizeFitnessSyncerReturnUrl, tokenExpiryMs };

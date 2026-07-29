@@ -2,10 +2,12 @@ package nl.cimpro.bugbaas
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 
+import com.facebook.drawee.backends.pipeline.Fresco
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -20,12 +22,32 @@ class MainActivity : ReactActivity() {
     // This is required for expo-splash-screen.
     setTheme(R.style.AppTheme);
     super.onCreate(null)
+    clearLegacyOsmTileCacheOnce()
     enableImmersiveMode()
   }
 
   override fun onWindowFocusChanged(hasFocus: Boolean) {
     super.onWindowFocusChanged(hasFocus)
     if (hasFocus) enableImmersiveMode()
+  }
+
+  private fun clearLegacyOsmTileCacheOnce(attempt: Int = 0) {
+    val migrationKey = "osm_tile_user_agent_cache_v2"
+    val preferences = getSharedPreferences("bugbaas_migrations", MODE_PRIVATE)
+    if (preferences.getBoolean(migrationKey, false)) return
+
+    if (!Fresco.hasBeenInitialized()) {
+      if (attempt >= 20) {
+        Log.w("BugBaasMapCache", "Fresco was not initialized; legacy OSM cache was not cleared")
+        return
+      }
+      window.decorView.postDelayed({ clearLegacyOsmTileCacheOnce(attempt + 1) }, 250L)
+      return
+    }
+
+    Fresco.getImagePipeline().clearCaches()
+    preferences.edit().putBoolean(migrationKey, true).apply()
+    Log.i("BugBaasMapCache", "Cleared legacy OSM tile cache")
   }
 
   private fun enableImmersiveMode() {

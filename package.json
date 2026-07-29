@@ -1,16 +1,18 @@
 {
   "name": "bugbaas",
-  "version": "2.10.19",
+  "version": "3.0.5",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
-    "apk:release": "cd android && gradlew.bat :app:assembleRelease --console=plain",
-    "apk:fast": "cd android && gradlew.bat :app:assembleRelease --console=plain -Pandroid.enableMinifyInReleaseBuilds=false -Pandroid.enableShrinkResourcesInReleaseBuilds=false -Pandroid.enablePngCrunchInReleaseBuilds=false",
+    "validate:bug-art": "node --test scripts/bugArtWebp.test.mjs",
+    "apk:release": "npm run validate:bug-art && cd android && gradlew.bat :app:assembleRelease --console=plain",
+    "apk:fast": "npm run validate:bug-art && cd android && gradlew.bat :app:assembleRelease --console=plain -Pandroid.enableMinifyInReleaseBuilds=false -Pandroid.enableShrinkResourcesInReleaseBuilds=false -Pandroid.enablePngCrunchInReleaseBuilds=false",
     "typecheck": "tsc --noEmit",
     "test:real-bug-scan": "node --experimental-strip-types --test src/services/pendingBugDexDiscovery.test.ts src/services/realBugCameraAsset.test.ts src/services/realBugScanContract.test.ts src/services/realBugScanFingerprint.test.ts src/services/realBugScanImagePolicy.test.ts src/services/realBugScanProgress.test.ts src/services/realBugScanReward.test.ts src/services/realBugScanUsage.test.ts && node --test server/realBugScan/*.test.mjs",
     "bug-scan:api": "node scripts/realBugScanLocalServer.mjs",
+    "zones:api": "node scripts/nearbySearchZonesLocalServer.mjs",
     "seed:cimpro-org": "node scripts/seed_cimpro_organization.mjs",
     "season:close-duel": "node scripts/close_duel_season.mjs",
     "wiki:deploy": "npx netlify-cli deploy --dir bugbaas-wiki",
@@ -20,20 +22,27 @@
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-google-signin/google-signin": "^16.1.2",
+    "@react-three/fiber": "^9.6.1",
     "expo": "~54.0.36",
+    "expo-asset": "~12.0.13",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
+    "expo-gl": "~16.0.10",
     "expo-image-manipulator": "~14.0.8",
     "expo-image-picker": "~17.0.0",
+    "expo-location": "~19.0.8",
     "expo-notifications": "~0.32.17",
+    "expo-sensors": "~15.0.8",
     "firebase": "^12.0.0",
     "react": "^19.1.0",
     "react-dom": "19.1.0",
     "react-native": "^0.81.5",
-    "react-native-web": "^0.21.0"
+    "react-native-web": "^0.21.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "@types/three": "^0.185.1",
     "babel-preset-expo": "~54.0.10",
     "typescript": "^5.9.0"
   }

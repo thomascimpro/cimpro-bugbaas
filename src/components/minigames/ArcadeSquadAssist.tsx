@@ -1,5 +1,6 @@
-import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import React, { useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { nativeDriver } from "../../services/animationPlatform";
 import { activeBugSquadBonusList, bugSquadAttackKindForCategory } from "../../services/bugSquadService";
 import { BugDexRarity, bugDexEntries } from "../../services/pointsService";
 import { User } from "../../types";
@@ -25,6 +26,16 @@ const entryById = new Map(bugDexEntries.map((entry) => [entry.id, entry]));
 export function ArcadeSquadAssist({ compact = false, label, micro = false, user }: Props) {
   const bonuses = activeBugSquadBonusList(user);
   const isCompact = compact || micro;
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(Animated.sequence([
+      Animated.timing(shimmer, { duration: 1500, easing: Easing.inOut(Easing.quad), toValue: 1, useNativeDriver: nativeDriver }),
+      Animated.timing(shimmer, { duration: 1500, easing: Easing.inOut(Easing.quad), toValue: 0, useNativeDriver: nativeDriver })
+    ]));
+    animation.start();
+    return () => animation.stop();
+  }, [shimmer]);
 
   if (!bonuses.length) return null;
 
@@ -37,6 +48,7 @@ export function ArcadeSquadAssist({ compact = false, label, micro = false, user 
           const kind = bugSquadAttackKindForCategory(bonus.category);
           return (
             <View key={bonus.bugId} style={[styles.jarSlot, isCompact && styles.jarSlotCompact, micro && styles.jarSlotMicro, { borderColor: rarityColors[bonus.rarity] }]}>
+              <Animated.View style={[styles.jarAura, { backgroundColor: rarityColors[bonus.rarity], opacity: shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.08, 0.24] }), transform: [{ scale: shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.82, 1.18] }) }] }]} />
               <BugJarArt bugId={bonus.bugId} rarity={bonus.rarity} size={micro ? 20 : isCompact ? 30 : 44} />
               <Text style={[styles.kind, isCompact && styles.kindCompact, micro && styles.kindMicro]} numberOfLines={1}>{kind}</Text>
               {!isCompact && entry ? <Text style={styles.name} numberOfLines={1}>{entry.name}</Text> : null}
@@ -57,7 +69,15 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
     minWidth: 0,
+    overflow: "hidden",
     padding: 5
+  },
+  jarAura: {
+    borderRadius: 999,
+    height: 48,
+    position: "absolute",
+    top: 2,
+    width: 48
   },
   jarSlotCompact: {
     flex: 0,

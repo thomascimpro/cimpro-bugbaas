@@ -1,9 +1,13 @@
 {
-  "buildCommand": "npx expo export --platform web --output-dir dist",
+  "buildCommand": "npx expo export --platform web --output-dir dist && mkdir -p dist/butterfly-catch-3d && cp prototypes/butterfly-catch-3d/index.html prototypes/butterfly-catch-3d/prototype.js dist/butterfly-catch-3d/",
   "outputDirectory": "dist",
   "functions": {
     "api/real-bug-identify.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "{server/realBugScan/**,shared/**}"
+    },
+    "api/nearby-search-zones.js": {
+      "maxDuration": 30
     }
   },
   "routes": [

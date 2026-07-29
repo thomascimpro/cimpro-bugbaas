@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Dimensions, Easing, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { BugArtId } from "../services/bugArt";
 import { BugArtImage } from "./BugArtImage";
 
@@ -39,7 +39,7 @@ type Props = {
 };
 
 export function WalkingBugsLayer({ onSplat }: Props) {
-  const { width, height } = Dimensions.get("window");
+  const { width, height } = useWindowDimensions();
   const [gone, setGone] = useState<Record<number, boolean>>({});
   const [splatted, setSplatted] = useState<Record<number, boolean>>({});
   const [hits, setHits] = useState<Record<number, number>>({});

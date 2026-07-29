@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Animated, Easing, ImageStyle, StyleProp, StyleSheet } from "react-native";
 import type { ImageSourcePropType } from "react-native";
+import { nativeDriver } from "../services/animationPlatform";
 
 type Props = {
   bugSize: number;
@@ -62,7 +63,7 @@ export function playBugSwatterFeedback(feedback: Animated.Value) {
     duration: 240,
     easing: Easing.out(Easing.quad),
     toValue: 1,
-    useNativeDriver: true
+    useNativeDriver: nativeDriver
   }).start();
 }
 

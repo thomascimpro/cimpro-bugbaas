@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { activityDistanceKm, activityImportId, aggregateActivityMovement, fitnessServerConfigurationStatus, fitnessUserConfigurationStatus, tokenExpiryMs } = require("./fitnessSyncerCore");
+const { activityDistanceKm, activityImportId, aggregateActivityMovement, fitnessServerConfigurationStatus, fitnessUserConfigurationStatus, normalizeFitnessSyncerReturnUrl, tokenExpiryMs } = require("./fitnessSyncerCore");
 
 test("accepts measured walking, running, and cycling distances", () => {
   assert.equal(activityDistanceKm({ type: "Activity", fitnessSyncerActivity: "Walking", distanceKM: 3.25, itemId: "1" }), 3.25);
@@ -11,6 +11,10 @@ test("rejects summaries, manual entries, and unsupported activities", () => {
   assert.equal(activityDistanceKm({ type: "Activity", activity: "Walking", distanceKM: 8, summary: true }), 0);
   assert.equal(activityDistanceKm({ type: "Activity", activity: "Running", distanceKM: 8, manual: true }), 0);
   assert.equal(activityDistanceKm({ type: "Activity", activity: "Swimming", distanceKM: 2 }), 0);
+});
+
+test("accepts case-insensitive Activity records and common distance field casing", () => {
+  assert.equal(activityDistanceKm({ type: "activity", activity: "Walking", distanceKm: 4.2 }), 4.2);
 });
 
 test("uses measured daily steps when FitnessSyncer provides a summary", () => {
@@ -41,6 +45,13 @@ test("creates stable provider-scoped import ids", () => {
   const item = { type: "Activity", activity: "Walking", distanceKM: 2, itemId: "activity-1" };
   assert.equal(activityImportId("source-a", item), activityImportId("source-a", item));
   assert.notEqual(activityImportId("source-a", item), activityImportId("source-b", item));
+});
+
+test("keeps OAuth return URLs inside approved BugBaas apps", () => {
+  const fallback = "https://bugbaas.vercel.app/";
+  assert.equal(normalizeFitnessSyncerReturnUrl("https://bugbaasv3.vercel.app/settings", fallback), "https://bugbaasv3.vercel.app/settings");
+  assert.equal(normalizeFitnessSyncerReturnUrl("bugbaas://settings", fallback), "bugbaas://settings");
+  assert.equal(normalizeFitnessSyncerReturnUrl("https://evil.example/settings", fallback), fallback);
 });
 
 test("supports both epoch and duration token expiry values", () => {

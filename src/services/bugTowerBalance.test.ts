@@ -36,11 +36,11 @@ test("tower pressure moves upward from the start and keeps accelerating", () => 
   assert.ok(towerScrollSpeed(25, 30_000) > towerScrollSpeed(0, 0));
 });
 
-test("a fully charged jump reaches roughly five to six normal steps", () => {
+test("a fully charged jump reaches a clearly higher seven-step arc", () => {
   const velocity = Math.abs(towerJumpVelocity(1, 1, false));
-  const estimatedHeight = (velocity * velocity) / (2 * 0.13);
-  assert.ok(estimatedHeight >= 52);
-  assert.ok(estimatedHeight <= 78);
+  const estimatedHeight = (velocity * velocity) / (2 * 0.145);
+  assert.ok(estimatedHeight >= 70);
+  assert.ok(estimatedHeight <= 94);
 });
 
 test("the green spring creates a clearly stronger mega jump", () => {

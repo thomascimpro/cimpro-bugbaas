@@ -1,5 +1,325 @@
 # Changelog
 
+## 2026-07-29 - BugBaas 3.0.5 Android-release
+
+- Android-versie verhoogd naar `3.0.5` (`versionCode 314`) met de actuele 3.0-productiecorrecties voor BugScan, geluiden, Bug Tower-besturing, duels, Buddy-voortgang en Solo Campaign.
+- Vleugeljacht 3D opent vanuit de APK bewust `https://bugbaas.vercel.app`, zodat Android dezelfde vrijgegeven game gebruikt als productie.
+- De runtime-BugDex en het gedeelde BugScan-cataloguscontract zijn op 512 bestaande app-items gesynchroniseerd.
+- Alleen de benodigde Android-rechten blijven in het pakket; microfoon- en verouderde opslagrechten zijn niet opgenomen.
+- De APK gebruikt dezelfde Android-certificaatketen als de openbare 3.0.4-APK, zodat gebruikers deze versie over 3.0.4 kunnen installeren.
+
+## 2026-07-29 - BugBaas 3.0.4 iPhone- en gameplaycorrecties
+
+- Webcamera op iPhone opent via de mobiele camera-picker; BugScan accepteert exacte catalogusmatches vanaf 70% en beoordeelt anatomische kenmerken in een aangescherpte tweede stap.
+- Trading rendert grote collecties in pagina's, actieve routes en de Play-workspace overleven schermrotatie, en iPhone Safari gebruikt een begrensde arcade-/audio-renderroute.
+- Foregroundvangsten tonen geen losse `+10 XP`-popup meer; Bug Tower stuurt minder snel links/rechts.
+- Zoekzones hebben een langere client/servergrens en een productie-fallback; open en recente duels tonen het gespeelde spel plus beschikbare scores.
+- De weekly `10x Solo Campaign-boss` is vervangen door het bereiken van het laatste Solo Campaign-level met een Epische bug en 70 XP.
+- Vleugeljacht 3D is op web ontgrendeld, markeert de vangzone duidelijk en wacht bij 100% op een tik ergens op het speelveld om met het zichtbare net te vangen.
+- Gepubliceerd op `https://bugbaas.vercel.app` met de BugBaas-productie-Firebase en Vercel-env.
+
+## 2026-07-29 - BugBaas 3.0.4 volledige Vleugeljacht 3D-herstel
+
+- Android gebruikt exact dezelfde volledige procedurele 3D-boswereld, insecten, terrein, bomen en het fysieke vangnet als de Vercel-game.
+- Een zichtbare marker vangt ieder zichtbaar insect na 1,5 seconde richten; afstand blokkeert de vangst niet meer.
+- Insecten behouden verschillende bewegingssnelheden en leveren 1, 2 of 3 punten op basis van hun beweeglijkheid.
+- De 60-secondenrun en aparte `butterfly_catch`-resultaatopslag blijven behouden voor training en ranked.
+- De webgame wordt lokaal in een interne WebView gebundeld met dezelfde Three.js `0.180.0`; Android opent daarvoor geen Chrome of externe URL.
+
+## 2026-07-29 - Vleugeljacht lokale Android-host
+
+- De Android-route vervangen door een interne WebView die de bestaande `index.html` en `prototype.js` rechtstreeks uit de APK laadt.
+- Three.js `0.180.0`, de key-art en alle gamecode worden lokaal meegebundeld; de game heeft geen browser, Vercel of netwerk nodig.
+- Appbridge toegevoegd voor ranked/training-resultaten, highscoreopslag en telefoonoriëntatie.
+- Geen APK-build of Android-devicetest uitgevoerd bij deze bronwijziging.
+
+## 2026-07-29 - BugBaas 3.0.1
+
+- De huidige BugBaas 3.0-versie uitgebracht als officiële Android-release `3.0.1` (versionCode 309).
+- De vernieuwde Vlindervangst, vloeiendere arcadegames, herstelde Daily-foregroundbug en actuele Museumdoelen zijn opgenomen.
+- Officiële APK gebouwd met CimPro-uploadsigning en de webversie gepubliceerd op `bugbaasv3.vercel.app`.
+- De map `C:\Users\thoma.THOMAS\Documents\Codex\CimPro BugBaas-3.0` vastgelegd als canonieke bron voor volgende 3.x-releases.
+
+## 2026-07-29 - 360° HD-vlindervangst prototype
+
+- Het eerdere vlakke Three.js-prototype uitgebreid naar een volledige 360° bosweide met terrein, sky dome, bomen, heuvels en instanced begroeiing rondom de speler.
+- Opt-in telefoonoriëntatie, herkalibratie, vloeiende quaternioncamera, sleepfallback en fullscreenbesturing toegevoegd.
+- Vlinders vernieuwd met procedurele HD-vleugelpatronen, vier afzonderlijke vleugels, lichaam, ogen, voelsprieten en natuurlijke gesloten 3D-routes.
+- Vlindernet vernieuwd met houten steel, metalen verbinding, draadmand, motion trails, vloeiende wind-up/slag/terugkeer en maximaal één vangst per slag.
+- Alleen het lokale prototype en documentatie zijn gewijzigd; geen app-integratie, deployment of APK-build uitgevoerd.
+
+## 2026-07-28 - Bug Brain vragenbank opgeschoond
+
+- Alle 3.000 gegenereerde taalvarianten gecontroleerd op antwoordverraad, kromme Nederlandse bijzinnen en uitlegteksten die na een punt met een kleine letter doorgingen.
+- Taxonomische groepsantwoorden gebruiken nu consistente wetenschappelijke insectenordes, zoals `Mantodea`, `Coleoptera` en `Odonata`, in plaats van labels die de soortnaam vrijwel herhalen.
+- Nederlandse herkennings- en expertvragen zijn herschreven naar grammaticaal volledige zinnen zonder de inhoud of beloningen van Bug Brain te wijzigen.
+- Geen APK gebouwd en niets gedeployed.
+
+## 2026-07-28 - 3.0.0-beta.8 Journaal-scroll en Weekvondst
+
+- Veldjournaal gebruikt nu een volledig ondoorzichtige, niet-geanimeerde scrolllaag; Android-overscroll en het wegclippen van rijen zijn uitgeschakeld om het witte scherm tijdens neerwaarts scrollen te voorkomen.
+- Wereld > Vandaag toont onder Onderzoek iedere week drie veelvoorkomende soorten, met een directe knop naar BugScan.
+- De eerste bevestigde Weekvondst per gebruiker en week is lokaal voorbereid als server-authoritatieve, idempotente beloning van 50 XP plus één Epische BugDex-bug.
+- Android beta verhoogd naar `3.0.0-beta.8` / versionCode `307`; x86_64-APK gebouwd en op Small Phone getest.
+- Firebase Functions-broncode is niet gedeployed; de Weekvondst-beloning wordt pas live na afzonderlijke deploymentgoedkeuring.
+
+## 2026-07-28 - BugDex 500 en Mythische kroonrangen
+
+- Uitgebreid van 249 naar 500 unieke BugDex-bugs over Gewoon t/m Mythisch.
+- Dubbele WebP-assets verwijderd uit de actieve assetset; BugDex-mappings gebruiken transparante PNG’s. Twee foutieve hommelbeelden zijn vervangen met imagegen-assets.
+- Toegevoegd: `battleWins`, idempotente PvE-winregistratie, Kroonrangen, CrownGlow, voortgang naar de volgende upgrade en upgrade-popup voor Mythische bugs.
+- Kroonbonus geldt alleen voor PvE en is begrensd op +10%; ranked Duel/PvP en bestaande mastery-XP-logica blijven ongewijzigd.
+- Geen deployment of release-build uitgevoerd.
+
+## 2026-07-27 - Arcade games remain open in fullscreen
+
+- Fixed Practice and Ranked games immediately closing when fullscreen gameplay started.
+- Kept the app-shell component stable so the active Play workspace and game state are no longer remounted away.
+- Added regression coverage for the fullscreen wrapper and mobile browser verification for both launch modes.
+
+## 2026-07-27 - Field-note proof verification
+
+- Fixed v2 BugScan receipt verification so Firebase validates the signing key derived from the synchronized Vercel/Firebase secret.
+- Preserved the ten-minute proof lifetime, UID binding and server-only observation write path.
+- Added cross-runtime regression tests for valid, mismatched, wrong-user and expired receipts.
+
+
+## 2026-07-27 - BugDex unlock popup rarity styling
+
+- Restored the cleaner 2.10.20 unlock-card composition.
+- Bug rarity now controls the popup border, heading, stars, circular art backdrop, streak text and action button.
+- Removed the beige specimen archive frame, stamp and plinth while preserving premium aura and mythic effects.
+
+
+## 2026-07-27 - Arcade ranked/practice launch
+
+- Fixed Ranked and Practice buttons failing to open a game when stale duel state was still active.
+- Practice launches now reset the previous duel and enter the selected game directly.
+- Ranked launches now reset stale duel state before matchmaking starts.
+
+
+## 2026-07-27 - Zwermbeleg boss-art mobile
+
+- Fixed the Zwermbeleg boss image appearing as an oversized cropped wing/body on mobile web.
+- The full square boss art now fits inside a taller compact hero card.
+
+
+## 2026-07-27 - Persistent mobile Play workspace
+
+- Fixed the mobile Arcade game selector disappearing shortly after opening `PLAY NOW` because stale duel state remained mounted behind the closed modal.
+- `PLAY NOW` now opens a clean Arcade workspace every time.
+- Open duels and Recent duels now start collapsed and can be expanded separately.
+
+
+## 2026-07-27 - Foreground rewards and field notes
+
+- Foreground catch rewards can now appear on every signed-in screen instead of only World.
+- Fixed field-note authentication when the Firebase client token and Cloud Functions runtime use different trusted BugBaas project audiences.
+- Deployed the two field-note endpoints and published the updated web app to `bugbaasv3.vercel.app`.
+
+## 2026-07-26 - Museum mobile scrolling
+
+- Museum gebruikt nu één verticale paginascroll in plaats van een klein intern scrollvenster.
+- Zaal, doelen en collectie groeien mee met hun inhoud op korte en lange telefoons.
+- Horizontale zaalkeuze blijft apart scrollbaar.
+- Extra onderruimte houdt content bereikbaar boven de vaste BottomNav en safe area.
+- Geen deployment uitgevoerd.
+
+## 2026-07-26 - Duel moved into Arcade
+
+- Removed the separate Duel tab from Play.
+- Added Open duels and Recent duels below Arcade, with open requests shown first.
+- Kept Tap Duel, direct duel links, notifications, matchmaking and rewards on the existing duel flow.
+- Expanded BugDex Active Squad with helper type, cooldown, hits, AOE targets and mythic special descriptions.
+
+## 2026-07-26 - Mobile arcade selector
+
+- Arcade toont nu alle zes games tegelijk in een 2x3-raster op telefoons en 3x2 op brede schermen.
+- Vergrendelde games blijven zichtbaar met hun bestaande unlock-eis.
+- Horizontaal scrollen door games is verwijderd.
+- Solo Campaign staat als compacte brede rij direct onder het raster.
+- Ranked-, Practice-, featured- en unlockgedrag zijn ongewijzigd gebleven.
+
+## 3.0.0-beta.1 - Draggable Bug World map
+
+- Added free mouse and touch panning to the existing Bug World OSM map.
+- Search zones now refresh automatically around the viewed field after panning, with a viewport-aware search radius and finer cache cells.
+- Kept existing finding markers, biome markers, player location, zoom, location recentering, zone toggle and scan action intact.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - BugScan unlock confirmation
+
+- Successful matched real-bug scans now pass the exact granted BugDex drop to the existing unlock modal.
+- Real-bug scan rewards bypass the roaming catch queue and show their new-species or extra-copy confirmation immediately.
+- The existing idempotent BugDex inventory and unlock transaction remains the source of truth.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - BugDex checkerboard asset cleanup
+
+- Audited all 249 active BugDex artwork mappings for baked white/grey transparency grids.
+- Replaced 11 affected mappings with transparent existing artwork; Mosquito and eight other exact species use their clean counterparts.
+- Aardhommel and Weidehommel temporarily use the closest clean bumblebee artwork because their exact source files contain a baked checkerboard.
+- Added a regression test that blocks the 11 contaminated source files from returning to active BugDex mappings.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - Museum rewards and endgame
+
+- Added one-time Open, Curated and Master rewards for every normal Museum gallery, including retroactive evaluation for existing collections.
+- Added server-verified Prestige goals and Crown Hall Bronze, Silver, Gold and Museum Legend progression for endgame players.
+- Added one compact child-friendly next-reward panel using existing Museum, BugDex and badge assets.
+- Museum reward receipts are permanent and idempotent; replacing exhibits cannot generate XP again.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - Duel launch and Play hero framing
+
+- Added visible random-duel and player-challenge actions inside the Duel workspace opened from Play Now.
+- Adjusted Duel and Ranking phone hero heights so their landscape artwork is no longer excessively cropped.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - BugDex ranking and back navigation
+
+- Added a Ranking mode for the number of unlocked bugs per player.
+- Added a visible back button to leave the Ranking workspace and return to Play.
+- Added Dutch, English and French labels for the new ranking mode and metric.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - BugScan review safe area
+
+- Made the review stage explicitly scrollable when crop controls and actions extend below the phone viewport.
+- Added compact phone sizing for the review photo frame, crop controls and Analyze/New photo actions so the fixed bottom navigation no longer obscures the action zone.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - 2.10.20 mission parity (local source)
+
+- Restored the six concrete daily missions and six concrete weekly missions from 2.10.20, including their targets, localized labels and XP rewards.
+- Retired the V3 Explorer/Trainer/Team Bronze/Silver/Gold mission tier layer because it did not communicate an actionable goal.
+- Preserved the legacy daily and weekly claim-ID formats so mission claims remain date/week scoped.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - Vercel v3 audio parity
+
+- Added the same 12 WAV sound effects used by Android to the web asset bundle.
+- Web game, bug-catch, unlock and interface-tap sounds now use the shared WAV files, with a browser-safe fallback when playback is blocked.
+- Published the change to `https://bugbaasv3.vercel.app`.
+
+## 3.0.0-beta.1 - Mobile viewport corrections
+
+- Enlarged the BugScan live camera area to the phone width and kept gallery capture reachable above fixed navigation.
+- Contained Swarm Siege boss art, replaced the cropped Arcade contact sheet with a complete game scene, and moved Museum exhibit selection into a scrollable modal.
+
+## 3.0.0-beta.1 - Compact Android beta APK
+
+- Aligned Android metadata to version code 300 and version name `3.0.0-beta.1`.
+- Re-encoded large opaque runtime art as JPEG and large transparent runtime art as WebP.
+- Reduced the release APK from 104.04 MiB to 75.19 MiB without removing BugDex entries or gameplay assets.
+- Produced an arm64 Android 8+ internal beta APK with Hermes, R8 and resource shrinking enabled.
+
+## 3.0.0-beta.1 - Responsive game and World correction
+
+- Bounded Play hero art across phone and tablet viewport heights.
+- Centered and capped Bubble Swarm on larger screens without changing gameplay coordinates or difficulty.
+- Removed the white World quick-action block and prevented compact World hero overlap.
+
+## 3.0.0-beta.1 - Commercial game refactor slice 1 (local source)
+
+- Added new reviewed BugBaas emblem, launcher icon and Scan medallion assets.
+- Reworked login, background motion and bottom navigation around the new visual identity.
+- Simplified World Today to one contextual primary action with visible reason, reward and progress.
+- Removed the 120-second and 50,000-point endings from Bug Tower and Bubble Swarm.
+- Added continuous Bubble Swarm pressure scaling and retained real danger-line game over.
+- Expanded the Functions development-origin allowlist to equivalent `localhost` and `127.0.0.1` ports.
+- Restored a green full-project TypeScript check by correcting stale structural-test paths and Bug Professor quiz typing.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - World biome visual implementation (local source)
+
+- Added one active World biome hero backed by a shared six-biome atlas for Tuin, Park, Water, Nacht, Kantoor and Binnen.
+- Integrated route progress, movement sync, search and finding markers, one next-action strip and one primary BugScan action into the hero.
+- Reworked Research into an image-led encounter directly below the hero while preserving existing event, Buddy and mission behavior.
+- Replaced World marker text symbols with scalable React Native location, search, scan, found and lock glyphs without adding a dependency.
+- Documented the Field Expedition Atlas direction and remaining image optimization and physical Android QA work.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - Authenticated production corrections (local source)
+
+- Added bounded server and client timeouts for optional OSM search zones, with a retryable non-blocking map state.
+- Kept Daily and Weekly missions permanently reachable from World Today.
+- Added a Settings action to the user's own Profile and restored Settings back-navigation to Profile.
+- Added a distinct Swarm Siege preview card state for the Friday signal window.
+- Localized the proven mixed-language Map, Field Journal and Museum Exhibit Editor copy in Dutch, English and French.
+- No deployment was performed.
+
+## 3.0.0-beta.1 - Hybrid progression master implementation and production release
+
+- Added a complete acquisition catalog for all 231 BugDex species with starter, field, research, campaign, event and mythic routes.
+- Added targeted Research with three missing-species choices, daily source caps, server evidence verification, exact species encounters, progression receipts and a non-decaying five-day Momentum cycle.
+- Rebuilt World Today around one Next Action, active Research, Museum-wing Research focus and one contextual secondary signal.
+- Split BugScan into capture, review, identification, result and impact stages while preserving camera, AI and reward contracts.
+- Added a Collection workspace with BugDex, Museum and Journal tabs, exact missing-species/event-return routes and three-tier Mastery Team cosmetic challenges.
+- Replaced automatic Museum champions with guided player-owned exhibit placements: one slot at discovered, three at open and six at curated/master. Stage goals now scale from each room's real catalog size.
+- Added Crown Hall season trophies and kept Museum as a read-only visual layer over the same BugDex inventory.
+- Replaced the six one-time Expedition discoveries with thirty region tiers inside World Map.
+- Added owned-species Play unlocks, daily featured Arcade rotation, Duel/Campaign unlock at ten species and Collection-owned squad editing.
+- Replaced random Solo Campaign boss drops with five visible, one-time, server-authoritative species milestones; weekly resets refill lives without deleting the highest wave.
+- Centralized mastery activity rewards and capped ranked mastery assistance at 3%.
+- Reworked Swarm Siege into a Friday preview, Saturday 12:00-18:00 live battle and Sunday result window with three timed charges, four phases, reconnectable tickets, partial rewards and a server-locked active-player-scaled HP target.
+- Changed Team Hunt to the first weekend of each month, added missing team categories and moved the Conservatory Guardian to the final week of an eight-week season with automatic reward finalization.
+- Replaced grind missions with Discover/Train/Contribute dailies and Explorer/Trainer/Team weekly tracks. Completed rewards auto-award without random species drops.
+- Added endgame completion by acquisition source, exact event return schedules and Crown Hall master at 90% BugDex plus five mastered core wings.
+- Retired active standalone Expedition and duplicate squad flows; legacy Museum/Journal routes redirect to Collection.
+- Deployed Firestore Rules to `bugbaas-3`, Cloud Functions to `thomascimpro-6266f` and Vercel production deployment `dpl_DerYgX6Np594ZVYP94XumQnb5g4L` to `https://bugbaasv3.vercel.app`.
+- Built Android debug APK `android/app/build/outputs/apk/debug/app-debug.apk`; physical-device QA remains open because no ADB target was connected.
+
+## 3.0.0-beta.1 - Hybrid progression catalog foundation (localhost only)
+
+- Added one central progression definition for all 231 current BugDex species.
+- Classified species into starter, field, research, campaign, event and mythic acquisition routes without changing current ownership or rewards.
+- Added habitat and Museum-wing metadata, research tiers, campaign milestones, event pools and explicit Mythic endgame paths.
+- Guaranteed that an exact verified BugScan remains a valid unlock route for every catalog species.
+- Documented migration behavior for every existing BugDex reward source and preserved inventory, mastery, unlocks, squads, trades and field notes.
+
+## 3.0.0-beta.1 - Insect Museum redesign (localhost only)
+
+- Rebuilt Museum around four clearly named rooms: Vondstenhal, Wonderkas, Nachtkabinet and Kroonzaal.
+- Added image-led room navigation, large insect displays, newest-arrival presentation and a compact collection wall using existing bundled artwork.
+- Corrected recent discoveries to use newest `lastUnlockedAt` values and removed the duplicate active-squad exhibit from Museum.
+- Added Dutch, English and French Museum copy plus loading, empty, locked and retry states.
+- Added tested deterministic room assignment without Firebase, reward or inventory changes.
+
+## 3.0.0-beta.1 - Swarm Siege (localhost only)
+
+- Added a Friday–Monday asynchronous community boss using Nest Defense and four deterministic AI Director modifiers.
+- Added three server-issued attempts per UTC day, bounded 0–3 damage, persistent shared HP, idempotent submissions and post-event contributor claims.
+- Replaced the empty Events state and visible Guardian route with live, upcoming and result Swarm Siege cards while retaining Team Hunt as a separate weekend event.
+- Kept event runs separate from normal Arcade high scores and result storage.
+
+## 3.0.0-beta.1 - Private sightings map foundation (localhost only)
+
+- Added an opt-in Scan-to-Field-Journal location flow that sends location only when selected and stores only a server-rounded map cell.
+- Kept markers owner-only in the verified-observation path; raw GPS, public markers, team markers and reward effects are deliberately excluded.
+
+## 3.0.0-beta.1 - Discovery UX pass
+
+- Added an illustrated Today goal board directly below Home statistics, with one direct action and explicit collection/world reward.
+- Moved Expedition actions ahead of the biome list and explained each shared or personal outcome.
+- Preserved navigation context when returning from Field Journal.
+
+## 3.0 local beta
+
+- Voeg een wekelijkse expeditie toe die alleen bevestigde persoonlijke veldvondsten telt.
+- Voeg een privé Veldjournaal met habitat- en gedragsnotities plus BugFoto Bingo toe.
+- Bewaar veldvondsten uitsluitend via een kortlevend, servergeverifieerd BugScan-bewijs; clientschrijfrechten zijn gesloten.
+- Voeg Museum v2 toe als levende, geïllustreerde galerij met echte BugDex-bewoners en subtiele lichtanimatie.
+- Vervang de generieke expeditiekaart door Expedition World: een privé ontdekkingskaart met biomen uit bevestigde veldvondsten.
+- Voeg Bug Professor en transparante herkenningsfeedback toe zonder extra AI-calls of rewards; verwijder de dubbele Daily Spotlight.
+- Vervang de herkenningsmedaille door Field Photo Stamps: afgeleide, geanimeerde documentatiestempels voor een eerste soort, habitat of specifiek gedrag; geen AI-fotokwaliteitsoordeel en geen extra XP.
+- Voeg Conservatory Guardian toe: een aparte co-op release-boss met geanimeerde visual, servergetelde geverifieerde bijdragen en een eenmalige contributorbeloning.
+- Label de lokale preview als `3.0.0-beta.1` en voorkom een eindeloze opstartspinner met een veilige auth-fallback naar inloggen.
+- Geef Home een v3-conservatoriumhero met een geÃ¯llustreerd veldjournaal, terrariumlicht en leesbare actieknoppen.
+- Geef de meldingenlijst en nieuwe-meldingflow een eigen Field Operations-hero; formulieren, filters en opslaggedrag blijven identiek.
+- Geef Buddy een levende terrariumgloed en de actieve BugSquad-potjes in alle minigames een subtiele zeldzaamheidsaura; er verandert geen game- of rewardlogica.
+- Voeg Daily Field Signal toe: Ã©Ã©n veilige, datumgedreven expeditiescan die alleen bestaande bevestigde veldnotities leest en geen dubbele beloning geeft.
+
 ## 2.10.19
 
 - BugScan verstuurt tot 2048 px met hogere JPEG-kwaliteit en gebruikt twee veilige fallbackstappen om onder Vercels requestlimiet te blijven.
@@ -845,6 +1165,87 @@
 - Demo-modus toegevoegd voor smoke-tests zonder Firebase secrets.
 # 2.10.11 - 2026-07-19
 
+## 3.0 local beta - Conservatory Path
+
+### Conservatory visual refresh
+
+- Restyled login, global background, navigation, Home, BugDex, BugScan, Field Journal, Museum, social screens, settings and bug-reporting surfaces under one visual system.
+- Added generated text-free `conservatory-app-background-v1.png` for the shared app shell.
+- No gameplay, route, auth, Firebase or release behavior changed as part of this visual refresh.
+
+- Added a private six-biome Expedition World with map reveal, beacon animation and a generated biome atlas.
+- Added a cinematic Museum with animated terrarium motes and BugDex-derived visual wing milestones.
+- Added server-owned, idempotent field milestones at 1, 3 and 6 verified observations (20/30/50 XP).
+- Added an in-scan milestone reveal after a verified field note is stored.
+- No production UI deployment, APK publish or 2.10.19 change was made; the additive Firebase event backend is deployed for localhost beta testing.
+
 - Nest Defense manual attacks now use the complete playfield, including the lower path.
 - Added a secure FitnessSyncer OAuth2/PKCE backend and client integration boundary for web distance imports.
 - Added activity-only distance filtering, encrypted token storage, stable import IDs, and week-first movement registration.
+# BugBaas 3.0 local beta — Team Hunt Weekend
+
+- Added an animated Team Hunt Weekend screen reached through Expedition World's World Signals panel.
+- Added server-owned Friday–Monday organization scoring for unique verified species, with idempotent contributions and a privacy-safe board.
+- Added Function-only Firestore paths for event aggregates and personal contribution bookkeeping.
+
+## 3.0 local beta - World home action hub
+
+- Rebuilt `Vandaag` around the real daily walking goal with an animated walking bug and movement sync action.
+- Daily and Weekly buttons now show their actual mission totals and open the correct mission tab.
+- Active Team Hunt and Swarm Siege states are visible on Today while full Events and Map tabs remain available.
+- Buddy status now appears on Today, and the Buddy overlay lets players choose from every expedition while preserving one active task at a time.
+- Removed the beta version footer that could overlap the bottom navigation.
+
+## 3.0 beta preview release
+
+- Refreshed all primary navigation areas and their supporting screens, dialogs, game states and reward presentations with responsive, image-led layouts and lightweight animation.
+- Added and connected the new BugBaas 3.0 branding, loading art, scan art, world art, event art and unused BugDex insect assets.
+- Made Bug Tower and Bubble Swarm continue until game over while difficulty increases.
+- Deployed backward-compatible Firestore rules and 15 additive 3.0 Functions to `thomascimpro-6266f`.
+- Released the validated preview to `https://bugbaasv3.vercel.app`; the separate 2.10.20 live deployment was not changed.
+
+## 3.0 local beta - Complete game UI pass
+
+- Replaced the striped shell and text-symbol controls with image-led backgrounds, HD assets and consistent game controls.
+- Made World, Scan, Play, Collection, Profile and Settings fit their main phone viewport; detail sheets retain internal scrolling.
+- Added a responsive expedition texture, animated 1.5 km walking route and equal-size four-button navigation.
+- Added five optimized insect assets from `assets/new` to BugDex with balanced Epic, Rare and Legendary tiers.
+- Changed New Report into a fixed modal-style sheet and prevented roaming catch bugs from blocking forms.
+- Made Bug Tower and Bubble Swarm endless until player failure, restored Web Runner tap-to-jump and tightened long-run score validation.
+- Upgraded monthly duel rewards and added live-photo authenticity handling for screen, print and generated-image cues.
+- Authorized `bugbaasv3.vercel.app` for Firebase Google authentication so the preview OAuth popup can complete.
+
+## 3.0 local beta - Full QA and European field guide
+
+- Added seven recognizable European bumblebees and completed the 249-entry BugDex with localized names, concise facts, balanced drop tiers and transparent art.
+- Localized World route, habitat, sighting, Buddy duration and Research copy that previously mixed Dutch and English.
+- Replaced the oversized Web Runner spider crop with a dedicated responsive moonlit web tunnel.
+- Added an image-led fallback for unavailable Swarm Siege states and kept event art bounded on small screens.
+- Replaced the raw Firebase unauthorized-domain message with a clear test-site Google-login explanation.
+- Verified the four main destinations at phone, tablet and desktop sizes without page-level overflow.
+
+## 3.0 beta - QA release
+
+- Released the 249-entry BugDex, responsive World, localized research flow and updated arcade visuals to `bugbaasv3.vercel.app`.
+- Verified email authentication, the Google authentication popup, all four main destinations and Bubble Swarm input on the production alias.
+- Kept the separate 2.10.20 live deployment and Firebase backend configuration unchanged.
+
+## 3.0 local beta - FitnessSyncer repair
+
+- Fixed OAuth return handling for the BugBaas 3.0 preview domains instead of silently returning users to the old BugBaas web app.
+- Made Activity and distance parsing tolerant of API field casing variants while retaining walking, running and cycling filtering.
+- Added regression coverage for approved OAuth return URLs and distance parsing.
+
+## 3.0 local beta - Vlindervangst skill rework
+
+- Replaced tap-spam catching with track, hold-to-focus and timed-release capture mechanics.
+- Rebuilt the meadow lighting, depth flight paths, species motion, woven net and continuous first-person swing.
+- Added an animated bug-into-net capture, timing feedback, species points, combo scoring and recovery cooldown.
+- Added optimized imagegen key art to the shared game picker and removed the duplicate standalone Arcade card.
+- Matched the native game to the focus mechanic and smooth swing while keeping the existing 60-second ranked result flow.
+
+## 3.0 local beta - Arcade, Museum and Daily hotfix
+
+- Made Bug Glide and Bug Tower faster and moved four realtime arcade loops from interval timers to display-synchronized frames.
+- Forced fresh Museum inventory and mastery reads so goal progress updates immediately on entry.
+- Restored a tappable foreground bug after every claimed Daily while keeping the Daily XP safely pre-awarded.
