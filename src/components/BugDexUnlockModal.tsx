@@ -64,7 +64,7 @@ const premiumRarityStyles: Record<"Episch" | "Legendarisch" | "Mythisch", {
 };
 
 export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const { height } = useWindowDimensions();
   const scale = useRef(new Animated.Value(0.82)).current;
   const glow = useRef(new Animated.Value(0)).current;
@@ -109,7 +109,15 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
         : t("bugdex.mythic")
     : "";
   const bugFact = isPointsReward ? t("bugdex.dailyLogin") : bugDexEntryFact(drop.entry, t);
-  const title = isDailyReward ? t("bugdex.daily") : drop.source === "combine" ? t("bugdex.combineDone") : drop.isNew ? t("bugdex.unlocked") : t("bugdex.duplicate");
+  const bugName = isPointsReward ? "" : bugDexEntryName(drop.entry, t);
+  const sourceLabel = rewardSourceLabel(drop.source, language);
+  const title = isPointsReward
+    ? isDailyReward ? t("bugdex.daily") : t("bugdex.pointsFound")
+    : language === "en"
+      ? `${bugName} discovered!`
+      : language === "fr"
+        ? `${bugName} découvert !`
+        : `${bugName} ontdekt!`;
   const subtitle = isPointsReward
     ? `+${drop.points} ${t("profile.points").toLowerCase()}`
     : drop.source === "combine" && drop.isNew
@@ -142,6 +150,9 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
             </View>
           )}
           <Text style={[styles.kicker, { color: rarityColor }]}>{title}</Text>
+          <View style={[styles.sourceBadge, { borderColor: rarityColor }]}>
+            <Text style={[styles.sourceBadgeText, { color: rarityColor }]}>{sourceLabel}</Text>
+          </View>
           <Text style={styles.subtitle}>{subtitle}</Text>
           <View style={styles.artStage}>
             {premiumStyle && (
@@ -162,7 +173,7 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
               </>
             )}
           </View>
-          <Text style={styles.name}>{isPointsReward ? t("bugdex.pointsFound") : bugDexEntryName(drop.entry, t)}</Text>
+          <Text style={styles.name}>{isPointsReward ? t("bugdex.pointsFound") : bugName}</Text>
           {!isPointsReward ? (
             <View style={styles.rarityStarsRow}>
               {Array.from({ length: rarityStars[drop.entry.rarity] }).map((_, index) => (
@@ -179,6 +190,27 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
       </View>
     </Modal>
   );
+}
+
+function rewardSourceLabel(source: BugDexDropResult["source"], language: "nl" | "en" | "fr"): string {
+  const category =
+    source === "real_bug_scan" ? "photo"
+      : source === "duel_win" || source === "rank_up" ? "duel"
+        : source.startsWith("weekly_") ? "weekly"
+          : source === "daily_login" || source === "daily_mission_bonus" ? "daily"
+            : source.startsWith("solo_") ? "campaign"
+              : source.startsWith("buddy_") ? "buddy"
+                : source === "museum_reward" ? "museum"
+                  : source === "research_encounter" ? "research"
+                    : source === "bug_splat" ? "arcade"
+                      : source === "combine" ? "combine"
+                        : "activity";
+  const labels = {
+    nl: { photo: "VAN JE BUGFOTO", duel: "VAN EEN DUEL", weekly: "VAN JE WEEKMISSIE", daily: "VAN JE DAGBELONING", campaign: "VAN SOLO CAMPAIGN", buddy: "VAN JE BUDDY", museum: "VAN HET MUSEUM", research: "VAN ONDERZOEK", arcade: "VAN DE ARCADE", combine: "DOOR COMBINEREN", activity: "VAN JE ACTIVITEIT" },
+    en: { photo: "FROM YOUR BUG PHOTO", duel: "FROM A DUEL", weekly: "FROM YOUR WEEKLY MISSION", daily: "FROM YOUR DAILY REWARD", campaign: "FROM SOLO CAMPAIGN", buddy: "FROM YOUR BUDDY", museum: "FROM THE MUSEUM", research: "FROM RESEARCH", arcade: "FROM THE ARCADE", combine: "FROM COMBINING", activity: "FROM YOUR ACTIVITY" },
+    fr: { photo: "DE TA PHOTO", duel: "D'UN DUEL", weekly: "DE TA MISSION HEBDO", daily: "DE TA RÉCOMPENSE DU JOUR", campaign: "DE LA CAMPAGNE SOLO", buddy: "DE TON COMPAGNON", museum: "DU MUSÉE", research: "DE LA RECHERCHE", arcade: "DE L'ARCADE", combine: "PAR COMBINAISON", activity: "DE TON ACTIVITÉ" }
+  } as const;
+  return labels[language][category];
 }
 
 const styles = StyleSheet.create({
@@ -250,6 +282,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "900",
     marginBottom: 10
+  },
+  sourceBadge: {
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: 8,
+    paddingHorizontal: 11,
+    paddingVertical: 4
+  },
+  sourceBadgeText: {
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 0.8
   },
   artStage: {
     alignItems: "center",

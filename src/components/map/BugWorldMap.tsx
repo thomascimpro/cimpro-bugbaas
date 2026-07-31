@@ -72,9 +72,11 @@ export function BugWorldMap({ entries, onSelectEntry, onStartScan }: Props) {
       setLocation(result.location);
       setLocationState("ready");
       if (recenter || !hasManualPan.current) {
+        const nextZoom = recenter ? 13 : zoom;
+        if (recenter) setZoom(nextZoom);
         viewCenterRef.current = result.location;
         setViewCenter(result.location);
-        setSearchView({ center: result.location, radius: visibleMapRadiusMeters(result.location, zoom, viewport) });
+        setSearchView({ center: result.location, radius: visibleMapRadiusMeters(result.location, nextZoom, viewport) });
       }
       return;
     }
@@ -152,7 +154,15 @@ export function BugWorldMap({ entries, onSelectEntry, onStartScan }: Props) {
   }
 
   const visibleEntries = useMemo(() => entries.filter((entry) => locationFromEntry(entry)).slice(0, 60), [entries]);
-  const visibleZones = zonesVisible ? zones : [];
+  const visibleZones = zonesVisible && zoom >= 8 ? zones : [];
+
+  function showWholeWorld() {
+    const center = { latitude: 0, longitude: 0 };
+    hasManualPan.current = true;
+    viewCenterRef.current = center;
+    setViewCenter(center);
+    setZoom(2);
+  }
 
   function onMapLayout(event: LayoutChangeEvent) {
     const { width, height } = event.nativeEvent.layout;
@@ -243,8 +253,11 @@ export function BugWorldMap({ entries, onSelectEntry, onStartScan }: Props) {
           <Pressable accessibilityLabel={t("map.toggleZones")} onPress={() => setZonesVisible((current) => !current)} style={[styles.controlButton, zonesVisible && styles.controlButtonActive]}>
             <Image source={{ uri: biomeMapArt.nature }} style={[styles.controlBiomeArt, !zonesVisible && styles.controlBiomeArtInactive]} />
           </Pressable>
+          <Pressable accessibilityLabel="Bekijk de hele wereld" onPress={showWholeWorld} style={[styles.controlButton, styles.worldButton]}>
+            <Text style={styles.worldButtonText}>WERELD</Text>
+          </Pressable>
           <Pressable accessibilityLabel={t("map.zoomIn")} onPress={() => setZoom((value) => Math.min(18, value + 1))} style={styles.controlButton}><ZoomGlyph direction="in" /></Pressable>
-          <Pressable accessibilityLabel={t("map.zoomOut")} onPress={() => setZoom((value) => Math.max(12, value - 1))} style={styles.controlButton}><ZoomGlyph direction="out" /></Pressable>
+          <Pressable accessibilityLabel={t("map.zoomOut")} onPress={() => setZoom((value) => Math.max(2, value - 1))} style={styles.controlButton}><ZoomGlyph direction="out" /></Pressable>
         </View>
 
         {locationState === "idle" ? (
@@ -335,6 +348,8 @@ const styles = StyleSheet.create({
   mapControls: { gap: 7, position: "absolute", right: 10, top: 10 },
   controlButton: { alignItems: "center", backgroundColor: "rgba(7,27,20,0.92)", borderColor: "rgba(255,255,255,0.24)", borderRadius: 13, borderWidth: 1, height: 38, justifyContent: "center", width: 38 },
   controlButtonActive: { backgroundColor: "#f4dc79", borderColor: "#f4dc79" },
+  worldButton: { width: 48 },
+  worldButtonText: { color: "#ffffff", fontSize: 6.5, fontWeight: "900", letterSpacing: 0.4 },
   controlBiomeArt: { height: 30, resizeMode: "contain", width: 30 },
   controlBiomeArtInactive: { opacity: 0.45 },
   controlIcon: { color: "#fff", fontSize: 20, fontWeight: "900", lineHeight: 22 },

@@ -4,7 +4,7 @@ import { CollectionProgressHeader } from "../components/collection/CollectionPro
 import { MasteryTeamChallengeCard } from "../components/collection/MasteryTeamChallengeCard";
 import { NavigationArt } from "../components/NavigationArt";
 import { GameUiIcon } from "../components/ui/GameUiIcon";
-import { listBugDexInventory } from "../services/bugDexService";
+import { listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
 import { buildCollectionCompletion } from "../services/collectionCompletionModel";
 import { listBugMastery } from "../services/bugMasteryService";
 import { sanitizeActiveBugSquad } from "../services/bugSquadService";
@@ -20,12 +20,13 @@ import { collectionTabs, normalizeCollectionTab, type CollectionTab } from "./Co
 type Props = {
   initialTab?: CollectionTab;
   onBack: () => void;
+  onRewardDrop?: (drop: BugDexDropResult) => void;
   onUserUpdated?: (user: User) => void;
   openTradeRequest?: number;
   user: User;
 };
 
-export function CollectionScreen({ initialTab, onBack, onUserUpdated, openTradeRequest = 0, user }: Props) {
+export function CollectionScreen({ initialTab, onBack, onRewardDrop, onUserUpdated, openTradeRequest = 0, user }: Props) {
   const { t } = useI18n();
   const { height } = useWindowDimensions();
   const layout = useResponsiveLayout();
@@ -92,7 +93,7 @@ export function CollectionScreen({ initialTab, onBack, onUserUpdated, openTradeR
         }
       ]}>
         {tab === "bugdex" ? <BugDexScreen embedded openTradeRequest={openTradeRequest} onBack={onBack} onOpenMuseum={() => setTab("museum")} onUserUpdated={onUserUpdated} user={user} /> : null}
-        {tab === "museum" ? <MuseumScreen embedded onBack={() => setTab("bugdex")} user={user} /> : null}
+        {tab === "museum" ? <MuseumScreen embedded onBack={() => setTab("bugdex")} onRewardDrop={onRewardDrop} user={user} /> : null}
         {tab === "journal" ? <FieldJournalScreen embedded onBack={() => setTab("bugdex")} user={user} /> : null}
       </View>
       </View>

@@ -1,5 +1,3 @@
-import { buildBugCatalogPrompt } from "./classification.mjs";
-
 const INITIAL_MAX_OUTPUT_TOKENS = 6000;
 const RETRY_MAX_OUTPUT_TOKENS = 9000;
 
@@ -79,22 +77,17 @@ export function createOpenAIImageIdentifier({
   model = "gpt-5-mini",
   fetchImpl = fetch
 } = {}) {
-  return async function identifyImage({ imageDataUrl, catalog }) {
+  return async function identifyImage({ imageDataUrl }) {
     if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
-    const catalogPrompt = buildBugCatalogPrompt(catalog);
     const promptLines = [
-      "First identify the visible insect, arachnid, or other small arthropod independently, without using the BugDex catalog as a list of candidates.",
+      "Identify the visible insect, arachnid, or other small arthropod independently. You are not given the BugDex catalog and must not guess toward an app species.",
       "Always name what is actually visible in commonName and scientificName at the most specific defensible taxonomic level, even when imageQuality is poor or containsBug is false. Use a broader honest taxon such as beetle, moth, spider, or family when the exact species is uncertain; do not replace a recognizable subject with a generic unknown label.",
       "If the photo does not contain an arthropod, commonName must still briefly name the visible subject, while containsBug remains false.",
-      "Only after identifying the animal, compare that taxon with the BugDex catalog.",
-      "Set catalogStatus to matched only when the identified taxon is genuinely represented by one exact BugDex entry. Never choose the closest-looking, related, or generic entry merely because it is in the catalog.",
-      "Set catalogStatus to not_in_catalog only when a specific named species or clear taxon is confidently identifiable but absent from the catalog.",
-      "Set catalogStatus to uncertain when the photo or identification is not specific enough. Use null for matchedBugId unless catalogStatus is matched.",
-      "Use uncertain only when the visible evidence genuinely cannot support one best identification. If one taxon is clearly most likely, return that best identification and express residual doubt through confidence instead.",
-      "Use a two-pass assessment: first inspect body shape, wing structure, antennae, legs, markings, scale, and habitat; then compare the strongest supported taxon with the catalog.",
+      "The server compares your independent name with BugDex afterward. Always set catalogStatus to uncertain and matchedBugId to null; do not invent or infer an app catalog ID.",
+      "If one taxon is clearly most likely, return that best identification and express residual doubt through confidence instead of replacing it with an unknown label.",
+      "Use a two-pass assessment: first inspect body shape, wing structure, antennae, legs, markings, scale, and habitat; then challenge the first identification against the strongest visual alternative.",
       "A confidence of 0.70 or higher is enough for the best identification when multiple visible anatomical features support it; do not require near-certainty or apply a stricter threshold to rare catalog entries.",
       "Set imageQuality to poor only when no useful diagnostic feature can be assessed because of severe blur, darkness, distance, or obstruction. A normal phone photo, crop, cluttered or plain background, mild motion blur, or imperfect composition is not poor by itself.",
-      "When the identified taxon is absent from BugDex, return catalogStatus not_in_catalog and its real name so a developer can review and add it later.",
       "Do not invent IDs. Treat confidence as identification confidence, not image quality.",
       "Return commonName in Dutch, commonNameEn in English, and commonNameFr in French. Keep scientificName language-neutral.",
       "Return one short, verifiable species fact in Dutch, English, and French using fact, factEn, and factFr. Avoid medical or safety claims.",
@@ -103,9 +96,7 @@ export function createOpenAIImageIdentifier({
       "Before species classification, inspect capture authenticity and reject screenshots, photos of screens or prints, toys, and clearly AI-generated or manipulated images. Look for screen bezels, browser or app chrome, pixel grids, moire, display glare, print halftones, flat paper edges, repeated synthetic details, and impossible AI anatomy.",
       "Set captureAuthenticity to live only when the image plausibly shows a physical bug in a real scene. Set it to reproduction for a screenshot, photographed screen, print, toy, or clearly AI-generated/manipulated image. Use uncertain when those cues are ambiguous.",
       "For reproduction set containsBug to false and explain the strongest authenticity cue in authenticityReason. For uncertain authenticity, keep the biological identification honest but never imply it is reward-safe.",
-      "For a rejected reference image, still fill commonName and scientificName for the visible subject when possible, but keep containsBug false so it cannot grant a reward or create a catalog suggestion.",
-      "BugDex catalog:",
-      catalogPrompt
+      "For a rejected reference image, still fill commonName and scientificName for the visible subject when possible, but keep containsBug false so it cannot grant a reward or create a catalog suggestion."
     ];
 
     async function requestIdentification(maxOutputTokens, retry = false) {
@@ -140,7 +131,7 @@ export function createOpenAIImageIdentifier({
             format: {
               type: "json_schema",
               name: "real_bug_identification",
-              description: "A cautious real-world bug identification matched to the BugBaas BugDex catalog.",
+              description: "An independent, cautious real-world arthropod identification.",
               strict: true,
               schema: responseSchema
             }

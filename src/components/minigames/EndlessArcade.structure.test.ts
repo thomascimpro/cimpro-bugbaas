@@ -40,27 +40,33 @@ test("Bubble Swarm advances a level after clearing the board and adds one color"
   assert.match(swarmSource, /Level \$\{level\}/);
 });
 
-test("all active arcade loops target 60 FPS and use real frame delta", () => {
+test("active movement games use frame delta while Nest Defense keeps its 2.10.19 balance tick", () => {
   assert.match(towerSource, /const tickMs = 16;/);
   assert.match(runnerSource, /const tickMs = 16;/);
   assert.match(glideSource, /const tickMs = 16;/);
-  assert.match(nestSource, /const tickMs = 16;/);
+  assert.match(nestSource, /const tickMs = 90;/);
   assert.match(towerSource, /frameScaleForTick/);
   assert.match(runnerSource, /frameScaleForTick/);
   assert.match(glideSource, /frameScaleForTick/);
-  assert.match(nestSource, /frameScaleForTick/);
+  assert.doesNotMatch(nestSource, /frameScaleForTick/);
   assert.match(towerSource, /startArcadeFrameLoop\(tick\)/);
   assert.match(runnerSource, /startArcadeFrameLoop\(tick\)/);
   assert.match(glideSource, /startArcadeFrameLoop\(tick\)/);
-  assert.match(nestSource, /startArcadeFrameLoop\(tick\)/);
+  assert.doesNotMatch(nestSource, /startArcadeFrameLoop\(tick\)/);
   assert.doesNotMatch(towerSource, /setInterval\(tick/);
   assert.doesNotMatch(runnerSource, /setInterval\(tick/);
   assert.doesNotMatch(glideSource, /setInterval\(tick/);
-  assert.doesNotMatch(nestSource, /setInterval\(tick/);
+  assert.match(nestSource, /setInterval\(tick, tickMs\)/);
   assert.doesNotMatch(towerSource, /const frameScale = tickMs \/ simulationStepMs;/);
   assert.doesNotMatch(runnerSource, /const frameScale = tickMs \/ simulationStepMs;/);
   assert.doesNotMatch(glideSource, /const frameScale = tickMs \/ simulationStepMs;/);
   assert.doesNotMatch(nestSource, /const frameScale = tickMs \/ simulationStepMs;/);
+});
+
+test("ranked arcade games remove the title bar while the game is running", () => {
+  for (const source of [towerSource, swarmSource, runnerSource, glideSource, nestSource]) {
+    assert.match(source, /!\(ranked && state === "running"\)/);
+  }
 });
 
 test("Bug Glide and Bug Tower use faster responsive simulation steps", () => {

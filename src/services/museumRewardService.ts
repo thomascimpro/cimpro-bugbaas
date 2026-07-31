@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
-import { auth } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { auth, db } from "../firebase";
 import type { User } from "../types";
 
 export type MuseumRewardClaimResult = {
@@ -31,4 +32,11 @@ export async function claimMuseumRewards(user: User): Promise<MuseumRewardClaimR
     awardedTitles: Array.isArray(payload?.awardedTitles) ? payload.awardedTitles.map(String) : [],
     claimedIds: Array.isArray(payload?.claimedIds) ? payload.claimedIds.map(String) : []
   };
+}
+
+export async function listMuseumRewardClaimIds(user: User): Promise<string[]> {
+  const currentUser = auth.currentUser;
+  if (!currentUser || currentUser.uid !== user.uid) throw new Error("Log opnieuw in om Museum-rewards te bekijken.");
+  const snapshot = await getDocs(collection(db, "users", user.uid, "museumRewardClaims"));
+  return snapshot.docs.map((item) => String(item.data()?.claimId || "")).filter(Boolean);
 }

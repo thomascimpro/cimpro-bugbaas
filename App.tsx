@@ -1553,8 +1553,8 @@ function AppContent() {
             onChallengeDuel={(opponent) => openBugSmashDuel(opponent)}
           />
         )}
-        {route === "bugdex" && <CollectionScreen openTradeRequest={openBugDexTradeRequest} user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
-        {route === "museum" && <CollectionScreen initialTab="museum" user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
+        {route === "bugdex" && <CollectionScreen openTradeRequest={openBugDexTradeRequest} user={user} onBack={() => setRoute("home")} onRewardDrop={showBugDexDrop} onUserUpdated={setUser} />}
+        {route === "museum" && <CollectionScreen initialTab="museum" user={user} onBack={() => setRoute("home")} onRewardDrop={showBugDexDrop} onUserUpdated={setUser} />}
         {route === "realBugScan" && <RealBugScanScreen user={user} onBack={() => setRoute("home")} onOpenCollection={() => setRoute("bugdex")} onOpenJournal={() => { setFieldJournalBackRoute("realBugScan"); setRoute("fieldJournal"); }} onOpenWorld={() => setRoute("home")} onRewardDrop={showBugDexDrop} />}
         {route === "fieldJournal" && <CollectionScreen initialTab="journal" user={user} onBack={() => setRoute(fieldJournalBackRoute)} onUserUpdated={setUser} />}
         {route === "teamHunt" && <TeamHuntScreen user={user} onBack={() => setRoute("home")} />}

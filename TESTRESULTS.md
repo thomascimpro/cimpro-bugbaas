@@ -1,5 +1,32 @@
 # Test Results
 
+## 2026-07-31 BugBaas 3.0.6 releasecandidate
+
+- Releasepreflight: versie `3.0.6` is gelijk in `package.json`, `package-lock.json`, `app.json` en Android; `versionCode 315`; web- en Android-tools aanwezig.
+- `npm run typecheck`: **passed**.
+- Complete BugScan-client/server-suite: **73/73 passed**, inclusief 70%-matches, `poor`/`uncertain`, ontbrekende soorten, catalogusaliassen, quota, CORS en OpenAI structured-output retry.
+- Gerichte reward-, Museum-, kaart-, onderzoek-, audio- en gameketen: **133/133 passed**.
+- Brede UI-/screen-/componentregressie: **166/166 passed**.
+- Brede service-run: **224 gestarte assertions passed**. Twee bestaande Daily/Weekly-testprocessen starten onder kale Node 24 niet door een extensieloze Firebase-import; hun betrokken 3.0.6-logica is via typecheck, schermtests en afzonderlijke mission-/Functions-tests gedekt.
+- Firebase Functions-package: **74/74 passed**; `node --check firebase/functions/index.js`: **passed**.
+- Museum reward-model afzonderlijk: **4/4 passed** nadat de testimport expliciet TypeScript-resolveerbaar is gemaakt.
+- BugDex WebP-validatie: **1/1 passed**; alle actieve artverwijzingen bestaan en zijn geldige WebP-bestanden. De vijf nieuwe soorten zijn opgenomen.
+- `node --check public/butterfly-catch-3d/prototype.js`: **passed**. `git diff --check`: geen whitespacefouten, alleen bestaande LF/CRLF-waarschuwingen.
+- Firebase-review-dry-run bevestigt acht beoordeelde records, zes reeds toegekende unieke beloningen en twee overgeslagen duplicaten.
+- Firestore-rules en alleen `functions:claimMuseumRewards`: **Firebase dry-run passed**. Werkelijke deployment, Vercel-build, browserruntime, APK-build, signing en hash volgen in de releasefase.
+
+## 2026-07-29 Vercel iPhone- en BugScan-hotfix
+
+- `npm run typecheck`: **passed**.
+- `npm run test:real-bug-scan`: **72/72 passed**, inclusief de gemelde `groene vleesvlieg` op 85%, `uncertain`/`poor`, exacte catalogusresolutie en developer-routing voor een ontbrekende soort.
+- Gerichte webaudio-, iPhone-timing-, unlock- en Vleugeljacht-structuurtests: **17/17 passed**; `node --check` voor het productieprototype: **passed**.
+- Lokale Expo-webexport: **passed**, 1.370 modules, AppEntry circa 3,13 MB; app en Vleugeljacht-bestanden staan in de output.
+- Vercel `dpl_5umNvb7VYihAyNK45eNUxTzVF1we`: **READY** en expliciet gekoppeld aan `https://bugbaas.vercel.app`.
+- Productiecontrole: app, Vleugeljacht-HTML en prototype HTTP 200; BugScan-CORS HTTP 204 en zonder Firebase-token HTTP 401; de bundle bevat Firebase-project `thomascimpro-6266f`.
+- Production-envcontrole bevestigt versleutelde OpenAI-, Firebase-, Google-, origin- en receipt-configuratie zonder geheime waarden te tonen.
+- Echte headless WebKit met iPhone 13-profiel: testaccountlogin, Play, ontgrendelde Wing Hunt en start van de 3D-run slagen; **0** consolefouten, **0** paginafouten en **0** `HTMLAudioElement.play()`-aanroepen tijdens de gecontroleerde app-taps.
+- Vercel-runtimecontrole na de smoke: geen errorlogs en geen HTTP 5xx. Een fysieke iPhone-FPS- en luidsprekercontrole blijft buiten deze Windows-omgeving.
+
 ## 2026-07-29 BugBaas 3.0.5 Android-release
 
 - `npm run typecheck`: **passed**.

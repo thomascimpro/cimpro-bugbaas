@@ -56,9 +56,10 @@ test("sends the image and returns structured identification", async () => {
   assert.equal(requestBody.input[0].content[1].image_url, "data:image/jpeg;base64,YWJjZA==");
   assert.match(requestBody.input[0].content[0].text, /screenshots, photos of screens or prints, toys, and clearly AI-generated or manipulated images/i);
   assert.match(requestBody.input[0].content[0].text, /still fill commonName and scientificName/i);
-  assert.match(requestBody.input[0].content[0].text, /without using the BugDex catalog as a list of candidates/i);
+  assert.match(requestBody.input[0].content[0].text, /not given the BugDex catalog/i);
   assert.match(requestBody.input[0].content[0].text, /always name what is actually visible/i);
-  assert.match(requestBody.input[0].content[0].text, /developer can review and add it later/i);
+  assert.match(requestBody.input[0].content[0].text, /matchedBugId to null/i);
+  assert.doesNotMatch(requestBody.input[0].content[0].text, /lieveheersbeestje|^mier$/im);
   assert.match(requestBody.input[0].content[0].text, /at most 140 characters per field/i);
   assert.match(requestBody.input[0].content[0].text, /confidence of 0\.70 or higher is enough/i);
   assert.match(requestBody.input[0].content[0].text, /normal phone photo, crop, cluttered or plain background, mild motion blur/i);

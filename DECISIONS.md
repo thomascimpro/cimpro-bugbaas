@@ -1,5 +1,24 @@
 # Decisions
 
+## 2026-07-31 - BugScan, beloningen en 3.0.6 releasegrenzen
+
+- Het beeldmodel krijgt geen lijst met BugDex-soorten. Het benoemt eerst onafhankelijk wat zichtbaar is; daarna koppelt de server alleen een exacte genormaliseerde naam, veilige alias of wetenschappelijke alias aan de catalogus. Zo kan de prompt niet meer naar de dichtstbijzijnde app-soort sturen.
+- `gpt-5-mini` blijft de productiestandaard: beeldinput en structured output zijn geschikt voor deze afgebakende scan, terwijl een zwaarder mini-model zonder gemeten kwaliteitswinst onnodig meer API-budget gebruikt.
+- Een specifieke echte soort is vanaf 70% bruikbaar. Staat die niet in de BugDex, dan wordt een developer-record gemaakt. Foto's zonder zichtbare bug, reproducties en onzekere authenticiteit blijven geblokkeerd; de 70%-grens omzeilt die controles niet.
+- Een geaccepteerde fotoscan is pas voltooid nadat een privé-veldnotitie met actuele locatie server-side is opgeslagen. De speler kan dit bewijs niet overslaan. Scan- en Weekvondst-rewards worden daarna gepresenteerd.
+- Iedere soortbeloning gebruikt hetzelfde bron-gelabelde ontdekkingsscherm. Willekeurige rarity-spins worden niet gebruikt voor al bepaalde rewards; bron en exacte bug zijn altijd zichtbaar.
+- Museum-rewards blijven server-authoritatief en eenmalig. De client toont en activeert alleen de volgende claim; permanente claimdocumenten zijn de bron voor idempotentie en endgamevoortgang.
+- Normale Bug Defence behoudt de 2.10.19-simulatiestap en neutrale balans. Alleen expliciete Zwermbeleg-events mogen snelheid, HP, spawnmix of bossinterval wijzigen.
+- Vleugeljacht 3D is vrij op Vercel. De Android-APK toont bewust een slot en opent `https://bugbaas.vercel.app`, zodat de zware 3D-route niet dubbel in de APK wordt onderhouden.
+- iPhone Safari gebruikt lichte oscillatorgeluiden en een lager 3D-renderprofiel. Andere browsers en Android behouden de bestaande pakketgeluiden.
+
+## 2026-07-29 - iPhone-webgeluid en 70%-scanclassificatie
+
+- Alleen iPhone/iPad Safari wijkt op web af van de pakketgeluiden: deze route gebruikt maximaal twee korte WebAudio-oscillatoren per feedbackmoment en maakt geen `HTMLAudioElement`-pool aan. Android en andere webbrowsers behouden hun bestaande WAV-geluiden.
+- De serverclassificatie gebruikt vanaf 70% de exact genormaliseerde BugDex-naam als bron voor een match, ook wanneer het model de catalogusstatus verkeerd als `uncertain` markeert. Een specifieke soort die niet exact in de catalogus staat wordt vanaf dezelfde grens `not_in_catalog` en blijft via `pendingBugDexDiscoveries` zichtbaar voor de developer.
+- Reproducties, foto's zonder zichtbare bug en onzekere authenticiteit blijven afgewezen of in review; de 70%-regel omzeilt deze veiligheidsgrenzen niet.
+- Vleugeljacht behoudt op desktop de volledige scène. iPhone Safari gebruikt een apart lichter profiel met 1× pixelratio, eenvoudigere materialen, geen antialiasing/schaduwen en acht gelijktijdige vliegende bugs.
+
 ## 2026-07-29 - Android 3.0.5 updatekanaal en Vleugeljacht
 
 - Android Vleugeljacht 3D opent voor deze release bewust `https://bugbaas.vercel.app`; dit vervangt de eerdere lokale WebView-beslissing.

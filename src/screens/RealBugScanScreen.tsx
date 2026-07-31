@@ -26,7 +26,7 @@ import {
 import { normalizeRealBugCameraAsset, type RealBugPhotoAsset } from "../services/realBugCameraAsset";
 import { adjustRealBugCameraZoom, calculateRealBugPinchZoom, chooseBestRealBugPictureSize } from "../services/realBugCameraControls";
 import { getRemainingRealBugScans, RealBugScanLimitError, submitRealBugScan } from "../services/realBugScanService";
-import { type BugDexDropResult } from "../services/bugDexService";
+import { entryByBugId, listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
 import { applyUserPoints } from "../services/userService";
 import { fieldJournalBehaviors, fieldJournalHabitats, listFieldJournalEntries, saveFieldJournalEntry, type FieldJournalBehavior, type FieldJournalHabitat, type FieldMilestoneReward, type WeeklyFieldSpotlightReward } from "../services/fieldJournalService";
 import { requestPrivateSightingLocation } from "../services/privateSightingLocation";
@@ -142,7 +142,8 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   const [habitat, setHabitat] = useState<FieldJournalHabitat>("Tuin");
   const [behavior, setBehavior] = useState<FieldJournalBehavior>("Onbekend");
   const [journalSaved, setJournalSaved] = useState(false);
-  const [savePrivateMapCell, setSavePrivateMapCell] = useState(false);
+  const [journalLocationError, setJournalLocationError] = useState("");
+  const [pendingScanDrop, setPendingScanDrop] = useState<BugDexDropResult | null>(null);
   const [journalMilestones, setJournalMilestones] = useState<FieldMilestoneReward[]>([]);
   const [weeklySpotlightReward, setWeeklySpotlightReward] = useState<WeeklyFieldSpotlightReward>();
   const [fieldPhotoStamps, setFieldPhotoStamps] = useState<FieldPhotoStamp[]>([]);
@@ -367,11 +368,18 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       const submission = await submitRealBugScan(user, dataUrl, thumbnailDataUrl);
       const nextResult = submission.result;
       setResult(nextResult);
-      if (submission.drop) onRewardDrop(submission.drop);
       setJournalSaved(false);
+      setJournalLocationError("");
+      setPendingScanDrop(submission.drop ?? null);
       setWeeklySpotlightReward(undefined);
       setProfessorQuizOpen(false);
       setRemainingScans(nextResult.remainingScans);
+      if (nextResult.receipt && (nextResult.status === "matched" || nextResult.status === "not_in_catalog")) {
+        await saveAutomaticJournal(nextResult, submission.drop ?? null);
+      } else {
+        setPendingScanDrop(null);
+        if (submission.drop) onRewardDrop(submission.drop);
+      }
     } catch (nextError) {
       if (nextError instanceof RealBugScanLimitError) setRemainingScans(0);
       setError(nextError instanceof Error ? nextError.message : t("bugScan.error.failed"));
@@ -392,7 +400,8 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     setPhoto(null);
     setResult(null);
     setJournalSaved(false);
-    setSavePrivateMapCell(false);
+    setJournalLocationError("");
+    setPendingScanDrop(null);
     setJournalMilestones([]);
     setWeeklySpotlightReward(undefined);
     setFieldPhotoStamps([]);
@@ -494,23 +503,58 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     }
   }
 
+  async function applySavedJournal(saved: Awaited<ReturnType<typeof saveFieldJournalEntry>>) {
+    setJournalMilestones(saved.milestones);
+    setWeeklySpotlightReward(saved.weeklySpotlight);
+    const entries = await listFieldJournalEntries(user).catch(() => [saved.entry]);
+    const stamps = getFieldPhotoStamps(saved.entry, entries);
+    setFieldPhotoStamps(stamps);
+    if (stamps.length > 0) {
+      stampReveal.setValue(0);
+      Animated.spring(stampReveal, { toValue: 1, friction: 6, tension: 65, useNativeDriver: nativeDriver }).start();
+    }
+    setJournalSaved(true);
+    setJournalLocationError("");
+  }
+
+  async function showWeeklySpotlightDiscovery(weekly: WeeklyFieldSpotlightReward | undefined) {
+    if (!weekly?.claimed || !weekly.rewardBugId) return;
+    const entry = entryByBugId(weekly.rewardBugId);
+    if (!entry) return;
+    const items = await listBugDexInventory(user, { force: true }).catch(() => []);
+    const item = items.find((candidate) => candidate.bugId === weekly.rewardBugId);
+    if (!item) return;
+    onRewardDrop({
+      rewardType: "bug",
+      entry,
+      item,
+      isNew: weekly.isNew ?? item.count === 1,
+      source: "weekly_field_spotlight"
+    });
+  }
+
+  async function saveAutomaticJournal(nextResult: RealBugScanResponse, drop: BugDexDropResult | null) {
+    const locationResult = await requestPrivateSightingLocation();
+    if (!locationResult.available) {
+      const message = locationResult.reason === "denied"
+        ? "Sta locatie toe om deze veldnotitie automatisch op je kaart te zetten."
+        : "Je locatie kon niet worden bepaald. Tik hieronder om het opnieuw te proberen.";
+      setJournalLocationError(message);
+      throw new Error(message);
+    }
+    const saved = await saveFieldJournalEntry(user, nextResult, habitat, behavior, locationResult.location);
+    await applySavedJournal(saved);
+    setPendingScanDrop(null);
+    if (drop) onRewardDrop(drop);
+    await showWeeklySpotlightDiscovery(saved.weeklySpotlight);
+  }
+
   async function saveJournal() {
     if (!result || !canJournal || busy || journalSaved) return;
     setBusy(true);
+    setError("");
     try {
-      const locationResult = savePrivateMapCell ? await requestPrivateSightingLocation() : undefined;
-      if (locationResult && !locationResult.available) setSavePrivateMapCell(false);
-      const saved = await saveFieldJournalEntry(user, result, habitat, behavior, locationResult?.available ? locationResult.location : undefined);
-      setJournalMilestones(saved.milestones);
-      setWeeklySpotlightReward(saved.weeklySpotlight);
-      const entries = await listFieldJournalEntries(user).catch(() => [saved.entry]);
-      const stamps = getFieldPhotoStamps(saved.entry, entries);
-      setFieldPhotoStamps(stamps);
-      if (stamps.length > 0) {
-        stampReveal.setValue(0);
-        Animated.spring(stampReveal, { toValue: 1, friction: 6, tension: 65, useNativeDriver: nativeDriver }).start();
-      }
-      setJournalSaved(true);
+      await saveAutomaticJournal(result, pendingScanDrop);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : "Veldnotitie opslaan mislukt.");
     } finally {
@@ -820,15 +864,16 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
             )}
           </View>}
           {canJournal && <View style={styles.journalCard}>
-            <Text style={styles.journalTitle}>Veldnotitie</Text>
-            <Text style={styles.journalBody}>Leg vast waar je deze echte vondst zag. Je ontdekpad groeit alleen uit bevestigde vondsten.</Text>
-            <Text style={styles.journalLabel}>Habitat</Text><View style={styles.journalChoices}>{fieldJournalHabitats.map((item) => <Pressable key={item} onPress={() => setHabitat(item)} style={[styles.journalChoice, habitat === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, habitat === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
-            <Text style={styles.journalLabel}>Gedrag</Text><View style={styles.journalChoices}>{fieldJournalBehaviors.map((item) => <Pressable key={item} onPress={() => setBehavior(item)} style={[styles.journalChoice, behavior === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, behavior === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
-            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: savePrivateMapCell }} disabled={busy || journalSaved} onPress={() => setSavePrivateMapCell((current) => !current)} style={[styles.privateMapChoice, savePrivateMapCell && styles.privateMapChoiceActive]}>
-              <View style={[styles.privateMapCheck, savePrivateMapCell && styles.privateMapCheckActive]}><Text style={styles.privateMapCheckText}>{savePrivateMapCell ? "✓" : ""}</Text></View>
-              <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>Bewaar een privé-kaartmarkering</Text><Text style={styles.privateMapBody}>Optioneel. Je locatie wordt afgerond tot ongeveer 110 meter, alleen jij kunt hem zien en hij geeft geen extra beloning.</Text></View>
-            </Pressable>
-            <Pressable disabled={busy || journalSaved} onPress={() => void saveJournal()} style={[styles.journalSave, (busy || journalSaved) && styles.disabledButton]}><Text style={styles.primaryButtonText}>{journalSaved ? "Opgeslagen in Veldjournaal" : "Sla veldnotitie op"}</Text></Pressable>
+            <Text style={styles.journalTitle}>{journalSaved ? "Veldnotitie automatisch opgeslagen" : "Locatie nodig voor je veldnotitie"}</Text>
+            <Text style={styles.journalBody}>{journalSaved ? "Je bugfoto, tijd en privélocatie staan nu op je kaart en tellen meteen mee voor je weekmissie." : "Na een geslaagde bugfoto bewaart BugBaas altijd een veldnotitie met je telefoonlocatie. Er is geen overslaanknop."}</Text>
+            <Text style={styles.journalLabel}>Habitat</Text><View style={styles.journalChoices}>{fieldJournalHabitats.map((item) => <Pressable disabled={busy || journalSaved} key={item} onPress={() => setHabitat(item)} style={[styles.journalChoice, habitat === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, habitat === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
+            <Text style={styles.journalLabel}>Gedrag</Text><View style={styles.journalChoices}>{fieldJournalBehaviors.map((item) => <Pressable disabled={busy || journalSaved} key={item} onPress={() => setBehavior(item)} style={[styles.journalChoice, behavior === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, behavior === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
+            <View style={[styles.privateMapChoice, journalSaved && styles.privateMapChoiceActive]}>
+              <View style={[styles.privateMapCheck, journalSaved && styles.privateMapCheckActive]}><Text style={styles.privateMapCheckText}>{journalSaved ? "✓" : "!"}</Text></View>
+              <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>{journalSaved ? "Privé-kaartmarkering bewaard" : "Telefoonlocatie nog niet beschikbaar"}</Text><Text style={styles.privateMapBody}>Je precieze locatie blijft privé en alleen jij ziet de afgeronde markering op je kaart.</Text></View>
+            </View>
+            {journalLocationError ? <Text style={styles.journalLocationError}>{journalLocationError}</Text> : null}
+            {!journalSaved ? <Pressable disabled={busy} onPress={() => void saveJournal()} style={[styles.journalSave, busy && styles.disabledButton]}><Text style={styles.primaryButtonText}>{busy ? "Locatie bepalen..." : "Probeer locatie opnieuw"}</Text></Pressable> : null}
             {fieldPhotoStamps.length > 0 && <Animated.View style={[styles.stampReveal, { opacity: stampReveal, transform: [{ scale: stampReveal.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }) }] }]}>
               <Text style={styles.stampRevealKicker}>VELDFOTOSTEMPELS</Text>
               <Text style={styles.stampRevealBody}>Vastgelegd uit deze echte vondst. Geen AI-fotocijfer en geen extra XP.</Text>
@@ -1708,6 +1753,7 @@ const styles = StyleSheet.create({
   privateMapCopy: { flex: 1 },
   privateMapTitle: { color: "#173426", fontSize: 13, fontWeight: "900" },
   privateMapBody: { color: "#587064", fontSize: 11, lineHeight: 16, marginTop: 3 },
+  journalLocationError: { color: "#a33c25", fontSize: 11, fontWeight: "800", lineHeight: 16, marginTop: 8 },
   journalSave: { alignItems: "center", backgroundColor: "#15724f", borderRadius: 12, marginTop: 14, padding: 12 },
   stampReveal: { backgroundColor: "#e6f2e7", borderColor: "#15724f", borderRadius: 12, borderWidth: 1, marginTop: 12, overflow: "hidden", padding: 12 },
   stampRevealKicker: { color: "#15724f", fontSize: 10, fontWeight: "900", letterSpacing: 1 },

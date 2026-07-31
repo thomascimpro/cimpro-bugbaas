@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
+import { listBugDexUnlocks, type BugDexDropResult } from "../services/bugDexService";
 import { loadBugBrainDailyStatus, type BugBrainDailyCompletion, type BugBrainDailyStatus } from "../services/bugBrainRewardService";
 import { featuredArcadeMode } from "../services/featuredArcadeMode";
 import { listBugSmashDuels, listOpenRandomBugSmashDuels } from "../services/bugSmashDuelService";
@@ -112,14 +112,14 @@ export function PlayScreen({
   const [bugBrainOpen, setBugBrainOpen] = useState(false);
   const [bugBrainActive, setBugBrainActive] = useState(false);
   const [bugBrainStatus, setBugBrainStatus] = useState<BugBrainDailyStatus | null>(null);
-  const [ownedSpecies, setOwnedSpecies] = useState(0);
+  const [discoveredSpecies, setDiscoveredSpecies] = useState(0);
   const glow = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let active = true;
-    listBugDexInventory(user).then((items) => {
+    listBugDexUnlocks(user).then((items) => {
       if (!active) return;
-      setOwnedSpecies(new Set(items.filter((item) => item.count > 0).map((item) => item.bugId)).size);
+      setDiscoveredSpecies(new Set(items.map((item) => item.bugId)).size);
     }).catch(() => undefined);
     return () => { active = false; };
   }, [user]);
@@ -182,13 +182,13 @@ export function PlayScreen({
   }, []);
   const workspaceCloseBlocked = rankedGameActive;
 
-  const unlocks = useMemo(() => buildPlayUnlocks(ownedSpecies), [ownedSpecies]);
+  const unlocks = useMemo(() => buildPlayUnlocks(discoveredSpecies), [discoveredSpecies]);
   const featuredMode = useMemo(() => featuredArcadeMode(unlocks.unlockedModes, localDayId()), [unlocks.unlockedModes]);
   const locked = tab === "ranking" && !unlocks.duelUnlocked;
   const heroTitle = tab === "arcade" ? t("play.arcade.title") : t("leaderboard.title");
   const heroMeta = tab === "arcade"
-    ? `${unlocks.unlockedModes.length} games · ${ownedSpecies} species`
-    : locked ? t("play.unlockSpecies", { count: 10, current: ownedSpecies }) : t("leaderboard.subtitle");
+    ? `${unlocks.unlockedModes.length} games · ${discoveredSpecies} bugs ontdekt`
+    : locked ? t("play.unlockSpecies", { count: 10, current: discoveredSpecies }) : t("leaderboard.subtitle");
 
   function closeBugBrain() {
     setBugBrainActive(false);
@@ -205,8 +205,8 @@ export function PlayScreen({
       status: "completed"
     });
     if (completion.drop?.rewardType === "bug") {
-      void listBugDexInventory(completion.user, { force: true })
-        .then((items) => setOwnedSpecies(new Set(items.filter((item) => item.count > 0).map((item) => item.bugId)).size))
+      void listBugDexUnlocks(completion.user)
+        .then((items) => setDiscoveredSpecies(new Set(items.map((item) => item.bugId)).size))
         .catch(() => undefined);
     }
   }
@@ -298,7 +298,7 @@ export function PlayScreen({
           />
           <View style={styles.heroTop}>
             <Text style={styles.modeKicker}>{t(`play.tab.${tab}`)}</Text>
-            <View style={styles.speciesPill}><Text style={styles.speciesPillText}>{ownedSpecies} BUGS</Text></View>
+            <View style={styles.speciesPill}><Text style={styles.speciesPillText}>{discoveredSpecies} BUGS ONTDEKT</Text></View>
           </View>
           <View style={styles.heroCopy}>
             <Text numberOfLines={2} style={[styles.heroTitle, layout.isCompact && styles.heroTitleCompact]}>{heroTitle}</Text>
@@ -411,7 +411,7 @@ export function PlayScreen({
                   embedded
                   duelUnlocked={unlocks.duelUnlocked}
                   featuredArcadeMode={featuredMode}
-                  ownedSpecies={ownedSpecies}
+                  ownedSpecies={discoveredSpecies}
                   soloCampaignUnlocked={unlocks.soloCampaignUnlocked}
                   unlockedArcadeModes={unlocks.unlockedModes}
                   initialDuelId={workspaceDuelId}

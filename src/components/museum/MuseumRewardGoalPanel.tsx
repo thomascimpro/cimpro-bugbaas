@@ -14,7 +14,16 @@ type Props = {
 };
 
 export function MuseumRewardGoalPanel({ busy, error, notice, goal, onClaim, t }: Props) {
-  if (!goal) return null;
+  if (!goal) return (
+    <View style={styles.panel}>
+      <View style={styles.artWrap}><Text style={styles.medal}>★</Text></View>
+      <View style={styles.copy}>
+        <Text style={styles.kicker}>{t("museum.reward.completeKicker")}</Text>
+        <Text style={styles.title}>{t("museum.reward.completeTitle")}</Text>
+        <Text style={styles.objective}>{t("museum.reward.completeBody")}</Text>
+      </View>
+    </View>
+  );
   const badgeSource = goal.rewardBadgeId ? getBadgeArtSource(goal.rewardBadgeId) : null;
   const percent = Math.round(Math.max(0, Math.min(1, goal.progress)) * 100);
   return (

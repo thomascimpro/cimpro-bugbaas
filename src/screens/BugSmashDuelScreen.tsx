@@ -1925,7 +1925,7 @@ export function BugSmashDuelScreen({ user, embedded = false, workspaceTab = "due
                   cardBasis={arcadeCardBasis}
                   featured={featuredArcadeMode === "butterfly_catch"}
                   image={butterflyCatchImage}
-                  locked={butterflyCatchWebOnly || !unlockedArcadeModeSet.has("butterfly_catch")}
+                  locked={butterflyCatchWebOnly}
                   lockedLabel={butterflyCatchWebOnly ? "🔒 OPEN WEBVERSIE" : undefined}
                   onLockedPress={butterflyCatchWebOnly ? () => {
                     void Linking.openURL(BUTTERFLY_CATCH_WEB_URL).catch(() => setError(`Open ${BUTTERFLY_CATCH_WEB_URL} in je browser.`));
@@ -4315,9 +4315,7 @@ const styles = StyleSheet.create({
   },
   fullscreenArena: {
     backgroundColor: "#0c1d14",
-    borderColor: "#d7bd57",
     borderRadius: 0,
-    borderTopWidth: 1,
     flex: 1,
     justifyContent: "center",
     overflow: "hidden",
@@ -4359,13 +4357,20 @@ const styles = StyleSheet.create({
   },
   gameHud: {
     alignItems: "center",
-    backgroundColor: "#102018",
+    backgroundColor: "rgba(8,27,19,0.86)",
+    borderColor: "rgba(215,189,87,0.58)",
+    borderRadius: 14,
+    borderWidth: 1,
     flexDirection: "row",
     gap: 8,
     justifyContent: "space-between",
+    left: 10,
     paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 8
+    paddingVertical: 6,
+    position: "absolute",
+    right: 10,
+    top: 8,
+    zIndex: 20
   },
   gameHudPlayer: {
     flex: 1,
@@ -4373,20 +4378,20 @@ const styles = StyleSheet.create({
   },
   gameOpponent: {
     color: "#ffffff",
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: "900"
   },
   gameScore: {
     color: "#dce9df",
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "800",
     marginTop: 2
   },
   gameTimer: {
     color: "#d7bd57",
-    fontSize: 30,
+    fontSize: 24,
     fontWeight: "900",
-    minWidth: 70,
+    minWidth: 54,
     textAlign: "center"
   },
   helperChargeFill: {

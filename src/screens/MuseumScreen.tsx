@@ -25,7 +25,7 @@ import { MuseumExhibitEditor } from "../components/museum/MuseumExhibitEditor";
 import { MuseumRewardGoalPanel } from "../components/museum/MuseumRewardGoalPanel";
 import { SeasonTrophyShelf } from "../components/museum/SeasonTrophyShelf";
 import { nativeDriver } from "../services/animationPlatform";
-import { entryByBugId, listBugDexInventory } from "../services/bugDexService";
+import { entryByBugId, listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
 import { listBugMastery } from "../services/bugMasteryService";
 import { listFieldJournalEntries, type FieldJournalEntry } from "../services/fieldJournalService";
 import { useI18n } from "../services/i18n";
@@ -41,7 +41,7 @@ import {
 import { listSeasonTrophies, type SeasonTrophy } from "../services/seasonProgressService";
 import { loadResearchFocusWing, saveResearchFocusWing } from "../services/researchFocusService";
 import { buildMuseumRewardGoals, nextMuseumRewardGoal } from "../services/museumRewardModel";
-import { claimMuseumRewards } from "../services/museumRewardService";
+import { claimMuseumRewards, listMuseumRewardClaimIds } from "../services/museumRewardService";
 import type { ResearchFocusWing } from "../services/researchFocusModel";
 import { useReducedMotion } from "../theme/useReducedMotion";
 import { useResponsiveLayout } from "../theme/useResponsiveLayout";
@@ -89,7 +89,7 @@ const previewBugs: Record<MuseumWingId, string[]> = {
 
 const rarityColors: Record<string, string> = specimenRarityAccent;
 
-export function MuseumScreen({ user, onBack, embedded = false }: { user: User; onBack: () => void; embedded?: boolean }) {
+export function MuseumScreen({ user, onBack, onRewardDrop, embedded = false }: { user: User; onBack: () => void; onRewardDrop?: (drop: BugDexDropResult) => void; embedded?: boolean }) {
   const { t, tr } = useI18n();
   const { height } = useWindowDimensions();
   const layout = useResponsiveLayout();
@@ -119,18 +119,18 @@ export function MuseumScreen({ user, onBack, embedded = false }: { user: User; o
   const mainScrollRef = useRef<ScrollView | null>(null);
   const initialWingChosen = useRef(false);
   const guidedPlacementPrompted = useRef(new Set<MuseumWingId>());
-  const rewardEvaluationStarted = useRef(false);
   const drift = useRef(new Animated.Value(0)).current;
 
   const loadMuseum = useCallback(async () => {
     setLoading(true);
     setLoadError(false);
-    const [inventoryResult, masteryResult, journalResult, placementResult, trophyResult] = await Promise.allSettled([
+    const [inventoryResult, masteryResult, journalResult, placementResult, trophyResult, rewardClaimResult] = await Promise.allSettled([
       listBugDexInventory(user, { force: true }),
       listBugMastery(user, { force: true }),
       listFieldJournalEntries(user),
       listMuseumPlacements(user),
-      listSeasonTrophies(user)
+      listSeasonTrophies(user),
+      listMuseumRewardClaimIds(user)
     ]);
 
     if (inventoryResult.status === "rejected") {
@@ -144,6 +144,7 @@ export function MuseumScreen({ user, onBack, embedded = false }: { user: User; o
     setJournalEntries(journalResult.status === "fulfilled" ? journalResult.value : []);
     if (placementResult.status === "fulfilled") setPlacementsByWing(placementResult.value);
     setSeasonTrophies(trophyResult.status === "fulfilled" ? trophyResult.value : []);
+    setClaimedRewardIds(new Set(rewardClaimResult.status === "fulfilled" ? rewardClaimResult.value : []));
     setLoading(false);
   }, [user]);
 
@@ -237,20 +238,22 @@ export function MuseumScreen({ user, onBack, embedded = false }: { user: User; o
           xp: result.awardedXp,
           rewards: result.awardedBadges.length + result.awardedBugs.length + result.awardedTitles.length
         }));
-        if (result.awardedBugs.length) await loadMuseum();
+        if (result.awardedBugs.length) {
+          const items = await listBugDexInventory(user, { force: true }).catch(() => []);
+          for (const bugId of result.awardedBugs) {
+            const entry = entryByBugId(bugId);
+            const item = items.find((candidate) => candidate.bugId === bugId);
+            if (entry && item) onRewardDrop?.({ rewardType: "bug", entry, item, isNew: item.count === 1, source: "museum_reward" });
+          }
+          await loadMuseum();
+        }
       }
     } catch (error) {
       setRewardError(error instanceof Error ? error.message : t("museum.reward.error"));
     } finally {
       setRewardBusy(false);
     }
-  }, [loadMuseum, t, user]);
-
-  useEffect(() => {
-    if (loading || loadError || rewardEvaluationStarted.current) return;
-    rewardEvaluationStarted.current = true;
-    void evaluateMuseumRewards();
-  }, [evaluateMuseumRewards, loadError, loading]);
+  }, [loadMuseum, onRewardDrop, t, user]);
 
   async function persistPlacements(next: MuseumExhibitPlacement[]) {
     const previous = placementsByWing[selectedWing.id] ?? [];

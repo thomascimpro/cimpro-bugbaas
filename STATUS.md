@@ -1,5 +1,22 @@
 # Status
 
+## 2026-07-31 BugBaas 3.0.6 releasecandidate
+
+- Versies zijn uitgelijnd op `3.0.6`; Android gebruikt `versionCode 315`.
+- De volledige gevraagde keten staat in bron: ranked fullscreen, Bug Defence-pariteit, onderzoekstouch, automatische locatie-veldnotitie, bron-gelabelde rewards, Weekvondst, onafhankelijke BugScan, Museum-claims/endgame, wereldzoom en vijf nieuwe soorten.
+- De acht bestaande Firebase-reviewrecords zijn teruggelezen als beoordeeld. Zes unieke speler/soort-beloningen zijn toegekend; twee dubbele inzendingen zijn bewust zonder tweede exemplaar verwerkt.
+- Firestore-rules en alleen Function `claimMuseumRewards` zijn lokaal en via Firebase-dry-run gevalideerd. Productiedeployment volgt na de selectieve releasecommit.
+- Vercel-project `thomas-cim-pro/bugbaas` bevat alle vereiste productie-envnamen. OpenAI- en receipt-secrets zijn als afgeschermde `Sensitive`-waarden aanwezig; model, Firebase-project en productie-API-basis kloppen.
+- De bronmap blijft bewust vuil met losse niet-releaseassets. Alleen runtimebestanden, tests, documentatie en vijf nieuwe WebP-assets worden in 3.0.6 opgenomen; webrelease en eindcontroles draaien vanuit een geïsoleerde worktree.
+
+## 2026-07-29 Vercel iPhone- en BugScan-hotfix
+
+- Vercel-deployment `dpl_5umNvb7VYihAyNK45eNUxTzVF1we` is `READY`; `https://bugbaas.vercel.app` wijst expliciet naar deze productiebuild.
+- iPhone Safari gebruikt voor app- en spelgeluiden nu korte speelse WebAudio-tonen zonder WAV-playerpool. Andere webbrowsers houden de bestaande APK-WAV-geluiden.
+- Een live bug met minimaal 70% zekerheid wordt bij een exacte catalogusnaam herkend, ook wanneer het model `uncertain` of `poor` terugstuurt. Een concrete ontbrekende soort vanaf 70% gaat naar de bestaande developer-wachtrij.
+- Vleugeljacht 3D is op web vrij, houdt de tik-met-net-vangst bij 100% en gebruikt op iPhone een lichter renderprofiel zonder shadows/antialiasing en met minder gelijktijdige 3D-objecten.
+- De production-env bevat de bestaande versleutelde OpenAI-, Firebase-, Google- en BugScan-configuratie; geheime waarden zijn niet naar bron of logs gekopieerd.
+
 ## 2026-07-29 BugBaas 3.0.5 Android-releasecandidate
 
 - Release-APK: `dist/BugBaas-3.0.5.apk`, package `nl.cimpro.bugbaas`, `versionCode 314`, `versionName 3.0.5`.

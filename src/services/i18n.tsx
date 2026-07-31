@@ -105,7 +105,10 @@ const nl: Record<string, string> = {
   "museum.reward.label": "Reward",
   "museum.reward.claim": "PAK REWARD",
   "museum.reward.claiming": "Even ophalen...",
-  "museum.reward.received": "Al verdiend: +{xp} XP en {rewards} extra rewards.",
+  "museum.reward.received": "Ontvangen: +{xp} XP en {rewards} extra rewards.",
+  "museum.reward.completeKicker": "ZAAL VOLTOOID",
+  "museum.reward.completeTitle": "Alle zaalrewards zijn opgehaald",
+  "museum.reward.completeBody": "Blijf bugs trainen en vind nieuwe soorten. Elke seizoensfinale kan een nieuwe trofee voor de Kroonzaal geven.",
   "museum.reward.error": "Museum-rewards konden niet worden opgehaald.",
   "museum.reward.open.title": "Open deze zaal",
   "museum.reward.open.objective": "Vang, train en vind buiten genoeg bugs voor deze zaal.",
@@ -230,6 +233,9 @@ const nl: Record<string, string> = {
   "world.today.walking": "VANDAAG GELOPEN",
   "world.today.activeEvents": "ACTIEVE EVENTS",
   "world.today.fieldStatus": "VELDSTATUS",
+  "world.region.level": "NIVEAU {tier} VAN 5",
+  "world.region.master": "REGIO VOLTOOID",
+  "world.region.repeat": "Nieuwe vondsten tellen door voor weekjachten en seizoenen.",
   "world.today.walkTitle": "Ga naar buiten",
   "world.today.ready": "Klaar",
   "world.today.buddyStatus.empty": "Geen buddy",
@@ -1789,7 +1795,10 @@ const en: Record<string, string> = {
   "museum.reward.label": "Reward",
   "museum.reward.claim": "CLAIM REWARD",
   "museum.reward.claiming": "Collecting...",
-  "museum.reward.received": "Already earned: +{xp} XP and {rewards} extra rewards.",
+  "museum.reward.received": "Received: +{xp} XP and {rewards} extra rewards.",
+  "museum.reward.completeKicker": "GALLERY COMPLETE",
+  "museum.reward.completeTitle": "All gallery rewards collected",
+  "museum.reward.completeBody": "Keep training bugs and finding species. Each season finale can add a new Crown Hall trophy.",
   "museum.reward.error": "Museum rewards could not be collected.",
   "museum.reward.open.title": "Open this gallery",
   "museum.reward.open.objective": "Catch, train and find enough bugs outside for this gallery.",
@@ -1914,6 +1923,9 @@ const en: Record<string, string> = {
   "world.today.walking": "WALKED TODAY",
   "world.today.activeEvents": "ACTIVE EVENTS",
   "world.today.fieldStatus": "FIELD STATUS",
+  "world.region.level": "LEVEL {tier} OF 5",
+  "world.region.master": "REGION COMPLETE",
+  "world.region.repeat": "New finds still count for weekly hunts and seasons.",
   "world.today.walkTitle": "Head outside",
   "world.today.ready": "Ready",
   "world.today.buddyStatus.empty": "No buddy",
@@ -3473,7 +3485,10 @@ const fr: Record<string, string> = {
   "museum.reward.label": "Récompense",
   "museum.reward.claim": "PRENDRE LA RÉCOMPENSE",
   "museum.reward.claiming": "Récupération...",
-  "museum.reward.received": "Déjà gagné : +{xp} XP et {rewards} récompenses en plus.",
+  "museum.reward.received": "Reçu : +{xp} XP et {rewards} récompenses en plus.",
+  "museum.reward.completeKicker": "SALLE TERMINÉE",
+  "museum.reward.completeTitle": "Toutes les récompenses sont prises",
+  "museum.reward.completeBody": "Continue à entraîner et découvrir des bugs. Chaque finale de saison peut ajouter un trophée à la Salle de la Couronne.",
   "museum.reward.error": "Les récompenses du Musée sont indisponibles.",
   "museum.reward.open.title": "Ouvre cette galerie",
   "museum.reward.open.objective": "Attrape, entraîne et trouve dehors assez d'insectes pour cette galerie.",
@@ -3598,6 +3613,9 @@ const fr: Record<string, string> = {
   "world.today.walking": "MARCHÉ AUJOURD'HUI",
   "world.today.activeEvents": "ÉVÉNEMENTS ACTIFS",
   "world.today.fieldStatus": "ÉTAT DU TERRAIN",
+  "world.region.level": "NIVEAU {tier} SUR 5",
+  "world.region.master": "RÉGION TERMINÉE",
+  "world.region.repeat": "Les nouvelles trouvailles comptent encore pour les chasses et saisons.",
   "world.today.walkTitle": "Pars explorer",
   "world.today.ready": "Prêt",
   "world.today.buddyStatus.empty": "Aucun buddy",
@@ -5180,7 +5198,12 @@ Object.assign(bugDexEntryNames.en, {
   "giraffekevertje": "Giraffe weevil",
   "doornbloembidsprinkhaan": "Spiny flower mantis",
   "lantaarndrager": "Lantern bug",
-  "glorieuze-scarabee": "Glorious scarab"
+  "glorieuze-scarabee": "Glorious scarab",
+  "rode-bosmier": "Red wood ant",
+  "rode-katoenwants": "Red cotton stainer",
+  "gouden-wielwebspin": "Golden orb-weaver",
+  "zwarte-wegmier": "Black garden ant",
+  "struiksprinkhaan": "Speckled bush-cricket"
 });
 
 Object.assign(bugDexEntryNames.fr, {
@@ -5191,7 +5214,12 @@ Object.assign(bugDexEntryNames.fr, {
   "giraffekevertje": "Charancon girafe",
   "doornbloembidsprinkhaan": "Mante fleur epineuse",
   "lantaarndrager": "Fulgores porte-lanterne",
-  "glorieuze-scarabee": "Scarabee glorieux"
+  "glorieuze-scarabee": "Scarabee glorieux",
+  "rode-bosmier": "Fourmi rousse des bois",
+  "rode-katoenwants": "Punaise rouge du coton",
+  "gouden-wielwebspin": "Nephile doree",
+  "zwarte-wegmier": "Fourmi noire des jardins",
+  "struiksprinkhaan": "Sauterelle ponctuee"
 });
 
 registerBugDexEntryTranslations();

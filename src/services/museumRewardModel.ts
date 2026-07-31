@@ -1,8 +1,8 @@
 import type { BugDexInventoryItem, BugMastery } from "../types";
 import type { FieldJournalEntry } from "./fieldJournalService";
 import type { MuseumExhibitPlacement } from "./museumPlacementModel";
-import { bugDexEntries } from "./pointsService";
-import { museumStageRank, type MuseumWing, type MuseumWingId } from "../screens/MuseumScreenModel";
+import { bugDexEntries } from "./pointsService.ts";
+import { museumStageRank, type MuseumWing, type MuseumWingId } from "../screens/MuseumScreenModel.ts";
 
 export type MuseumRewardMilestoneId = "open" | "curated" | "master" | "prestige" | "bronze" | "silver" | "gold" | "legend";
 
@@ -123,7 +123,7 @@ export function buildMuseumRewardGoals(args: {
 export function nextMuseumRewardGoal(goals: MuseumRewardGoal[], wingId: MuseumWingId, claimedIds: ReadonlySet<string> = new Set()): MuseumRewardGoal | undefined {
   const order: MuseumRewardMilestoneId[] = wingId === "crown" ? ["bronze", "silver", "gold", "legend"] : ["open", "curated", "master", "prestige"];
   const orderedGoals = order.map((id) => goals.find((goal) => goal.wingId === wingId && goal.milestoneId === id)).filter((goal): goal is MuseumRewardGoal => Boolean(goal));
-  return orderedGoals.find((goal) => !claimedIds.has(goal.claimId)) ?? orderedGoals[orderedGoals.length - 1];
+  return orderedGoals.find((goal) => !claimedIds.has(goal.claimId));
 }
 
 function stageGoal(wing: MuseumWing, milestoneId: "open" | "curated" | "master", rewardXp: number, rewardBugId?: string, rewardBadgeId?: string): MuseumRewardGoal {

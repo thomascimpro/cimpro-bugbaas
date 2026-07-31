@@ -300,7 +300,20 @@ export function WorldScreen({ user, onStartScan, onOpenCollection, onOpenBuddy, 
         setResearchStatus(status);
         if (status.awardedBugId) {
           const nextInventory = await listBugDexInventory(user, { force: true }).catch(() => undefined);
-          if (nextInventory) setInventory(nextInventory);
+          if (nextInventory) {
+            setInventory(nextInventory);
+            const entry = entryByBugId(status.awardedBugId);
+            const item = nextInventory.find((candidate) => candidate.bugId === status.awardedBugId);
+            if (entry && item) {
+              onRewardDrop?.({
+                rewardType: "bug",
+                entry,
+                item,
+                isNew: !status.duplicate && item.count === 1,
+                source: "research_encounter"
+              });
+            }
+          }
         }
       } catch (error) {
         setResearchError(error instanceof Error ? error.message : t("research.unavailable"));

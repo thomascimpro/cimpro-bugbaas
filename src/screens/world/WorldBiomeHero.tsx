@@ -77,8 +77,9 @@ export function WorldBiomeHero({
         <View style={styles.heroBottom}>
           <View style={styles.routeHeader}>
             <View>
-              <Text style={styles.routeKicker}>T{region.tier}/5</Text>
+              <Text style={styles.routeKicker}>{region.tier >= 5 ? t("world.region.master") : t("world.region.level", { tier: region.tier })}</Text>
               <Text style={styles.routeMeta}>{t("map.findings", { count: region.verifiedObservations })}</Text>
+              {region.tier >= 5 ? <Text style={styles.masterHint}>{t("world.region.repeat")}</Text> : null}
             </View>
             <View style={styles.movementChip}>
               <Text style={styles.movementValue}>{movementModel.currentLabel}/{movementModel.goalLabel}</Text>
@@ -233,6 +234,7 @@ const styles = StyleSheet.create({
   routeHeader: { alignItems: "flex-end", flexDirection: "row", justifyContent: "space-between" },
   routeKicker: { color: gameTheme.colors.accentStrong, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
   routeMeta: { color: "#e1ece6", fontSize: 8, fontWeight: "800", marginTop: 2 },
+  masterHint: { color: "#f7e8a2", fontSize: 7, fontWeight: "800", marginTop: 2, maxWidth: 210 },
   movementChip: { alignItems: "flex-end", backgroundColor: "rgba(5,23,17,0.80)", borderColor: "rgba(255,255,255,0.18)", borderRadius: 12, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 6 },
   movementValue: { color: "#ffffff", fontSize: 10, fontWeight: "900" },
   movementLabel: { color: gameTheme.colors.textMuted, fontSize: 6.5, fontWeight: "900", letterSpacing: 0.6, marginTop: 1 },

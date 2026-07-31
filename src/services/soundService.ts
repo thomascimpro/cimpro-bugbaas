@@ -1,5 +1,12 @@
 import { NativeModules, Platform } from "react-native";
-import { BugSoundName, WebSoundProfile, webSoundProfile, webUiSoundTargetSelector, webUiTapProfile } from "./webSoundProfile";
+import {
+  BugSoundName,
+  WebSoundProfile,
+  webSoundPlaybackMode,
+  webSoundProfile,
+  webUiSoundTargetSelector,
+  webUiTapProfile
+} from "./webSoundProfile";
 import { webSoundAsset } from "./webSoundAssets";
 
 export type { BugSoundName } from "./webSoundProfile";
@@ -28,20 +35,28 @@ function playWebTone(profile: WebSoundProfile) {
   const context = browserAudioContext();
   if (!context) return;
   const play = () => {
-    const startAt = context.currentTime;
-    const endAt = startAt + profile.durationMs / 1000;
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = profile.wave;
-    oscillator.frequency.setValueAtTime(profile.frequency, startAt);
-    oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, profile.endFrequency ?? profile.frequency), endAt);
-    gain.gain.setValueAtTime(0.0001, startAt);
-    gain.gain.exponentialRampToValueAtTime(profile.gain, startAt + 0.008);
-    gain.gain.exponentialRampToValueAtTime(0.0001, endAt);
-    oscillator.connect(gain);
-    gain.connect(context.destination);
-    oscillator.start(startAt);
-    oscillator.stop(endAt + 0.01);
+    const playTone = (tone: Omit<WebSoundProfile, "accent">, delayMs = 0) => {
+      const startAt = context.currentTime + delayMs / 1000;
+      const endAt = startAt + tone.durationMs / 1000;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = tone.wave;
+      oscillator.frequency.setValueAtTime(tone.frequency, startAt);
+      oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, tone.endFrequency ?? tone.frequency), endAt);
+      gain.gain.setValueAtTime(0.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(tone.gain, startAt + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, endAt);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.addEventListener("ended", () => {
+        oscillator.disconnect();
+        gain.disconnect();
+      }, { once: true });
+      oscillator.start(startAt);
+      oscillator.stop(endAt + 0.01);
+    };
+    playTone(profile);
+    if (profile.accent) playTone(profile.accent, profile.accent.delayMs);
   };
   if (context.state === "suspended") void context.resume().then(play).catch(() => undefined);
   else play();
@@ -55,6 +70,7 @@ function webSoundAssetUri(asset: ReturnType<typeof webSoundAsset>): string | nul
 
 function playWebAsset(name: BugSoundName): boolean {
   if (typeof window === "undefined" || typeof Audio === "undefined") return false;
+  if (typeof navigator !== "undefined" && webSoundPlaybackMode(navigator.userAgent, navigator.maxTouchPoints ?? 0) === "tone") return false;
   const uri = webSoundAssetUri(webSoundAsset(name));
   if (!uri) return false;
 

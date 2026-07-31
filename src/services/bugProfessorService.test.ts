@@ -20,5 +20,7 @@ test("Bug Professor combines localized scan copy with a playable quiz", () => {
   assert.ok(brief.quizOptions.includes(brief.quizAnswer));
   assert.ok(brief.quizExplanation.length > brief.quizAnswer.length);
   assert.equal(brief.quizRewardPoints, 1);
-  assert.equal(brief.quizCategory, "Insectenfeit");
+  assert.equal(brief.quizCategory, "Jouw vondst");
+  assert.equal(brief.quizQuestion, "Welke bug heb je net gefotografeerd?");
+  assert.equal(brief.quizAnswer, "Mier");
 });

@@ -36,6 +36,45 @@ test("accepts an exact BugDex match at seventy percent confidence", () => {
   assert.equal(result.identification.bugId, "mier");
 });
 
+test("accepts the screenshot case by exact catalog name even when the model is uncertain", () => {
+  const result = normalizeIdentification({
+    containsBug: true,
+    imageQuality: "poor",
+    captureAuthenticity: "live",
+    catalogStatus: "uncertain",
+    matchedBugId: null,
+    commonName: "groene vleesvlieg",
+    scientificName: "Lucilia sp.",
+    fact: "{Volwassenen hebben een metaalgroene glans en bezoeken bloemen of kadavers.}",
+    confidence: 0.85,
+    reason: "Metalen groene thorax, grote facetogen en vleugels passen bij een vleesvlieg."
+  }, catalog);
+
+  assert.equal(result.status, "matched");
+  assert.equal(result.identification.bugId, "groene-vleesvlieg");
+  assert.equal(result.identification.commonName, "Groene vleesvlieg");
+  assert.doesNotMatch(result.identification.fact, /^\{/);
+});
+
+test("accepts an exact catalog alias without forcing a nearest species", () => {
+  const result = normalizeIdentification({
+    containsBug: true,
+    imageQuality: "good",
+    captureAuthenticity: "live",
+    catalogStatus: "uncertain",
+    matchedBugId: null,
+    commonName: "Grote groene sabelsprinkhaan",
+    scientificName: "Tettigonia viridissima",
+    fact: "Deze soort heeft zeer lange antennes en een opvallend zwaardvormige legboor.",
+    confidence: 0.82,
+    reason: "De lichaamsvorm en kenmerken passen bij deze soort."
+  }, catalog);
+
+  assert.equal(result.status, "matched");
+  assert.equal(result.identification.bugId, "groene-sabelsprinkhaan");
+  assert.equal(result.identification.commonName, "Groene sabelsprinkhaan");
+});
+
 test("routes an invented BugDex id to review", () => {
   const result = normalizeIdentification({
     containsBug: true,
@@ -89,6 +128,24 @@ test("records a concrete missing species at seventy percent confidence", () => {
   }, catalog);
 
   assert.equal(result.status, "not_in_catalog");
+});
+
+test("recommends a confident specific missing species even when the model marks it uncertain", () => {
+  const result = normalizeIdentification({
+    containsBug: true,
+    imageQuality: "poor",
+    captureAuthenticity: "live",
+    catalogStatus: "uncertain",
+    matchedBugId: null,
+    commonName: "Purperen langpootmug",
+    scientificName: "Tipula purpurata",
+    fact: "Deze langpootmug heeft opvallend purper gekleurde vleugels.",
+    confidence: 0.85,
+    reason: "De vorm en kleur passen bij deze specifieke soort."
+  }, catalog);
+
+  assert.equal(result.status, "not_in_catalog");
+  assert.equal(result.identification.bugId, null);
 });
 
 test("rejects a forced nearest BugDex match and stores it as a missing species", () => {

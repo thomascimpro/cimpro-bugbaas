@@ -3,7 +3,7 @@
     "name": "BugBaas",
     "slug": "bugbaas",
     "scheme": "bugbaas",
-    "version": "3.0.5",
+    "version": "3.0.6",
     "orientation": "portrait",
     "icon": "./assets/generated/bugbaas-app-icon-v3.png",
     "splash": {
@@ -84,7 +84,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "BugBaas gebruikt je locatie alleen na jouw tik om privé-vondsten op je kaart te plaatsen."
+          "locationWhenInUsePermission": "BugBaas gebruikt je locatie na een geslaagde bugfoto om automatisch een privé-veldnotitie op je kaart te plaatsen."
         }
       ]
     ]

@@ -22,7 +22,7 @@ export function ResearchProgressCard({ activeTarget, loading, onChoose, onContin
     const progress = Math.min(100, Math.round((activeTarget.progress / Math.max(1, activeTarget.target)) * 100));
     const ready = Boolean(activeTarget.completedAt);
     return (
-      <Pressable accessibilityRole="button" disabled={loading} onPress={onContinue} style={({ pressed }) => [styles.card, ready && styles.cardReady, pressed && styles.pressed]}>
+      <Pressable accessibilityRole="button" disabled={loading} hitSlop={8} onPress={onContinue} style={({ pressed }) => [styles.card, ready && styles.cardReady, pressed && styles.pressed]}>
         <View style={styles.encounterRow}>
           <View style={[styles.bugStage, ready && styles.bugStageReady]}>
             <View pointerEvents="none" style={styles.scanRing} />
@@ -55,10 +55,10 @@ export function ResearchProgressCard({ activeTarget, loading, onChoose, onContin
       </View>
       <View style={styles.options}>
         {options.slice(0, 3).map((option) => (
-          <Pressable accessibilityRole="button" disabled={loading} key={option.bugId} onPress={() => onChoose(option.bugId)} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
-            <View style={styles.optionArt}><BugArtImage bugId={option.bugId} size={38} /></View>
-            <Text numberOfLines={1} style={styles.optionName}>{entryByBugId(option.bugId) ? bugDexEntryName(entryByBugId(option.bugId)!, t) : option.bugId}</Text>
-            <Text style={styles.optionTier}>T{option.researchTier}</Text>
+          <Pressable accessibilityLabel={`Onderzoek ${entryByBugId(option.bugId) ? bugDexEntryName(entryByBugId(option.bugId)!, t) : option.bugId}`} accessibilityRole="button" disabled={loading} hitSlop={6} key={option.bugId} onPress={() => onChoose(option.bugId)} style={({ pressed }) => [styles.option, pressed && styles.optionPressed]}>
+            <View pointerEvents="none" style={styles.optionArt}><BugArtImage bugId={option.bugId} size={44} /></View>
+            <Text pointerEvents="none" numberOfLines={2} style={styles.optionName}>{entryByBugId(option.bugId) ? bugDexEntryName(entryByBugId(option.bugId)!, t) : option.bugId}</Text>
+            <Text pointerEvents="none" style={styles.optionTier}>NIVEAU {option.researchTier}</Text>
           </Pressable>
         ))}
       </View>
@@ -90,9 +90,9 @@ const styles = StyleSheet.create({
   chooseHeaderMark: { alignItems: "center", backgroundColor: "rgba(111,209,208,0.13)", borderColor: "rgba(111,209,208,0.34)", borderRadius: 15, borderWidth: 1, height: 46, justifyContent: "center", width: 46 },
   chooseHeaderIcon: { color: "#6fd1d0", fontSize: 23, fontWeight: "900" },
   options: { flexDirection: "row", gap: 6, marginTop: 10 },
-  option: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.07)", borderColor: "rgba(255,255,255,0.12)", borderRadius: 12, borderWidth: 1, flex: 1, minHeight: 74, paddingHorizontal: 5, paddingVertical: 6 },
+  option: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.07)", borderColor: "rgba(255,255,255,0.12)", borderRadius: 12, borderWidth: 1, flex: 1, minHeight: 98, paddingHorizontal: 6, paddingVertical: 8 },
   optionPressed: { backgroundColor: "rgba(111,209,208,0.18)", borderColor: "rgba(111,209,208,0.48)" },
-  optionArt: { alignItems: "center", height: 40, justifyContent: "center" },
-  optionName: { color: gameTheme.colors.text, fontSize: 7.5, fontWeight: "900", textAlign: "center", width: "100%" },
+  optionArt: { alignItems: "center", height: 46, justifyContent: "center" },
+  optionName: { color: gameTheme.colors.text, fontSize: 9, fontWeight: "900", lineHeight: 11, minHeight: 22, textAlign: "center", width: "100%" },
   optionTier: { color: "#6fd1d0", fontSize: 7, fontWeight: "900", marginTop: 2 }
 });

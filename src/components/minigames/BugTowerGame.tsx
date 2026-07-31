@@ -351,10 +351,10 @@ export function BugTowerGame({ onBack, onResult, practice = false, ranked = fals
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}>
+      {!(ranked && state === "running") && <View style={styles.header}>
         <View><Text style={styles.title}>Bug Tower</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>
         {(practice || state === "result") && <Pressable accessibilityLabel="Back to games" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}
-      </View>
+      </View>}
       {state === "ready" && <Ready onStart={start} />}
       {state === "running" && (
         <View style={styles.game}>

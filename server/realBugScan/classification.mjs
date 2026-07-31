@@ -7,6 +7,11 @@ function cleanString(value, fallback = "") {
   return cleaned || fallback;
 }
 
+function cleanProse(value, fallback = "") {
+  const cleaned = cleanString(value, fallback);
+  return cleaned.startsWith("{") && cleaned.endsWith("}") ? cleaned.slice(1, -1).trim() : cleaned;
+}
+
 function clampConfidence(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return 0;
@@ -20,6 +25,14 @@ function normalizedTaxonName(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
+}
+
+function taxonNamesForEntry(entry) {
+  return [
+    entry.name,
+    ...(Array.isArray(entry.aliases) ? entry.aliases : []),
+    ...(Array.isArray(entry.scientificAliases) ? entry.scientificAliases : [])
+  ].map(normalizedTaxonName).filter(Boolean);
 }
 
 export function buildBugCatalogPrompt(catalog) {
@@ -52,43 +65,44 @@ export function normalizeIdentification(
   missingCatalogThreshold = defaultMissingCatalogThreshold
 ) {
   const catalogMap = new Map(catalog.map((entry) => [entry.id, entry]));
+  const catalogNameMap = new Map(catalog.flatMap((entry) => (
+    taxonNamesForEntry(entry).map((name) => [name, entry])
+  )));
   const containsBug = raw?.containsBug === true;
   const imageQuality = raw?.imageQuality === "poor" ? "poor" : "good";
   const captureAuthenticity = ["live", "reproduction", "uncertain"].includes(raw?.captureAuthenticity)
     ? raw.captureAuthenticity
     : "live";
   const authenticityReason = cleanString(raw?.authenticityReason);
-  const catalogStatus = ["matched", "not_in_catalog", "uncertain"].includes(raw?.catalogStatus)
-    ? raw.catalogStatus
-    : "uncertain";
   const requestedBugId = cleanString(raw?.matchedBugId) || null;
-  const matchedEntry = requestedBugId ? catalogMap.get(requestedBugId) : null;
   const confidence = clampConfidence(raw?.confidence);
   const commonName = cleanString(raw?.commonName, containsBug ? "Onbekende bug" : "Geen bug herkend");
+  const requestedEntry = requestedBugId ? catalogMap.get(requestedBugId) : null;
+  const namedEntry = catalogNameMap.get(normalizedTaxonName(commonName));
+  const matchedEntry = namedEntry ?? requestedEntry;
   const commonNameEn = cleanString(raw?.commonNameEn, commonName);
   const commonNameFr = cleanString(raw?.commonNameFr, commonName);
   const scientificName = cleanString(raw?.scientificName);
-  const fact = cleanString(raw?.fact);
-  const factEn = cleanString(raw?.factEn, fact);
-  const factFr = cleanString(raw?.factFr, fact);
-  const reason = cleanString(raw?.reason, "De foto kon niet betrouwbaar worden beoordeeld.");
-  const reasonEn = cleanString(raw?.reasonEn, reason);
-  const reasonFr = cleanString(raw?.reasonFr, reason);
+  const fact = cleanProse(raw?.fact);
+  const factEn = cleanProse(raw?.factEn, fact);
+  const factFr = cleanProse(raw?.factFr, fact);
+  const reason = cleanProse(raw?.reason, "De foto kon niet betrouwbaar worden beoordeeld.");
+  const reasonEn = cleanProse(raw?.reasonEn, reason);
+  const reasonFr = cleanProse(raw?.reasonFr, reason);
   const exactCatalogNameMatch = Boolean(matchedEntry)
-    && normalizedTaxonName(commonName) === normalizedTaxonName(matchedEntry.name);
+    && taxonNamesForEntry(matchedEntry).includes(normalizedTaxonName(commonName));
 
   let status;
   if (captureAuthenticity === "reproduction") status = "rejected_authenticity";
   else if (!containsBug) status = "rejected_no_bug";
   else if (captureAuthenticity === "uncertain") status = "pending_review";
-  else if (imageQuality === "poor") status = "rejected_quality";
-  else if (catalogStatus === "matched" && exactCatalogNameMatch && confidence >= autoAwardThreshold) status = "matched";
+  else if (exactCatalogNameMatch && confidence >= autoAwardThreshold) status = "matched";
   else if (
-    (catalogStatus === "not_in_catalog" || (catalogStatus === "matched" && matchedEntry && !exactCatalogNameMatch))
-    && confidence >= missingCatalogThreshold
+    confidence >= missingCatalogThreshold
     && specificMissingSpeciesName(commonName, scientificName)
     && fact.length >= 12
   ) status = "not_in_catalog";
+  else if (imageQuality === "poor") status = "rejected_quality";
   else status = "pending_review";
 
   return {

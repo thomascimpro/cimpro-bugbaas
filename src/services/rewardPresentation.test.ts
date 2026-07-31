@@ -17,11 +17,11 @@ test("confirmed real bug scans show their BugDex receipt immediately", () => {
   assert.equal(shouldPresentBugDexDropImmediately("real_bug_scan"), true);
 });
 
-test("casino presentation is reserved for genuinely random rarity rolls", () => {
-  assert.equal(shouldShowRewardSpin("daily_mission_bonus"), true);
-  assert.equal(shouldShowRewardSpin("weekly_mission_rare"), true);
-  assert.equal(shouldShowRewardSpin("duel_win"), true);
-  assert.equal(shouldShowRewardSpin("rank_up"), true);
+test("every reward goes straight to the source-labelled discovery screen", () => {
+  assert.equal(shouldShowRewardSpin("daily_mission_bonus"), false);
+  assert.equal(shouldShowRewardSpin("weekly_mission_rare"), false);
+  assert.equal(shouldShowRewardSpin("duel_win"), false);
+  assert.equal(shouldShowRewardSpin("rank_up"), false);
 });
 
 test("fixed-rarity and known-species rewards skip the casino presentation", () => {

@@ -49,3 +49,11 @@ test("confirmed scan rewards are handed to the BugDex unlock presentation", () =
   assert.match(source, /onRewardDrop: \(drop: BugDexDropResult\) => void/);
   assert.match(source, /if \(submission\.drop\) onRewardDrop\(submission\.drop\)/);
 });
+
+test("every successful scan requires an automatic private fieldnote before its reward", () => {
+  assert.match(source, /await saveAutomaticJournal\(nextResult, submission\.drop \?\? null\)/);
+  assert.match(source, /const locationResult = await requestPrivateSightingLocation\(\)/);
+  assert.match(source, /await saveFieldJournalEntry\(user, nextResult, habitat, behavior, locationResult\.location\)/);
+  assert.match(source, /Er is geen overslaanknop/);
+  assert.doesNotMatch(source, /accessibilityRole="checkbox"/);
+});

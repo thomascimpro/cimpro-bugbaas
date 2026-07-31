@@ -297,7 +297,13 @@
   {
     "id": "koninginnenpage",
     "name": "Koninginnenpage",
-    "rarity": "Episch"
+    "rarity": "Episch",
+    "aliases": [
+      "Machaon"
+    ],
+    "scientificAliases": [
+      "Papilio machaon"
+    ]
   },
   {
     "id": "atalanta",
@@ -1302,7 +1308,10 @@
   {
     "id": "groene-vleesvlieg",
     "name": "Groene vleesvlieg",
-    "rarity": "Gewoon"
+    "rarity": "Gewoon",
+    "scientificAliases": [
+      "Lucilia sp."
+    ]
   },
   {
     "id": "huisboktor",
@@ -2262,7 +2271,13 @@
   {
     "id": "groene-sabelsprinkhaan",
     "name": "Groene sabelsprinkhaan",
-    "rarity": "Episch"
+    "rarity": "Episch",
+    "aliases": [
+      "Grote groene sabelsprinkhaan"
+    ],
+    "scientificAliases": [
+      "Tettigonia viridissima"
+    ]
   },
   {
     "id": "sierlijke-sprinkhaan",
@@ -2558,5 +2573,45 @@
     "id": "kleine-watersalamander",
     "name": "Kleine watersalamander",
     "rarity": "Gewoon"
+  },
+  {
+    "id": "rode-bosmier",
+    "name": "Rode bosmier",
+    "rarity": "Gewoon",
+    "scientificAliases": [
+      "Formica rufa"
+    ]
+  },
+  {
+    "id": "rode-katoenwants",
+    "name": "Rode katoenwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": [
+      "Dysdercus sp."
+    ]
+  },
+  {
+    "id": "gouden-wielwebspin",
+    "name": "Gouden wielwebspin",
+    "rarity": "Episch",
+    "scientificAliases": [
+      "Trichonephila sp."
+    ]
+  },
+  {
+    "id": "zwarte-wegmier",
+    "name": "Zwarte wegmier",
+    "rarity": "Gewoon",
+    "scientificAliases": [
+      "Lasius niger"
+    ]
+  },
+  {
+    "id": "struiksprinkhaan",
+    "name": "Struiksprinkhaan",
+    "rarity": "Gewoon",
+    "scientificAliases": [
+      "Leptophyes punctatissima"
+    ]
   }
 ]

@@ -54,6 +54,9 @@ export const legacyRewardSourcePolicies = Object.freeze({
   buddy_epic: "preserve_then_targeted_reward",
   bug_brain_daily: "preserve_then_targeted_reward",
   real_bug_scan: "preserve_then_exact_species",
+  museum_reward: "preserve_then_targeted_reward",
+  research_encounter: "preserve_then_targeted_reward",
+  weekly_field_spotlight: "preserve_then_targeted_reward",
   combine: "preserve_then_directed_synthesis"
 } satisfies Record<string, LegacyRewardTransition>);
 
@@ -183,7 +186,12 @@ const additionalFieldBugIds = new Set([
   "meikever",
   "schorpioenvlieg",
   "voorraadmot",
-  "witte-tijger"
+  "witte-tijger",
+  "rode-bosmier",
+  "rode-katoenwants",
+  "gouden-wielwebspin",
+  "zwarte-wegmier",
+  "struiksprinkhaan"
 ]);
 
 const fieldBugIds = new Set([...dutchFieldBugIds, ...additionalFieldBugIds]);

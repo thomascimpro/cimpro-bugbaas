@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-07-31 - BugBaas 3.0.6
+
+- Ranked arcadegames gebruiken tijdens het spelen het volledige gamevlak zonder losse titelbalk. Normale Bug Defence gebruikt opnieuw de 2.10.19-tick en neutrale balans; eventmodifiers blijven alleen binnen Zwermbeleg actief.
+- Iedere geslaagde fotoscan maakt verplicht eerst een privé-veldnotitie met de actuele telefoonlocatie. Pas daarna verschijnen de scan-, Weekvondst- en BugDex-beloningen.
+- BugScan identificeert de zichtbare soort onafhankelijk van de BugDex. Exacte namen en veilige aliassen worden server-side vanaf 70% gekoppeld; concrete ontbrekende soorten gaan vanaf dezelfde grens naar de developer-wachtrij in plaats van naar een geforceerde app-soort.
+- Alle bugbeloningen gebruiken één bron-gelabeld `Bug X ontdekt`-scherm voor onder meer foto, Duel, Daily, Weekly, Museum, Onderzoek, Campaign, Buddy en Arcade. De willekeurige casino-presentatie is uitgeschakeld.
+- Museum-rewards worden alleen via de zichtbare claimknop server-side toegekend. Permanente claims blokkeren dubbel innen; voltooide zalen verwijzen door naar Prestige, Kroonzaal en seizoensfinales.
+- Onderzoekskaarten hebben grotere touchdoelen, de quiz na een fotoscan gaat over de daadwerkelijk herkende bug, Arcade telt ontdekte soorten en de wereldkaart kan met `WERELD` tot zoomniveau 2 uitzoomen.
+- De regio-indicator legt `NIVEAU X VAN 5`, voltooiing en herhaalbare week-/seizoensprogressie uit.
+- Toegevoegd aan de BugDex: rode bosmier, rode katoenwants, gouden wielwebspin, zwarte wegmier en struiksprinkhaan, met transparante WebP-art en veilige wetenschappelijke aliassen.
+- Acht bestaande developer-waarnemingen zijn beoordeeld; zes unieke speler/soort-combinaties hebben één exemplaar ontvangen en twee dubbele inzendingen zijn zonder extra beloning afgehandeld.
+- iPhone Safari behoudt de lichte WebAudio- en 3D-renderroute. Vleugeljacht is vrij op web en blijft in Android vergrendeld met een link naar `https://bugbaas.vercel.app`.
+
+## 2026-07-29 - Vercel iPhone- en BugScan-hotfix
+
+- De iPhone Safari-webclient speelt lichte meerklank-WebAudio-feedback af zonder de laggevende pool van APK-WAV-spelers; andere webbrowsers blijven de bestaande pakketgeluiden gebruiken.
+- BugScan herkent exacte BugDex-namen vanaf 70% ook bij een foutief `uncertain`-modelantwoord en stuurt concrete ontbrekende soorten vanaf 70% naar de developer-wachtrij. Losse accolades rond modeltekst worden verwijderd.
+- Het webslot van Vleugeljacht 3D is verwijderd en de bestaande tik-bij-100%-netslag blijft actief.
+- Het iPhone-renderprofiel van Vleugeljacht gebruikt minder GPU-zware effecten en objecten; desktopweergave blijft ongewijzigd.
+- Gepubliceerd op `https://bugbaas.vercel.app` als deployment `dpl_5umNvb7VYihAyNK45eNUxTzVF1we`.
+
 ## 2026-07-29 - BugBaas 3.0.5 Android-release
 
 - Android-versie verhoogd naar `3.0.5` (`versionCode 314`) met de actuele 3.0-productiecorrecties voor BugScan, geluiden, Bug Tower-besturing, duels, Buddy-voortgang en Solo Campaign.

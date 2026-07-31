@@ -1080,11 +1080,15 @@ async function claimMuseumRewards(uid) {
     const claimRefs = eligibleIds.map((claimId) => userRef.collection("museumRewardClaims").doc(claimId.replace(/:/g, "__")));
     const rewardBugIds = Array.from(new Set(eligibleIds.map((claimId) => rewardForClaimId(claimId)?.rewardBugId).filter(Boolean)));
     const bugRefs = rewardBugIds.map((bugId) => userRef.collection("bugdex").doc(bugId));
-    const snapshots = await transaction.getAll(userRef, ...claimRefs, ...bugRefs);
+    const unlockRefs = rewardBugIds.map((bugId) => userRef.collection("bugdexUnlocks").doc(bugId));
+    const snapshots = await transaction.getAll(userRef, ...claimRefs, ...bugRefs, ...unlockRefs);
     const userSnapshot = snapshots[0];
     const claimSnapshots = snapshots.slice(1, 1 + claimRefs.length);
-    const bugSnapshots = snapshots.slice(1 + claimRefs.length);
+    const bugSnapshotStart = 1 + claimRefs.length;
+    const bugSnapshots = snapshots.slice(bugSnapshotStart, bugSnapshotStart + bugRefs.length);
+    const unlockSnapshots = snapshots.slice(bugSnapshotStart + bugRefs.length);
     const bugSnapshotById = new Map(rewardBugIds.map((bugId, index) => [bugId, bugSnapshots[index]]));
+    const unlockSnapshotById = new Map(rewardBugIds.map((bugId, index) => [bugId, unlockSnapshots[index]]));
     if (!userSnapshot.exists) throw httpError(404, "User profile not found.");
     const newIds = eligibleIds.filter((_, index) => !claimSnapshots[index].exists);
     const allClaimedIds = Array.from(new Set([...existingClaimIds, ...eligibleIds]));
@@ -1126,6 +1130,16 @@ async function claimMuseumRewards(uid) {
           sources: ["museum_reward"]
         };
         transaction.set(bugRef, next);
+        const unlockRef = userRef.collection("bugdexUnlocks").doc(reward.rewardBugId);
+        const unlockSnapshot = unlockSnapshotById.get(reward.rewardBugId);
+        const existingUnlock = unlockSnapshot?.exists ? unlockSnapshot.data() || {} : {};
+        transaction.set(unlockRef, {
+          bugId: reward.rewardBugId,
+          firstUnlockedAt: String(existingUnlock.firstUnlockedAt || next.firstUnlockedAt || now),
+          lastUnlockedAt: now,
+          rarity: String(existingUnlock.rarity || next.rarity || catalogRarity),
+          sources: Array.from(new Set([...(Array.isArray(existingUnlock.sources) ? existingUnlock.sources : []), "museum_reward"]))
+        });
         awardedBugs.push(reward.rewardBugId);
       }
       const claimRef = userRef.collection("museumRewardClaims").doc(claimId.replace(/:/g, "__"));

@@ -82,7 +82,7 @@ let runState = "ready";
 let runEndsAt = 0;
 let activeRunId = "";
 let resultSent = false;
-let currentPixelRatio = Math.min(window.devicePixelRatio, isIosSafari ? 1.25 : 2);
+let currentPixelRatio = Math.min(window.devicePixelRatio, isIosSafari ? 1 : 2);
 let lowFpsWindows = 0;
 let fpsFrames = 0;
 let fpsWindowStartedAt = performance.now();
@@ -106,14 +106,14 @@ let catchFlashTimer = 0;
 try {
   renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
+    antialias: !isIosSafari,
     alpha: false,
     powerPreference: "high-performance",
   });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMapping = isIosSafari ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !isIosSafari;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setPixelRatio(currentPixelRatio);
   renderer.setClearColor(0x8bb89f, 1);
@@ -134,7 +134,8 @@ createTerrain(scene);
 createForest(scene);
 createMeadowDetails(scene);
 
-for (let index = 0; index < 12; index += 1) {
+const flyingBugCount = isIosSafari ? 8 : 12;
+for (let index = 0; index < flyingBugCount; index += 1) {
   butterflies.push(createButterfly(index));
 }
 
@@ -445,12 +446,13 @@ function createGroundTexture() {
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(7, 7);
-  texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  texture.anisotropy = Math.min(isIosSafari ? 2 : 8, renderer.capabilities.getMaxAnisotropy());
   return texture;
 }
 
 function createTerrain(targetScene) {
-  const geometry = new THREE.PlaneGeometry(64, 64, 80, 80);
+  const terrainSegments = isIosSafari ? 56 : 80;
+  const geometry = new THREE.PlaneGeometry(64, 64, terrainSegments, terrainSegments);
   const positions = geometry.attributes.position;
 
   for (let index = 0; index < positions.count; index += 1) {
@@ -493,7 +495,7 @@ function createTerrain(targetScene) {
 }
 
 function createForest(targetScene) {
-  const treeCount = 52;
+  const treeCount = isIosSafari ? 38 : 52;
   const dummy = new THREE.Object3D();
   const trunkGeometry = new THREE.CylinderGeometry(0.24, 0.42, 4.1, 14, 3);
   const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x6a4c31, roughness: 0.98 });
@@ -501,7 +503,7 @@ function createForest(targetScene) {
   trunks.castShadow = true;
   trunks.receiveShadow = true;
 
-  const crownClusters = 6;
+  const crownClusters = isIosSafari ? 4 : 6;
   const crownGeometry = new THREE.SphereGeometry(1, 14, 10);
   const crownMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.94 });
   const crowns = new THREE.InstancedMesh(crownGeometry, crownMaterial, treeCount * crownClusters);
@@ -557,8 +559,9 @@ function createForest(targetScene) {
     roughness: 1,
   });
 
-  for (let index = 0; index < 18; index += 1) {
-    const angle = (index / 18) * Math.PI * 2 + range(-0.12, 0.12);
+  const hillCount = isIosSafari ? 12 : 18;
+  for (let index = 0; index < hillCount; index += 1) {
+    const angle = (index / hillCount) * Math.PI * 2 + range(-0.12, 0.12);
     const distance = range(28, 37);
     const hill = new THREE.Mesh(
       new THREE.SphereGeometry(range(3.6, 6.5), 18, 10),
@@ -583,7 +586,7 @@ function createMeadowDetails(targetScene) {
     roughness: 1,
     side: THREE.DoubleSide,
   });
-  const grass = new THREE.InstancedMesh(grassGeometry, grassMaterial, 760);
+  const grass = new THREE.InstancedMesh(grassGeometry, grassMaterial, isIosSafari ? 440 : 760);
   grass.receiveShadow = true;
 
   for (let index = 0; index < grass.count; index += 1) {
@@ -604,7 +607,8 @@ function createMeadowDetails(targetScene) {
   const flowerStemGeometry = new THREE.CylinderGeometry(0.018, 0.024, 0.45, 5);
   flowerStemGeometry.translate(0, 0.225, 0);
   const flowerStemMaterial = new THREE.MeshStandardMaterial({ color: 0x3d743f, roughness: 1 });
-  const flowerStems = new THREE.InstancedMesh(flowerStemGeometry, flowerStemMaterial, 150);
+  const flowerCount = isIosSafari ? 96 : 150;
+  const flowerStems = new THREE.InstancedMesh(flowerStemGeometry, flowerStemMaterial, flowerCount);
 
   const flowerHeadGeometry = new THREE.SphereGeometry(0.095, 8, 6);
   const flowerHeadMaterial = new THREE.MeshStandardMaterial({
@@ -614,7 +618,7 @@ function createMeadowDetails(targetScene) {
     roughness: 0.8,
     vertexColors: true,
   });
-  const flowerHeads = new THREE.InstancedMesh(flowerHeadGeometry, flowerHeadMaterial, 150);
+  const flowerHeads = new THREE.InstancedMesh(flowerHeadGeometry, flowerHeadMaterial, flowerCount);
 
   for (let index = 0; index < flowerStems.count; index += 1) {
     const angle = range(0, Math.PI * 2);
@@ -650,7 +654,7 @@ function createMeadowDetails(targetScene) {
 
   const stoneGeometry = new THREE.DodecahedronGeometry(0.38, 1);
   const stoneMaterial = new THREE.MeshStandardMaterial({ color: 0x777d70, roughness: 0.98 });
-  const stones = new THREE.InstancedMesh(stoneGeometry, stoneMaterial, 48);
+  const stones = new THREE.InstancedMesh(stoneGeometry, stoneMaterial, isIosSafari ? 32 : 48);
   stones.castShadow = true;
   stones.receiveShadow = true;
 
@@ -670,7 +674,7 @@ function createMeadowDetails(targetScene) {
 
   const shrubGeometry = new THREE.SphereGeometry(0.52, 12, 8);
   const shrubMaterial = new THREE.MeshStandardMaterial({ color: 0x397342, roughness: 0.96 });
-  const shrubs = new THREE.InstancedMesh(shrubGeometry, shrubMaterial, 68);
+  const shrubs = new THREE.InstancedMesh(shrubGeometry, shrubMaterial, isIosSafari ? 44 : 68);
   for (let index = 0; index < shrubs.count; index += 1) {
     const angle = range(0, Math.PI * 2);
     const distance = range(5.5, 18);
@@ -687,8 +691,9 @@ function createMeadowDetails(targetScene) {
   targetScene.add(shrubs);
 
   const motesGeometry = new THREE.BufferGeometry();
-  const motePositions = new Float32Array(240 * 3);
-  for (let index = 0; index < 240; index += 1) {
+  const moteCount = isIosSafari ? 120 : 240;
+  const motePositions = new Float32Array(moteCount * 3);
+  for (let index = 0; index < moteCount; index += 1) {
     const angle = range(0, Math.PI * 2);
     const distance = range(2, 18);
     motePositions[index * 3] = Math.cos(angle) * distance;
@@ -812,28 +817,35 @@ function createButterfly(index) {
   const group = new THREE.Group();
   group.name = `flying-bug-${kind}-${index}`;
 
-  const wingMaterial = new THREE.MeshPhysicalMaterial({
+  const wingMaterialOptions = {
     map: createWingTexture(palette),
     color: 0xffffff,
     side: THREE.DoubleSide,
     transparent: true,
     opacity: kind === "dragonfly" || kind === "bee" ? 0.64 : 0.98,
-    roughness: kind === "dragonfly" ? 0.28 : 0.55,
-    metalness: kind === "beetle" ? 0.24 : 0.02,
-    clearcoat: kind === "beetle" ? 0.72 : 0.38,
-    clearcoatRoughness: 0.45,
-  });
+  };
+  const wingMaterial = isIosSafari
+    ? new THREE.MeshBasicMaterial(wingMaterialOptions)
+    : new THREE.MeshPhysicalMaterial({
+      ...wingMaterialOptions,
+      roughness: kind === "dragonfly" ? 0.28 : 0.55,
+      metalness: kind === "beetle" ? 0.24 : 0.02,
+      clearcoat: kind === "beetle" ? 0.72 : 0.38,
+      clearcoatRoughness: 0.45,
+    });
 
   const bodyMaterial = new THREE.MeshStandardMaterial({
     color: palette.edge,
     roughness: kind === "moth" ? 0.92 : 0.68,
     metalness: kind === "beetle" ? 0.34 : 0,
   });
-  const eyeMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0x090704,
-    roughness: 0.18,
-    clearcoat: 0.8,
-  });
+  const eyeMaterial = isIosSafari
+    ? new THREE.MeshBasicMaterial({ color: 0x090704 })
+    : new THREE.MeshPhysicalMaterial({
+      color: 0x090704,
+      roughness: 0.18,
+      clearcoat: 0.8,
+    });
 
   const foreWingLeft = new THREE.Group();
   const foreWingRight = new THREE.Group();
@@ -919,13 +931,15 @@ function createButterfly(index) {
     });
   }
   if (kind === "beetle") {
-    const shellMaterial = new THREE.MeshPhysicalMaterial({
-      color: palette.base,
-      clearcoat: 0.9,
-      clearcoatRoughness: 0.22,
-      metalness: 0.38,
-      roughness: 0.28,
-    });
+    const shellMaterial = isIosSafari
+      ? new THREE.MeshStandardMaterial({ color: palette.base, metalness: 0.22, roughness: 0.38 })
+      : new THREE.MeshPhysicalMaterial({
+        color: palette.base,
+        clearcoat: 0.9,
+        clearcoatRoughness: 0.22,
+        metalness: 0.38,
+        roughness: 0.28,
+      });
     [-0.07, 0.07].forEach((x) => {
       const shell = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 10), shellMaterial);
       shell.position.set(x, 0.055, 0.17);

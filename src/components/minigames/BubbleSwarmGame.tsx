@@ -382,10 +382,10 @@ export function BubbleSwarmGame({ onBack, onResult, practice = false, ranked = f
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}>
+      {!(ranked && state === "running") && <View style={styles.header}>
         <View><Text style={styles.title}>Bubble Swarm</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>
         {(practice || state === "result") && <Pressable accessibilityLabel="Back to games" testID="bubble-swarm-close" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}
-      </View>
+      </View>}
       {state === "ready" && <Ready compact={compact} onStart={start} />}
       {state === "running" && (
         <View style={styles.game}>

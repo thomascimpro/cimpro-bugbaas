@@ -13,7 +13,7 @@ export type PrivateSightingLocationOptions = {
   maxAccuracyMeters?: number;
 };
 
-/** Gets a location only after an explicit player choice; it is stored privately with server validation. */
+/** Gets the foreground phone location; the server stores only the owner's rounded private map position. */
 export async function requestPrivateSightingLocation(options: PrivateSightingLocationOptions = {}): Promise<PrivateSightingLocationResult> {
   const maxAccuracyMeters = options.maxAccuracyMeters ?? 250;
   if (typeof navigator === "undefined" || !navigator.geolocation) {

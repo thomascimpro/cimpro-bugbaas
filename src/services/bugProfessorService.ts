@@ -1,5 +1,3 @@
-import { getRandomBugQuizQuestion } from "./bugQuizService.ts";
-
 type BugProfessorLanguage = "nl" | "en" | "fr";
 type BugProfessorScan = { identification: { commonName: string; commonNameEn: string; commonNameFr: string; confidence: number; fact: string; factEn: string; factFr: string } };
 
@@ -28,8 +26,45 @@ function localizedFact(result: BugProfessorScan, language: BugProfessorLanguage)
   return result.identification.fact;
 }
 
+function localizedName(result: BugProfessorScan, language: BugProfessorLanguage): string {
+  if (language === "en") return result.identification.commonNameEn;
+  if (language === "fr") return result.identification.commonNameFr;
+  return result.identification.commonName;
+}
+
+function scanQuiz(result: BugProfessorScan, language: BugProfessorLanguage, random: () => number) {
+  const answer = localizedName(result, language).trim();
+  const distractors = language === "en"
+    ? ["Ladybird", "Dragonfly", "Grasshopper", "Garden spider", "Hoverfly", "Ant"]
+    : language === "fr"
+      ? ["Coccinelle", "Libellule", "Sauterelle", "Épeire", "Syrphe", "Fourmi"]
+      : ["Lieveheersbeestje", "Libel", "Sprinkhaan", "Kruisspin", "Zweefvlieg", "Mier"];
+  const options = [answer, ...distractors.filter((item) => item.toLocaleLowerCase() !== answer.toLocaleLowerCase()).slice(0, 3)]
+    .map((item) => ({ item, sort: random() }))
+    .sort((first, second) => first.sort - second.sort)
+    .map(({ item }) => item);
+  const fact = localizedFact(result, language);
+  return {
+    answer,
+    options,
+    question: language === "en"
+      ? "Which bug did you just photograph?"
+      : language === "fr"
+        ? "Quel animal viens-tu de photographier ?"
+        : "Welke bug heb je net gefotografeerd?",
+    explanation: fact || (language === "en"
+      ? `The scan identified ${answer}.`
+      : language === "fr"
+        ? `Le scan a identifié ${answer}.`
+        : `De scan herkende ${answer}.`),
+    categoryLabel: language === "en" ? "Your discovery" : language === "fr" ? "Ta découverte" : "Jouw vondst",
+    difficulty: "easy" as const,
+    rewardPoints: 1
+  };
+}
+
 export function getBugProfessorBrief(result: BugProfessorScan, language: BugProfessorLanguage, random: () => number = Math.random): BugProfessorBrief {
-  const quiz = getRandomBugQuizQuestion(language, random);
+  const quiz = scanQuiz(result, language, random);
   const confidence = Math.round(result.identification.confidence * 100);
   const confidenceCopy = language === "en"
     ? confidence >= 85 ? "Strong identification" : "Tentative identification"

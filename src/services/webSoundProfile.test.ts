@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { webSoundProfile, webUiSoundTargetSelector, webUiTapProfile } from "./webSoundProfile.ts";
+import { webSoundPlaybackMode, webSoundProfile, webUiSoundTargetSelector, webUiTapProfile } from "./webSoundProfile.ts";
 
 const names = [
   "arcade_build",
@@ -29,6 +29,12 @@ test("every existing BugBaas sound has a short safe web audio profile", () => {
     assert.ok(profile.frequency >= 80 && profile.frequency <= 1800);
     assert.ok(profile.durationMs >= 20 && profile.durationMs <= 500);
     assert.ok(profile.gain > 0 && profile.gain <= 0.12);
+    if (profile.accent) {
+      assert.ok(profile.accent.delayMs >= 0 && profile.accent.delayMs <= 200);
+      assert.ok(profile.accent.durationMs >= 20 && profile.accent.durationMs <= 300);
+      assert.ok(profile.accent.frequency >= 80 && profile.accent.frequency <= 1800);
+      assert.ok(profile.accent.gain > 0 && profile.accent.gain <= 0.08);
+    }
   });
 });
 
@@ -51,7 +57,11 @@ test("web sound assets are byte-identical to the Android APK assets", () => {
   });
 });
 
-test("iPhone Safari uses the same packaged sounds instead of synthetic tones", () => {
+test("iPhone Safari uses lightweight tones while other browsers keep the packaged sounds", () => {
+  const iphoneSafari = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 Version/18.5 Mobile/15E148 Safari/604.1";
+  const androidChrome = "Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/136.0.0.0 Mobile Safari/537.36";
+  assert.equal(webSoundPlaybackMode(iphoneSafari, 5), "tone");
+  assert.equal(webSoundPlaybackMode(androidChrome, 5), "asset");
   assert.match(soundServiceSource, /playWebAsset\(name\)/);
-  assert.doesNotMatch(soundServiceSource, /isIosSafariBrowser/);
+  assert.match(soundServiceSource, /webSoundPlaybackMode\(navigator\.userAgent/);
 });

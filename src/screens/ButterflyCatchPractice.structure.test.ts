@@ -12,7 +12,7 @@ const duelSource = readFileSync(join(root, "BugSmashDuelScreen.tsx"), "utf8");
 const gameTypesSource = readFileSync(join(root, "../components/butterflyCatch/ButterflyCatchGame.types.ts"), "utf8");
 const webGameSource = readFileSync(join(root, "../components/butterflyCatch/ButterflyCatchGame.web.tsx"), "utf8");
 const i18nSource = readFileSync(join(root, "../services/i18n.tsx"), "utf8");
-const prototypeSource = readFileSync(join(root, "../../prototypes/butterfly-catch-3d/prototype.js"), "utf8");
+const prototypeSource = readFileSync(join(root, "../../public/butterfly-catch-3d/prototype.js"), "utf8");
 
 test("Wing Hunt 3D only appears in the shared Choose a game selector", () => {
   assert.doesNotMatch(playSource, /butterflyCatchOpen|butterflyCatchCard|Open Vlindervangst/);
@@ -38,6 +38,7 @@ test("Android locks Wing Hunt and links to the BugBaas web app", () => {
   assert.match(nativeEntrySource, /Linking\.openURL\(BUTTERFLY_CATCH_WEB_URL\)/);
   assert.doesNotMatch(nativeEntrySource, /WebView|android_asset|ReactNativeWebView/);
   assert.match(duelSource, /butterflyCatchWebOnly = Platform\.OS !== "web"/);
+  assert.match(duelSource, /locked=\{butterflyCatchWebOnly\}/);
   assert.match(duelSource, /lockedLabel=\{butterflyCatchWebOnly \? "🔒 OPEN WEBVERSIE"/);
   assert.match(duelSource, /Linking\.openURL\(BUTTERFLY_CATCH_WEB_URL\)/);
 });
@@ -53,4 +54,13 @@ test("web version embeds the playable 3D prototype without native GL imports", (
   assert.match(webGameSource, /butterfly-catch-3d\/index\.html/);
   assert.match(webGameSource, /React\.createElement\("iframe"/);
   assert.match(webGameSource, /run-complete/);
+});
+
+test("iPhone Safari uses the reduced 3D rendering profile", () => {
+  assert.match(prototypeSource, /antialias: !isIosSafari/);
+  assert.match(prototypeSource, /renderer\.shadowMap\.enabled = !isIosSafari/);
+  assert.match(prototypeSource, /isIosSafari \? 1 : 2/);
+  assert.match(prototypeSource, /isIosSafari \? 440 : 760/);
+  assert.match(prototypeSource, /flyingBugCount = isIosSafari \? 8 : 12/);
+  assert.match(prototypeSource, /isIosSafari[\s\S]*new THREE\.MeshBasicMaterial\(wingMaterialOptions\)/);
 });

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web --output-dir dist && mkdir -p dist/butterfly-catch-3d && cp prototypes/butterfly-catch-3d/index.html prototypes/butterfly-catch-3d/prototype.js dist/butterfly-catch-3d/",
+  "buildCommand": "npx expo export --platform web --output-dir dist && mkdir -p dist/butterfly-catch-3d && cp public/butterfly-catch-3d/index.html public/butterfly-catch-3d/prototype.js dist/butterfly-catch-3d/",
   "outputDirectory": "dist",
   "functions": {
     "api/real-bug-identify.js": {

@@ -34,6 +34,9 @@ export type BugDexDropSource =
   | "buddy_epic"
   | "bug_brain_daily"
   | "real_bug_scan"
+  | "museum_reward"
+  | "research_encounter"
+  | "weekly_field_spotlight"
   | "combine";
 
 export type BugDexDropResult = {
@@ -95,6 +98,9 @@ const dropChances: Record<BugDexDropSource, number> = {
   buddy_epic: 1,
   bug_brain_daily: 1,
   real_bug_scan: 1,
+  museum_reward: 1,
+  research_encounter: 1,
+  weekly_field_spotlight: 1,
   combine: 1
 };
 
@@ -122,6 +128,9 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   buddy_epic: [["Episch", 100]],
   bug_brain_daily: [["Zeldzaam", 100]],
   real_bug_scan: [["Gewoon", 100]],
+  museum_reward: [["Mythisch", 100]],
+  research_encounter: [["Gewoon", 100]],
+  weekly_field_spotlight: [["Episch", 100]],
   combine: [["Zeldzaam", 100]]
 };
 

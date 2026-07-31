@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, BackHandler, GestureResponderEvent, Image, ImageSourcePropType, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 import { createArcadeSeed, loadArcadeHighScore, saveArcadeHighScore, seededNumber } from "../../services/arcadeResultService";
 import { arcadeSquadAssistForUser } from "../../services/bugSquadGameBalance";
-import { frameScaleForTick, startArcadeFrameLoop } from "../../services/gameLoopTiming";
 import { playBugSound } from "../../services/soundService";
 import { swarmSiegeNestBalance } from "../../services/swarmSiegeGameBalance";
 import type { SwarmSiegeModifier } from "../../services/swarmSiegeService";
@@ -33,8 +32,7 @@ type ManualImpact = { id: string; x: number; y: number };
 type SlowZone = { id: string; progress: number; until: number };
 
 const durationMs = 150000;
-const simulationStepMs = 90;
-const tickMs = 16;
+const tickMs = 90;
 const manualCooldownMs = 850;
 const maxTapUpgradeLevel = 4;
 const sprayCooldownMs = 12500;
@@ -119,7 +117,6 @@ export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, p
   const finishedRef = useRef(false);
   const impactIdRef = useRef(0);
   const lastControlTapAtRef = useRef(0);
-  const lastFrameAtRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -129,7 +126,8 @@ export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, p
 
   useEffect(() => {
     if (state !== "running") return;
-    return startArcadeFrameLoop(tick);
+    const id = setInterval(tick, tickMs);
+    return () => clearInterval(id);
   }, [state, squadAssist.nestDefense.slowMultiplier]);
 
   useEffect(() => {
@@ -145,7 +143,6 @@ export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, p
     const startedAt = Date.now();
     seedRef.current = seed ?? createArcadeSeed("nest_defense", `${user.uid}:${startedAt}`);
     statsRef.current = { startAt: startedAt };
-    lastFrameAtRef.current = startedAt;
     enemiesRef.current = [];
     towersRef.current = towerSlots;
     coinsRef.current = startingCoins;
@@ -194,8 +191,6 @@ export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, p
 
   function tick() {
     const now = Date.now();
-    const frameScale = frameScaleForTick(now, lastFrameAtRef.current, simulationStepMs);
-    lastFrameAtRef.current = now;
     const elapsed = now - statsRef.current.startAt;
     if (elapsed >= durationMs) return finish(true);
     setRemainingMs(durationMs - elapsed);
@@ -203,7 +198,7 @@ export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, p
     setWave(waveRef.current);
     slowZonesRef.current = slowZonesRef.current.filter((zone) => zone.until > now);
     setSlowZones(slowZonesRef.current);
-    let nextEnemies = moveEnemies(enemiesRef.current, now, frameScale);
+    let nextEnemies = moveEnemies(enemiesRef.current, now);
     nextEnemies = applyEnemyAuras(nextEnemies);
     nextEnemies = fireTowers(nextEnemies, now);
     nextEnemies = spawnEnemies(nextEnemies, elapsed);
@@ -216,12 +211,12 @@ export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, p
     if (hpRef.current <= 0) finish(false);
   }
 
-  function moveEnemies(current: Enemy[], now: number, frameScale: number) {
+  function moveEnemies(current: Enemy[], now: number) {
     const survivors: Enemy[] = [];
     for (const enemy of current) {
       const zoneSlow = slowZonesRef.current.some((zone) => Math.abs(zone.progress - enemy.progress) < 0.12) ? 0.44 : 1;
       const towerSlow = now < enemy.slowUntil ? 0.52 * squadAssist.nestDefense.slowMultiplier : 1;
-      const next = { ...enemy, progress: enemy.progress + enemy.speed * zoneSlow * towerSlow * frameScale };
+      const next = { ...enemy, progress: enemy.progress + enemy.speed * zoneSlow * towerSlow };
       if (next.progress >= 1) {
         hpRef.current -= leakDamage(enemy.kind, waveRef.current);
         leakRef.current += 1;
@@ -505,7 +500,7 @@ export function NestDefenseGame({ eventLabel, eventModifier, onBack, onResult, p
 
   return (
     <View style={styles.shell}>
-      <View style={styles.header}><View><Text style={styles.title}>Nest Defense</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>{(practice || state === "result") && <Pressable accessibilityLabel="Back to games" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}</View>
+      {!(ranked && state === "running") && <View style={styles.header}><View><Text style={styles.title}>Nest Defense</Text><Text style={styles.meta}>Best score: {bestScore}</Text></View>{(practice || state === "result") && <Pressable accessibilityLabel="Back to games" style={styles.closeButton} onPress={back}><GameUiIcon name="back" size={24} /></Pressable>}</View>}
       {eventLabel ? <View style={styles.eventBanner}><Text style={styles.eventBannerText}>{eventLabel}</Text></View> : null}
       {state === "ready" && <Ready onStart={start} />}
       {state === "running" && (

@@ -512,7 +512,12 @@ export const bugArt = {
   "poelslak": require("../../assets/bugdex-webp/poelslak.webp"),
   "posthoornslak": require("../../assets/bugdex-webp/posthoornslak.webp"),
   "waterslak": require("../../assets/bugdex-webp/waterslak.webp"),
-  "kleine-watersalamander": require("../../assets/bugdex-webp/kleine-watersalamander.webp")
+  "kleine-watersalamander": require("../../assets/bugdex-webp/kleine-watersalamander.webp"),
+  "rode-bosmier": require("../../assets/bugdex-webp/rode-bosmier.webp"),
+  "rode-katoenwants": require("../../assets/bugdex-webp/rode-katoenwants.webp"),
+  "gouden-wielwebspin": require("../../assets/bugdex-webp/gouden-wielwebspin.webp"),
+  "zwarte-wegmier": require("../../assets/bugdex-webp/zwarte-wegmier.webp"),
+  "struiksprinkhaan": require("../../assets/bugdex-webp/struiksprinkhaan.webp")
 } as const satisfies Record<string, ImageSourcePropType>;
 
 export type BugArtId = keyof typeof bugArt;

@@ -26,3 +26,9 @@ test("premium and mythic reward effects remain available", () => {
   assert.match(source, /MythicRarityFrame/);
   assert.match(source, /premiumStyle/);
 });
+
+test("every discovery names its reward source", () => {
+  assert.match(source, /rewardSourceLabel\(drop\.source, language\)/);
+  assert.match(source, /styles\.sourceBadge/);
+  assert.match(source, /photo|duel|weekly/i);
+});

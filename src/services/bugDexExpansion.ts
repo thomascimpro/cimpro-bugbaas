@@ -34,7 +34,12 @@ const additionalMappedRows: Array<[string, BugDexRarity]> = [
   ["watermijt", "Episch"],
   ["zwarte-waterschorpioen", "Episch"],
   ["bergveldwesp", "Episch"],
-  ["sierlijke-sprinkhaan", "Episch"]
+  ["sierlijke-sprinkhaan", "Episch"],
+  ["rode-bosmier", "Gewoon"],
+  ["rode-katoenwants", "Zeldzaam"],
+  ["gouden-wielwebspin", "Episch"],
+  ["zwarte-wegmier", "Gewoon"],
+  ["struiksprinkhaan", "Gewoon"]
 ];
 
 const rows: Array<[string, BugDexRarity]> = [
