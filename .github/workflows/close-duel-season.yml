@@ -1,6 +1,11 @@
 name: Close duel season
 
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - ".github/workflows/close-duel-season.yml"
   schedule:
     - cron: "15 0 1 * *"
   workflow_dispatch:
