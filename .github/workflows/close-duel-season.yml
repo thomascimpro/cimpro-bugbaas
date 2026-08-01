@@ -9,11 +9,15 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: close-duel-season
+  cancel-in-progress: false
+
 jobs:
   close-duel-season:
     name: Close previous duel season
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
