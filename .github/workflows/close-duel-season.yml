@@ -38,7 +38,8 @@ jobs:
       - name: Dry-run close previous duel season
         env:
           FIREBASE_PROJECT_ID: thomascimpro-6266f
-        run: node scripts/close_duel_season.mjs
+        run: |
+          FIRESTORE_ACCESS_TOKEN="$(gcloud auth print-access-token)" node scripts/close_duel_season.mjs
 
       - name: Close previous duel season
         env:
