@@ -68,7 +68,7 @@ The values in angle brackets are filled from the actual Git/worktree result duri
 
 ## 1.3 Task table
 
-Add all 28 master-plan tasks to one table:
+Add all 29 master-plan tasks to one table:
 
 ```markdown
 | Task | State | Started | Completed | Commit | Receipt | Last verification |
@@ -402,30 +402,31 @@ Checkpoint: fixed prices, no direct Legendary/Mythical purchase, no power sale a
 
 Checkpoint: old scan parser remains valid, exact observations stay private and Journal rewards are not presented before storage succeeds.
 
-## Phase F — Migration presentation and existing gameplay fixes
+## Phase F — Migration presentation, assets and shared power foundation
 
 17. `BB31-T16` migration onboarding, levels and Training stars.
-18. `BB31-T17` Buddy picker.
-19. `BB31-T18` Tap Duel density/safe playfield.
-20. `BB31-T19` World research summary and same-device Movement x/10.
+18. `BB31-T20` generated/reviewed research, shop, role, PvE and Crown assets.
+19. `BB31-T29` one shared Bug Power model, Crown visual trials, server-authoritative PvE and obsolete-feature audit.
 
-Checkpoint: new progression is understandable while existing Buddy, games, widget and movement behavior remain functional.
+Checkpoint: the child-facing Training/Kracht model, every required asset, old-feature decisions and server-side PvE math are fixed before event/gameplay surfaces are changed.
 
-## Phase G — Visual production
+## Phase G — Existing gameplay fixes and final visual integration
 
-21. `BB31-T20` generated/reviewed research assets.
-22. `BB31-T21` full visual system, states and motion.
+20. `BB31-T17` Buddy picker.
+21. `BB31-T18` Tap Duel density/safe playfield and Ranked no-power regression.
+22. `BB31-T19` World research summary and same-device Movement x/10.
+23. `BB31-T21` full visual system, shop/Crown previews, states and motion.
 
-Checkpoint: all new screens match the approved quality references and have full/reduced/low-end states.
+Checkpoint: all new and changed screens match the approved quality references and have full/reduced/low-end states while existing Buddy, games, widget and movement behavior remain functional.
 
 ## Phase H — Global proof and release preparation
 
-23. `BB31-T23` change-impact and permission gate.
-24. `BB31-T24` complete functional/visual Playwright suite.
-25. `BB31-T25` Android/device/performance proof.
-26. `BB31-T26` concurrency and migration rehearsal.
-27. `BB31-T27` help, documentation and child comprehension.
-28. `BB31-T28` final verification and release candidate preparation.
+24. `BB31-T23` change-impact and permission gate.
+25. `BB31-T24` complete functional/visual Playwright suite.
+26. `BB31-T25` Android/device/performance proof.
+27. `BB31-T26` concurrency and migration rehearsal.
+28. `BB31-T27` help, documentation and child comprehension.
+29. `BB31-T28` final verification and release candidate preparation.
 
 Checkpoint: release remains blocked until every required receipt is PASS and the owner separately approves deployment/publication.
 
@@ -523,7 +524,7 @@ The original 3.0 checkout and branch are never cleaned as part of this process.
 
 The single-chat run is complete only when:
 
-- All 28 task rows are COMPLETE.
+- All 29 task rows are COMPLETE.
 - Every task has a PASS receipt and matching commit.
 - Worktree is clean.
 - Full test/visual/device/compatibility matrices are green or honestly marked NOT_RUN with release blocked.
