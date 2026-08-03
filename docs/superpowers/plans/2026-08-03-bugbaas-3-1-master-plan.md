@@ -8,9 +8,12 @@
 
 **Tech Stack:** Expo, React Native, TypeScript, Firebase Authentication, Firestore, Firebase Cloud Functions, Node.js 24, `tsx`, Playwright, bestaande BugBaas assets, Android native movement bridge en bestaande BugScan-server.
 
+**Required execution protocol:** `docs/superpowers/plans/2026-08-03-bugbaas-3-1-single-chat-execution-protocol.md`. Dit protocol bepaalt worktree-isolatie, de daadwerkelijke dependencyvolgorde, statusnotities, task receipts, dubbele-uitvoerpreventie en approval gates voor uitvoering in één chat.
+
 ## Global Constraints
 
-- Werk voor implementatie in een geïsoleerde Git-worktree vanaf `codex/bugbaas-3.0`; raak de huidige vuile checkout en niet-getrackte assets niet aan.
+- Werk voor implementatie op branch `codex/bugbaas-3.1` in een geïsoleerde native Git-worktree vanaf de goedgekeurde `codex/bugbaas-3.0`-commit. Maak geen gewone mapkopie: de worktree neemt alleen tracked bronbestanden mee en laat de huidige vuile checkout plus niet-getrackte rommel onaangeraakt.
+- Voer dit plan in één chat uit via het verplichte execution protocol. Gebruik `docs/superpowers/execution/bugbaas-3.1-status.md` als duurzame statusbron, maximaal één actieve taak en één receipt plus commit per voltooide taak.
 - BugBaas 3.1 blijft localhost/intern totdat de eigenaar expliciet toestemming geeft voor Firebase, Vercel, APK of store-publicatie.
 - Behoud alle bestaande BugDex-copies, unlock history, mastery, squads, trades, Museumplaatsingen, badges, titels, characters, Daily/Weekly missions en 2.10.19-compatibele data.
 - Nieuwe Firestore-paden zijn additief. Geen bestaand veld, documentpad, endpoint, index of toegestane oude-clientwrite wordt in 3.1 verwijderd, hernoemd of strenger gemaakt zonder een bewezen compatibele vervanger.
@@ -792,28 +795,84 @@ export type AcquisitionSource =
 
 Iedere rij krijgt een concrete emulator-Rule-test en minstens één runtime- of servertest. Geen pad mag alleen op basis van documentatie als veilig gelden.
 
+## 3.6 Verplichte uitvoeringsvolgorde en chatcheckpoints
+
+De numerieke taakvolgorde is de documentindeling, niet overal de veiligste dependencyvolgorde. Uitvoering volgt exact het single-chat protocol:
+
+1. Tasks 1–2: schone tracked-only worktree, bronmanifest, test- en visuele nulmeting.
+2. Tasks 3–4, daarna 15 en 22: economy, additieve Firebasebasis, migratiemodel en voortdurende oude-/nieuwe-clientsynchronisatie vóór nieuwe reward-UI.
+3. Tasks 5–14: duplicates, feiten, research, shop, herkomst, scan en Journal.
+4. Tasks 16–21: migratiepresentatie, bestaande gameplayfixes en volledige visuele laag.
+5. Tasks 23–28: impact-, permissie-, oude-APK-, browser-, Android-, concurrency- en releasebewijs.
+
+Bij iedere taak worden status, receipt, tests en commit bijgewerkt. Bij ieder fase-einde wordt een contextcheckpoint in het statusbestand geschreven. Read-only tests mogen worden herhaald; Firebasemigratie, deployments, feature-flagwijzigingen en releases vereisen een unieke operation receipt en expliciete eigenaarstoestemming.
+
 ---
 
 # 4. Implementation Tasks
 
-### Task 1: Isolated worktree and reproducible test runner
+### Task 1: Clean tracked-only 3.1 worktree, durable status and reproducible runner
 
 **Files:**
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Create: `scripts/run-ts-tests.mjs`
+- Create: `scripts/verify-bugbaas31-source-manifest.mjs`
 - Create: `.github/workflows/bugbaas-3-1-verify.yml`
+- Create: `docs/superpowers/execution/bugbaas-3.1-status.md`
+- Create: `docs/superpowers/execution/bugbaas-3.1-task-receipts/README.md`
+- Create: `docs/superpowers/execution/bugbaas-3.1-operation-receipts/README.md`
+- Create: `docs/reviews/bugbaas-3.1-source-manifest.md`
 - Test: existing `*.test.ts`, `server/realBugScan/*.test.mjs`, `firebase/functions/*.test.js`
 
 **Interfaces:**
-- Produces: `npm run test:ts`, `npm run test:3.1:core`, `npm run verify:3.1`.
-- Consumes: existing TypeScript, MJS and Firebase testfiles.
+- Produces: clean branch `codex/bugbaas-3.1`, durable execution state, `npm run verify:3.1:source`, `npm run test:ts`, `npm run test:3.1:core`, `npm run verify:3.1`.
+- Consumes: tracked 3.0 source, existing TypeScript/MJS/Firebase tests and the required single-chat execution protocol.
 
-- [ ] **Step 1: Create an isolated worktree**
+- [ ] **Step 1: Create the isolated tracked-only worktree**
 
-Use the `superpowers:using-git-worktrees` skill and create a clean worktree from `codex/bugbaas-3.0`. Confirm `git status --short` is empty before modifying files.
+Use `superpowers:using-git-worktrees` and the native DevSpace worktree mechanism with base ref `codex/bugbaas-3.0`. Create work branch `codex/bugbaas-3.1`; prefer a managed path clearly named `CimPro BugBaas-3.1`. Do not manually copy the existing folder.
 
-- [ ] **Step 2: Record the failing official runner**
+Run in the new worktree:
+
+```bash
+git branch --show-current
+git rev-parse HEAD
+git status --short
+git ls-files -o --exclude-standard | wc -l
+```
+
+Expected: branch `codex/bugbaas-3.1`, clean status and zero untracked files before ignored local configuration. Record the actual base commit and absolute worktree path in the execution status file.
+
+- [ ] **Step 2: Bootstrap durable status and receipts**
+
+Create the status header, all 28 task rows and receipt directories exactly as specified by `docs/superpowers/plans/2026-08-03-bugbaas-3-1-single-chat-execution-protocol.md`. Set only `BB31-T01` to `IN_PROGRESS`; all other tasks start `NOT_STARTED`. Record all deployment/publication fields as `NONE` or `NO`.
+
+- [ ] **Step 3: Write the failing source-manifest audit**
+
+Create tests/fixtures for `scripts/verify-bugbaas31-source-manifest.mjs` that fail on a missing referenced asset, an untracked runtime file, a duplicate asset target and a runtime import into ignored output. The audit scans `App.tsx`, `src`, package scripts, app/native configuration, BugArt/catalog data, `public` routes and Firebase/scan imports.
+
+- [ ] **Step 4: Run and confirm the source-manifest red phase**
+
+```bash
+node --test scripts/verify-bugbaas31-source-manifest.test.mjs
+```
+
+Expected: FAIL because the verifier does not exist.
+
+- [ ] **Step 5: Implement the source-manifest verifier**
+
+The verifier returns nonzero for missing, untracked or ignored-output runtime dependencies. It writes no project files. Unreferenced tracked files are reported as cleanup candidates only and are not deleted. Add script:
+
+```json
+{
+  "verify:3.1:source": "node scripts/verify-bugbaas31-source-manifest.mjs"
+}
+```
+
+If a required file exists only in the dirty 3.0 checkout, import only that exact reviewed file, document its source/reference in `docs/reviews/bugbaas-3.1-source-manifest.md` and commit it with Task 1. Never copy a whole untracked directory.
+
+- [ ] **Step 6: Record the failing official runner**
 
 Run:
 
@@ -823,7 +882,7 @@ npm run test:real-bug-scan
 
 Expected before the fix: FAIL before test execution with `Cannot use import statement outside a module` for `.test.ts` files.
 
-- [ ] **Step 3: Add pinned test dependencies and scripts**
+- [ ] **Step 7: Add pinned test dependencies and scripts**
 
 Add pinned dev dependencies `tsx`, `@playwright/test`, `@firebase/rules-unit-testing` and `firebase-tools`. Add scripts:
 
@@ -836,30 +895,39 @@ Add pinned dev dependencies `tsx`, `@playwright/test`, `@firebase/rules-unit-tes
   "test:3.1:rules": "firebase emulators:exec --only firestore \"node --test tests/firestore/bugbaas31.rules.test.mjs\"",
   "test:3.1:visual": "playwright test scripts/qa/bugbaas31-visual.spec.ts",
   "test:3.1:functional": "playwright test scripts/qa/bugbaas31-functional.spec.ts",
-  "verify:3.1": "npm run typecheck && npm run test:ts && npm run test:real-bug-scan && npm run test:3.1:functions && npm run test:3.1:rules && npm run validate:bug-art"
+  "verify:3.1": "npm run verify:3.1:source && npm run typecheck && npm run test:ts && npm run test:real-bug-scan && npm run test:3.1:functions && npm run test:3.1:rules && npm run validate:bug-art"
 }
 ```
 
 `scripts/run-ts-tests.mjs` discovers app `.test.ts` files outside dependency/build/output directories, splits them into bounded batches and invokes the local `tsx` binary with `--test`.
 
-- [ ] **Step 4: Run the repaired baseline**
+- [ ] **Step 8: Run the clean baseline**
 
 Run:
 
 ```bash
+npm ci
+npm run verify:3.1:source
 npm run typecheck
 npm run test:real-bug-scan
 npm --prefix firebase/functions test
+npm run validate:bug-art
+npx expo export --platform web --output-dir dist-bugbaas-3.1-baseline --clear
+git diff --check
 ```
 
-Expected: typecheck green; 30 client scan tests, 43 scan server tests and 74 Function tests green, subject to additional tests added by later tasks.
+Expected: source manifest green, typecheck green, 30 client scan tests, 43 scan server tests and 74 Function tests green subject to later-added tests, valid BugArt and successful web export. The generated export remains ignored and uncommitted.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 9: Complete receipt, status and commit**
+
+Create `BB31-T01.md`, set Task 1 COMPLETE, record exact test counts and set `Last green commit` after committing:
 
 ```bash
-git add package.json package-lock.json scripts/run-ts-tests.mjs .github/workflows/bugbaas-3-1-verify.yml
-git commit -m "test: make BugBaas suites reproducible"
+git add package.json package-lock.json scripts/run-ts-tests.mjs scripts/verify-bugbaas31-source-manifest.mjs scripts/verify-bugbaas31-source-manifest.test.mjs .github/workflows/bugbaas-3-1-verify.yml docs/superpowers/execution docs/reviews/bugbaas-3.1-source-manifest.md
+git commit -m "test(bb31-t01): create clean reproducible 3.1 workspace"
 ```
+
+Confirm `git status --short` is empty before Task 2.
 
 ### Task 2: Deterministic visual baseline and screenshot inventory
 
@@ -2550,6 +2618,8 @@ Use het signed-in-readable, server/developer-written document `appConfig/bugbaas
 | Volledige senior visual design, nieuwe art, popups en animaties | Section 2.12, Tasks 20–21, 24–25, section 5 |
 | Screenshots en visuele kwaliteit | Tasks 2, 7, 10–21, 24–25, section 5 |
 | Oude APK blijft werken en latere voortgang wordt bijgehaald | Section 2.13, Tasks 3–4, 15, 22, 26 |
+| 3.0 niet beschadigen en alleen nuttige bron meenemen | Global Constraints, Section 3.6, Task 1 en het single-chat execution protocol Section 2 |
+| Eén chat, deel voor deel, statusnotities en geen dubbele uitvoering | Section 3.6 en `2026-08-03-bugbaas-3-1-single-chat-execution-protocol.md` Sections 1/3/4/5 |
 | Firebase additief, permissies niet verruimen | Sections 2.13–2.14/3.1/3.5, Tasks 4, 9, 13–15, 22–23, 26 |
 | Alles regressietesten en wijzigingsimpact bewijzen | Tasks 1, 21–26, section 6 |
 | Migratie old → new plus latere old-client delta | Tasks 15–16, 22, 26 |
@@ -2561,7 +2631,7 @@ Use het signed-in-readable, server/developer-written document `appConfig/bugbaas
 
 ## Spec coverage
 
-Alle eisen uit de gesprekken van 3 augustus 2026 zijn gekoppeld aan minimaal één van de 28 implementation tasks, een testgebied en waar relevant screenshot/devicegate. De eerdere hybrid-progressionbeslissing die premium currency verbood en upgrades deels behield, wordt door dit 3.1-plan expliciet vervangen. Het plan bevat nu afzonderlijke contracten voor senior visual design, oude-APK-compatibiliteit, continue reconciliatie, Firebase-permissies en wijzigingsimpact. Bestaande data, oude clientwrites en beveiligingsbeslissingen blijven behouden.
+Alle eisen uit de gesprekken van 3 augustus 2026 zijn gekoppeld aan minimaal één van de 28 implementation tasks, een testgebied en waar relevant screenshot/devicegate. De eerdere hybrid-progressionbeslissing die premium currency verbood en upgrades deels behield, wordt door dit 3.1-plan expliciet vervangen. Het plan bevat afzonderlijke contracten voor senior visual design, oude-APK-compatibiliteit, continue reconciliatie, Firebase-permissies en wijzigingsimpact. Het verplichte single-chat execution protocol voegt een tracked-only 3.1-worktree, bronmanifest, duurzame taskstatus, receipts, dependencyvolgorde en dubbele-uitvoerpreventie toe. Bestaande data, oude clientwrites en beveiligingsbeslissingen blijven behouden.
 
 ## Placeholder scan
 
