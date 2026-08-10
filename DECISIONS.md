@@ -1,9 +1,54 @@
 # Decisions
 
+## 2026-08-10 - 3.0.9 platformrelease met exact 1000 soorten
+
+- De releasegrens is exact 1000 actieve BugDex-soorten. Extra goedgekeurde generatiebestanden blijven buiten catalogus, artregistry en runtime tot een latere expliciete uitbreiding.
+- Alleen transparante WebP-bestanden zijn runtime-art. Ruwe BugDex-PNG's zijn bron-/generatiemateriaal en worden via `.vercelignore` niet naar productie geupload.
+- De webrelease blijft op het gekoppelde 3.0-project `bugbaasv3.vercel.app`, met lichte iPhone-audio en vrije Vleugeljacht 3D. De Android-build blijft bewust anders: 3D-slot en externe link naar `bugbaas.vercel.app`.
+- OpenAI-, Firebase-, Google- en receipt-secrets blijven uitsluitend in lokale/hosted env-opslag. Releasebron, Git-commit, APK-metadata en documentatie mogen geen secretwaarden bevatten.
+
+## 2026-08-10 - BugScan bewaart detail tot de modelaanroep
+
+- Gebruik de volledige telefoon-/systeemcamera en bewaar het originele camerabestand tot de speler zijn uitsnede bevestigt. Maak primaire en eventuele kleinere payloads telkens opnieuw uit die bron om dubbele JPEG-compressie te voorkomen.
+- Stuur een uitsnede maximaal op 2560 px met een 2048/1600-payloadfallback en een afzonderlijke 640 px developer-thumbnail. De server gebruikt `detail: original`, zodat het model niet alsnog op een gereduceerde interne afbeelding redeneert.
+- Gebruik `gpt-5.6-luna` met `reasoning.effort: max` voor de definitieve bronwijziging. Dit verbetert de beoordelingsruimte, maar vervangt geen goede pixels; daarom zijn camerakwaliteit, originele uitsnede en eerlijke confidence de eerste vangrails.
+- Een concrete soortnaam vereist minimaal twee zichtbare soortdiagnostische kenmerken. De modelprompt kent de acceptatiegrens niet als doel en mag confidence nooit verhogen om een rewardroute te halen.
+- Deze keuze is bron-only totdat een afzonderlijk releaseverzoek volgt; productie en de bestaande APK zijn niet gewijzigd.
+
+## 2026-08-10 - Veldnotitie-, radar- en APK-hotfix
+
+- Vercel en `recordVerifiedObservation` gebruiken exact hetzelfde cryptografisch willekeurige receipt-secret zonder verborgen regeleinde; het secret blijft buiten bron, APK en logs.
+- Een handmatige radarclaim combineert bestaande widgetrewards en nieuwe Health Connect-rewards zonder deduplicatie, omdat twee exemplaren van dezelfde soort ook twee echte rewards zijn.
+- BugDex-art blijft volledig lokaal in de APK, maar wordt begrensd op 512 px en WebP-kwaliteit 85. Dit behoudt transparantie en is voldoende voor de grootste huidige BugDex-weergave, terwijl een vaste 55 MiB-artbudgettest toekomstige APK-groei afvangt.
+
+## Actueel BugDex-checkpoint 2026-08-10
+
+- Promoot alleen assets met afzonderlijke PASS-gates; behoud bestaande IDs, afbeeldingen en `bugArt`-mappings.
+- De queue staat op **483/610** en de actieve catalogus exact op **1000**; de bestaande runtime-variantunie blijft leidend voor nieuwe soortkaarten.
+- De laatste vijf actieve kaarten zijn additief geregistreerd na afzonderlijke naam-, wetenschappelijke naam-, asset- en PASS-gates. Drie extra PASS-renders zijn buiten runtime gehouden om de catalogus niet boven 1000 te laten uitkomen.
+- Wave 463-470 is additief geregistreerd met acht duidelijk verschillende Nederlandse soorten; `gewone-krabspin-misumena-vatia` en `gewone-doodgraver-nicrophorus-vespillo` zijn vóór imagegen als dubbelen overgeslagen.
+- Wave 455-462 is additief geregistreerd met acht duidelijk verschillende Nederlandse soorten; `gewone-krabspin-misumena-vatia` is vóór imagegen als dubbel overgeslagen.
+- Wave 447-454 is additief geregistreerd met acht duidelijk verschillende Nederlandse soorten; de bestaande naamgate bleef leidend voor mogelijke dubbelen.
+- Wave 439-446 is additief geregistreerd met acht duidelijk verschillende Nederlandse soorten. De kandidaat `gewone-krabspin-misumena-vatia` is vóór imagegen overgeslagen omdat de genormaliseerde naam al bestond; er is geen dubbel toegevoegd.
+- Wave 431-438 is additief geregistreerd met acht duidelijk verschillende Nederlandse soorten. De Zesvlekkige groefbij en het Wollig Gitje gebruiken de tweede blauwe renderpoging; de eerste magenta-renders zijn niet gemapt.
+- Wave 423–430 is additief geregistreerd met acht nieuwe, duidelijk verschillende Nederlandse soorten. Zwervende Pantserjuffer, Zigzagtijger en Witte halvemaanzwever gebruiken de tweede renderpoging met blauwe chroma; de eerste pogingen zijn niet gemapt.
+- Wave 415–422 is additief geregistreerd met acht nieuwe, duidelijk verschillende Nederlandse soorten. Parelmoermot, Paardenkastanjemineermot, Viervlekglansmug en Leverkleurige bladroller gebruiken de tweede renderpoging met blauwe chroma; de eerste pogingen zijn niet gemapt.
+- Wave 407–414 is additief geregistreerd met acht nieuwe, duidelijk verschillende Nederlandse soorten. Zilverstreepgrasmot en Rotsheidenetwants gebruiken de tweede renderpoging met blauwe chroma; de eerste pogingen zijn niet gemapt.
+- Wave 399–406 is additief geregistreerd met acht nieuwe, duidelijk verschillende Nederlandse soorten. Koraaljuffer gebruikt de tweede renderpoging met magenta chroma; de eerste poging is niet gemapt.
+- Groene soorten krijgen geen groene chroma-key wanneer dat de alpha kan aantasten; het goudoogje is daarom met magenta chroma-key opnieuw gegenereerd en pas daarna gemapt.
+- Assets met onduidelijke vleugels, te weinig zichtbare poten of kleurfranje worden buiten runtime gehouden tot een gerichte imagegen-correctie afzonderlijk PASS is.
+
+## 2026-08-01 - Nederlandse soortkaarten blijven soortspecifiek en bug-only
+
+- Bestaande generieke IDs blijven backwards-compatible; nieuwe herkenbare Nederlandse insecten en expliciet gevraagde spinachtigen krijgen alleen een nieuwe ID wanneer er nog geen betrouwbare eigen kaart of wetenschappelijke alias is.
+- Slakken, pissebedden, duizendpoten en miljoenpoten worden niet als nieuwe BugDex-bugs toegevoegd. Ze blijven hoogstens zichtbaar als uitgesloten analyse-record.
+- Nieuwe soort-assets worden pas gemapt na transparantie- en semantische review. Een technische alpha-channelcheck is onvoldoende; checkerboardpixels, witte halo’s of een verkeerde soort worden afgekeurd.
+- De Nederlandse soortenwave heeft 82 kaarten geïntegreerd zonder nieuwe Firebase-collectie, badgepad of beloningsbron. De vierenvijftig nieuwe P0/P1-soorten zijn pas na imagegen, chroma-key-alpha, soort-/anatomie-/stijlreview en dubbele-check gemapt. Foto-cut-outs uit Wave 2/3 zijn stijl-afgekeurd en niet gekoppeld; de bestaande app-art blijft onaangeraakt. De kandidaten-datagate staat in `scripts/build_bugdex_nederland_photo_candidates.mjs` en de uitvoeringsregels in `docs/bugdex-nederland-asset-to-app-plan.md`.
+
 ## 2026-07-31 - BugScan, beloningen en 3.0.6 releasegrenzen
 
 - Het beeldmodel krijgt geen lijst met BugDex-soorten. Het benoemt eerst onafhankelijk wat zichtbaar is; daarna koppelt de server alleen een exacte genormaliseerde naam, veilige alias of wetenschappelijke alias aan de catalogus. Zo kan de prompt niet meer naar de dichtstbijzijnde app-soort sturen.
-- `gpt-5-mini` blijft de productiestandaard: beeldinput en structured output zijn geschikt voor deze afgebakende scan, terwijl een zwaarder mini-model zonder gemeten kwaliteitswinst onnodig meer API-budget gebruikt.
+- `gpt-5.6-luna` is de productiestandaard voor BugScan: een read-only A/B-test op vier handmatig beoordeelde spelersfoto's gaf 2/4 exacte namen tegenover 0/4 voor `gpt-5-mini`, met circa halve responstijd en lagere tokenprijs. De 70%- en developer-reviewroute blijft de vangrail voor lastige foto's.
 - Een specifieke echte soort is vanaf 70% bruikbaar. Staat die niet in de BugDex, dan wordt een developer-record gemaakt. Foto's zonder zichtbare bug, reproducties en onzekere authenticiteit blijven geblokkeerd; de 70%-grens omzeilt die controles niet.
 - Een geaccepteerde fotoscan is pas voltooid nadat een privé-veldnotitie met actuele locatie server-side is opgeslagen. De speler kan dit bewijs niet overslaan. Scan- en Weekvondst-rewards worden daarna gepresenteerd.
 - Iedere soortbeloning gebruikt hetzelfde bron-gelabelde ontdekkingsscherm. Willekeurige rarity-spins worden niet gebruikt voor al bepaalde rewards; bron en exacte bug zijn altijd zichtbaar.
@@ -371,3 +416,34 @@
 - Realtime arcadegames gebruiken één gedeelde `requestAnimationFrame`-loop met begrensde delta; spelregels en scoremodellen blijven ongewijzigd.
 - Museum-doelen verkiezen actuele Firestore-data boven de normale twee-minuten UI-cache.
 - Daily XP blijft bij claim direct en veilig toegekend; de foreground bug is de herstelde presentatie en kan de reeds verdiende Daily XP niet verliezen.
+
+# 2026-08-01 BugDex Nederland photo-candidate scope
+
+- Use verifiable Dutch iNaturalist species observations as a photo-likelihood ranking signal, not as an unqualified abundance claim.
+- Treat the 828-card result as a candidate work queue: validate Dutch naming, scientific identity, synonyms, identifiability and invasive/monitoring status before catalog integration.
+- Keep insects, arachnids, molluscs and other arthropods explicitly typed; do not force every photographed animal into the generic bee, beetle or bug variant.
+- Promote only semantically reviewed, background-free 768x768 RGBA assets to WebP quality 95/method 6 and then to `bugArt.ts`.
+- Preserve generic fallback cards and existing reward/badge/Firebase paths. Large expansions proceed in small waves with a central duplicate, alpha, semantic and test gate.
+
+# 2026-08-01 scan-, reward- en releasebesluiten
+
+- GPT-5.6 Luna is het standaard beeldmodel: in de kleine live A/B-set was het goedkoper, ongeveer tweemaal zo snel en nauwkeuriger dan GPT-5 mini. Structured output en onafhankelijke taxonidentificatie blijven verplicht.
+- Alleen een exacte genormaliseerde catalogusmatch telt als bestaande BugDex-soort. Een geloofwaardige identificatie vanaf 70% wordt wel als vondst verwerkt; ontbrekende soorten gaan naar de private developer-reviewqueue.
+- Het antwoord op de quiz mag vóór beantwoorden nergens zichtbaar staan. De modelvraag gaat over voeding, habitat, levenscyclus, lichaam of gedrag van de gevonden soort, nooit over alleen de reeds getoonde naam.
+- De verplichte veldnotitie wordt pas geschreven nadat habitat en gedrag zijn gekozen; locatie blijft exact alleen voor de eigenaar en serverpaden blijven idempotent.
+- Casino-presentatie staat uit. Elke BugDex-beloning toont eerst de vangbare foreground bug en daarna ontdekt of +1, met de concrete bron van de beloning.
+- Web houdt Vleugeljacht 3D ontgrendeld; Android gebruikt de bestaande webhandoff. De bestaande Android debug-signer blijft bewust behouden voor updatecompatibiliteit met reeds geïnstalleerde BugBaas 3.0-APK's.
+
+# 2026-08-02 centrale belonings- en eventpresentatie
+
+- Een BugDex-toekenning is pas visueel afgerond na de vaste reeks foreground-vangst, daarna ontdekt/+1 en bronuitleg; alleen punten mogen geen nepbug tonen.
+- Meerdere beloningen blijven in volgorde staan en een gemiste foreground bug gaat achteraan terug in de wachtrij.
+- Een gewone ranked overwinning heeft 0,1% kans op Mythisch; de gegarandeerde Mythische beloning voor seizoenplaats 1 blijft server-side toegekend.
+- Actieve eventmeldingen worden eenmaal per speler en event bewaard, zodat openen of hervatten duidelijk is zonder dezelfde popup telkens opnieuw te tonen.
+
+# 2026-08-02 BugDex- en rotatierelease
+
+- Nieuwe BugDex-soorten veranderen bestaande badge-eisen niet: ze verschijnen wel in filters en drops, maar oude badgevoorwaarden blijven stabiel voor bestaande spelers.
+- Visuele aantrekkelijkheid bepaalt alleen de bestaande tiers Gewoon, Zeldzaam, Episch en Legendarisch; Mythisch blijft voor de al bestaande eindtier en wordt niet automatisch uitgebreid.
+- Webroutes en de Play-workspace krijgen een lokale herstelkopie van maximaal 30 minuten. Een actieve ranked run bewaart daarnaast score, timer, vangsten en hitcounts per gebruiker in AsyncStorage.
+- iPhone Safari gebruikt korte WebAudio-tonen in plaats van de zwaardere assetpool. Android behoudt de legacy signer voor updatecompatibiliteit en de bestaande 3D-webhandoff.

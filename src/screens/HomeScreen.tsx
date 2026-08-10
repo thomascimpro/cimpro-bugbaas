@@ -8,7 +8,6 @@ import { TierBadge } from "../components/TierBadge";
 import { listBugs } from "../services/bugService";
 import { dailyFieldSignal, dailyFieldSignalBody } from "../services/dailyFieldSignalService";
 import { listFieldJournalEntries, type FieldJournalEntry } from "../services/fieldJournalService";
-import { BugArtId } from "../services/bugArt";
 import { BugDexDropResult, BugDexDropSource, entryByBugId, listBugDexInventory, listBugDexUnlocks } from "../services/bugDexService";
 import { bugLampStatus } from "../services/bugLampService";
 import { BuddyCareAction, BuddyCareState, applyBuddyCareAction, buddyActionRewardCount, buddyCareActions, buddyXpMultiplier, claimBuddyTaskReward, emptyBuddyCareState, loadBuddyState, saveBuddyState } from "../services/bugBuddyService";
@@ -16,7 +15,7 @@ import { awardBugMasteryXp, bugMasteryNextUnlockLevel, bugMasteryUnlockedSkills,
 import { maxActiveBugSquadSize, sanitizeActiveBugSquad } from "../services/bugSquadService";
 import { dismissPhoneNotification, scheduleBuddyTaskNotification } from "../services/notificationService";
 import { listBugSmashDuels } from "../services/bugSmashDuelService";
-import { claimMovementRadarBonusesForApp, claimQueuedRadarBugs, getMovementRadarProgress, getQueuedRadarBugIds, MovementRadarProgress } from "../services/movementRadarService";
+import { claimAllMovementRadarRewards, getMovementRadarProgress, getQueuedRadarBugIds, movementRadarPendingRewardCount, MovementRadarProgress, type MovementRadarRewardId } from "../services/movementRadarService";
 import { MovementSyncSource } from "../services/movementSyncSource";
 import { disconnectFitnessSyncer, FitnessSyncerStatus, getFitnessSyncerStatus, startFitnessSyncerConnection, syncFitnessSyncerActivities } from "../services/fitnessSyncerService";
 import { bugDexEntries, BugDexRarity, getTierForPoints, userTiers } from "../services/pointsService";
@@ -34,7 +33,7 @@ import { sharedStyles } from "./sharedStyles";
 type Props = {
   movementBoost?: number;
   onActivateBugLamp?: () => Promise<void>;
-  onMovementRadarClaimed?: (bugIds: BugArtId[]) => void;
+  onMovementRadarClaimed?: (bugIds: MovementRadarRewardId[]) => void;
   onMovementRegistered?: (estimatedKm: number, estimatedWeekKm?: number, source?: MovementSyncSource) => Promise<void>;
   onOpenBugDexWorkshop?: () => void;
   onRewardDrop?: (drop: BugDexDropResult) => void;
@@ -100,7 +99,7 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   const [unlockHistory, setUnlockHistory] = useState<BugDexUnlock[]>([]);
   const [masteryByBugId, setMasteryByBugId] = useState<Record<string, BugMastery>>({});
   const [movementProgress, setMovementProgress] = useState<MovementRadarProgress | null>(null);
-  const [queuedRadarBugIds, setQueuedRadarBugIds] = useState<BugArtId[]>([]);
+  const [queuedRadarBugIds, setQueuedRadarBugIds] = useState<MovementRadarRewardId[]>([]);
   const [bugLampActivating, setBugLampActivating] = useState(false);
   const [movementClaiming, setMovementClaiming] = useState(false);
   const [fitnessSyncerStatus, setFitnessSyncerStatus] = useState<FitnessSyncerStatus | null>(null);
@@ -181,7 +180,8 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
   const dailyMissionIdsKey = dailyMissions.map((mission) => mission.id).join("|");
   const missions = weeklyMissionSet(user, bugs, { bossProgress, duels, inventory, soloCampaignWave });
   const missionIdsKey = missions.map((mission) => mission.id).join("|");
-  const canClaimMovement = Boolean((movementProgress && movementProgress.claimableRewards > 0) || queuedRadarBugIds.length > 0);
+  const claimableMovementCount = movementRadarPendingRewardCount(movementProgress?.claimableRewards ?? 0, queuedRadarBugIds.length);
+  const canClaimMovement = claimableMovementCount > 0;
   const selectedLanguage = languages.find((item) => item.value === language) ?? languages[0];
   const lampStatus = bugLampStatus(user);
   const fieldSignal = dailyFieldSignal(fieldJournalEntries);
@@ -286,19 +286,11 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
     if (movementClaiming) return;
     setMovementClaiming(true);
     try {
-      const queuedBugIds = await claimQueuedRadarBugs();
-      if (queuedBugIds.length > 0) {
-        onMovementRadarClaimed?.(queuedBugIds);
-        await refreshMovementProgress();
-        return;
-      }
-
-      const result = await claimMovementRadarBonusesForApp(user.uid, movementBoost);
+      const result = await claimAllMovementRadarRewards(user.uid, movementBoost);
       if (result.estimatedKm > 0) await onMovementRegistered?.(result.estimatedKm, result.estimatedWeekKm);
       if (result.estimatedKm > 0) await awardWalkingBugMasteryXp(result.estimatedKm);
       if (result.bugIds.length > 0) {
         onMovementRadarClaimed?.(result.bugIds);
-        await claimQueuedRadarBugs().catch(() => []);
       }
       await refreshMovementProgress();
     } catch {
@@ -746,7 +738,7 @@ export function HomeScreen({ movementBoost = 0, onActivateBugLamp, onMovementRad
                     movementClaiming && styles.movementClaimButtonDisabled
                   ]}
                 >
-                  <Text style={styles.movementClaimText}>{movementClaiming ? "..." : t("home.claim")}</Text>
+                  <Text style={styles.movementClaimText}>{movementClaiming ? "..." : `${t("home.claim")} (${claimableMovementCount})`}</Text>
                 </Pressable>
               )}
             </View>

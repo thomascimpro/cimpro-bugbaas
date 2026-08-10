@@ -1,8 +1,11 @@
 import { dayKeyInTimeZone, normalizeIdentification } from "./classification.mjs";
 import { RealBugScanQuotaError } from "./firebaseUsageStore.mjs";
+import { createHash } from "node:crypto";
 
 const maxImageDataUrlLength = 6_000_000;
 const allowedImagePattern = /^data:image\/(?:jpeg|jpg|png|webp);base64,[a-z0-9+/=]+$/i;
+const maxReviewThumbnailLength = 220_000;
+const allowedReviewThumbnailPattern = /^data:image\/jpeg;base64,[a-z0-9+/=]+$/i;
 
 function sendJson(response, statusCode, body) {
   if (typeof response.status === "function") return response.status(statusCode).json(body);
@@ -61,6 +64,12 @@ function validImageDataUrl(value) {
     && allowedImagePattern.test(value);
 }
 
+function validReviewThumbnailDataUrl(value) {
+  return typeof value === "string"
+    && value.length <= maxReviewThumbnailLength
+    && allowedReviewThumbnailPattern.test(value);
+}
+
 export function createRealBugIdentifyHandler({
   catalog,
   verifyIdToken,
@@ -100,6 +109,9 @@ export function createRealBugIdentifyHandler({
     }
     if (!validImageDataUrl(body.imageDataUrl)) {
       return sendJson(response, 400, { ok: false, error: "De afbeelding is ongeldig of te groot." });
+    }
+    if (body.reviewThumbnailDataUrl !== undefined && !validReviewThumbnailDataUrl(body.reviewThumbnailDataUrl)) {
+      return sendJson(response, 400, { ok: false, error: "De beveiligde wedstrijdminiatuur is ongeldig of te groot." });
     }
 
     const usageRequest = {
@@ -146,7 +158,15 @@ export function createRealBugIdentifyHandler({
         }
       }
       const receipt = typeof signReceipt === "function"
-        ? signReceipt({ uid: decoded.uid, scanId: body.scanId, status: normalized.status, identification: normalized.identification })
+        ? signReceipt({
+          uid: decoded.uid,
+          scanId: body.scanId,
+          status: normalized.status,
+          identification: normalized.identification,
+          thumbnailSha256: validReviewThumbnailDataUrl(body.reviewThumbnailDataUrl)
+            ? createHash("sha256").update(body.reviewThumbnailDataUrl).digest("hex")
+            : undefined
+        })
         : undefined;
       return sendJson(response, 200, {
         ok: true,

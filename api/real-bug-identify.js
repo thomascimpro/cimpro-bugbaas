@@ -60,7 +60,7 @@ async function getHandler() {
     signReceipt: receiptModule.createScanReceiptSigner({ secret: process.env.BUG_SCAN_RECEIPT_SECRET }),
     identifyImage: openaiModule.createOpenAIImageIdentifier({
       apiKey: process.env.OPENAI_API_KEY,
-      model: process.env.OPENAI_BUG_SCAN_MODEL || "gpt-5-mini"
+      model: process.env.OPENAI_BUG_SCAN_MODEL || "gpt-5.6-luna"
     })
   });
   return configuredHandler;

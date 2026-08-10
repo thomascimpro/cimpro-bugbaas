@@ -15,7 +15,7 @@ import { listFieldJournalEntries, type FieldJournalEntry, type FieldJournalHabit
 import { buildExpeditionRegionProgress, expeditionHabitats } from "../services/expeditionWorldProgress";
 import { useI18n } from "../services/i18n";
 import { loadSoloCampaignBossProgress, type SoloCampaignBossProgress } from "../services/missionProgressService";
-import { getMovementRadarProgress, getQueuedRadarBugIds, type MovementRadarProgress } from "../services/movementRadarService";
+import { getMovementRadarProgress, getQueuedRadarBugIds, movementRadarPendingRewardCount, type MovementRadarProgress } from "../services/movementRadarService";
 import { getDailyRealBugScanProgress } from "../services/realBugScanProgress";
 import { buildResearchTargetOptions, type ResearchTargetStatus } from "../services/researchTargetModel";
 import { claimResearchEncounter, getResearchTargetStatus, startResearchTarget } from "../services/researchTargetService";
@@ -212,7 +212,7 @@ export function WorldScreen({ user, onStartScan, onOpenCollection, onOpenBuddy, 
   const todayKm = walkingRadarGoal?.km ?? dailyWalkMission?.progress ?? 0;
   const walkGoalKm = walkingRadarGoal?.targetKm ?? dailyWalkMission?.target ?? 3;
   const weekKm = movementProgress?.estimatedWeekKm ?? weeklyWalkMission?.progress ?? 0;
-  const claimableMovementRewards = Math.max(movementProgress?.claimableRewards ?? 0, queuedMovementRewards);
+  const claimableMovementRewards = movementRadarPendingRewardCount(movementProgress?.claimableRewards ?? 0, queuedMovementRewards);
   const teamHuntActive = teamHuntActiveNow();
   const eventCards = worldEventCards({
     swarmActive: Boolean(swarmStatus?.active),
@@ -373,7 +373,7 @@ export function WorldScreen({ user, onStartScan, onOpenCollection, onOpenBuddy, 
                   style={({ pressed }) => [styles.quickAction, usesSideLayout && styles.quickActionWide, claimableMovementRewards > 0 && styles.quickActionReward, pressed && styles.quickActionPressed]}
                 >
                   <Text style={styles.quickKicker}>{claimableMovementRewards > 0 ? "REWARD" : t("world.today.walking")}</Text>
-                  <Text numberOfLines={1} style={styles.quickTitle}>{claimableMovementRewards > 0 ? `${claimableMovementRewards} ready` : `${todayKm.toFixed(1)}/${walkGoalKm.toFixed(1)} km`}</Text>
+                  <Text numberOfLines={1} style={styles.quickTitle}>{claimableMovementRewards > 0 ? `${claimableMovementRewards} ${claimableMovementRewards === 1 ? "bug" : "bugs"} klaar` : `${todayKm.toFixed(1)}/${walkGoalKm.toFixed(1)} km`}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={onOpenBuddy} style={({ pressed }) => [styles.quickAction, styles.quickBuddyAction, usesSideLayout && styles.quickActionWide, pressed && styles.quickActionPressed]}>
                   <View style={styles.quickBuddyRow}>
@@ -518,7 +518,7 @@ export function WorldScreen({ user, onStartScan, onOpenCollection, onOpenBuddy, 
           </View>
         </View>
       </Modal>
-      <MissionOverviewModal initialTab={missionTab} onClose={() => setMissionsOpen(false)} onUserUpdated={onUserUpdated} user={user} visible={missionsOpen} />
+      <MissionOverviewModal initialTab={missionTab} onClose={() => setMissionsOpen(false)} onRewardDrop={onRewardDrop} onUserUpdated={onUserUpdated} user={user} visible={missionsOpen} />
     </View>
   );
 }

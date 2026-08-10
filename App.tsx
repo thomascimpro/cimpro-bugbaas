@@ -42,16 +42,17 @@ import { BugSplatBonusOverlay } from "./src/components/BugSplatBonusOverlay";
 import { ForegroundCatchBug } from "./src/components/ForegroundCatchBug";
 import { DisplayNameModal } from "./src/components/DisplayNameModal";
 import { InAppNotificationToast } from "./src/components/InAppNotificationToast";
+import { ActiveEventAnnouncementModal, type ActiveEventAnnouncement } from "./src/components/ActiveEventAnnouncementModal";
 import { HelpTourOverlay } from "./src/components/HelpTourOverlay";
 import { DailyMissionCompletionController } from "./src/components/DailyMissionCompletionController";
 import { allBugArtIds, BugArtId } from "./src/services/bugArt";
 import { CharacterId, CharacterUnlockContext } from "./src/services/characterService";
 import { bugDexEntryName, LanguageProvider, rarityLabel, useI18n } from "./src/services/i18n";
 import { listBugs } from "./src/services/bugService";
-import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, entryByBugId, grantBugDexReward, hasBugDexRewardAvailable, pickBugDexRewardEntry, pickQueuedBugDexRewardEntry, prepareDailyLoginBug, rollSpecificBugDexDrop } from "./src/services/bugDexService";
+import { BugDexDropResult, BugDexDropSource, claimDailyLoginBug, entryByBugId, grantBugDexReward, hasBugDexRewardAvailable, listBugDexInventory, pickBugDexRewardEntry, pickQueuedBugDexRewardEntry, prepareDailyLoginBug, rollSpecificBugDexDrop, takePendingPointUnlockedBugDex } from "./src/services/bugDexService";
 import { badgeDefinitions, getTierForPoints, userTiers, type BadgeDefinition, type BugDexEntry, type UserTier } from "./src/services/pointsService";
 import { getFitnessSyncerStatus } from "./src/services/fitnessSyncerService";
-import { claimMovementRadarBonusesForApp, claimQueuedRadarBugs, requestHealthConnectPermissions } from "./src/services/movementRadarService";
+import { claimAllMovementRadarRewards, claimMovementRadarBonusesForApp, requestHealthConnectPermissions, resolveMovementRadarBugIds, type MovementRadarRewardId } from "./src/services/movementRadarService";
 import { canRegisterMovementSource, MovementSyncSource } from "./src/services/movementSyncSource";
 import { movementRadarXpPerBug } from "./src/services/rewardBalanceService";
 import { checkLatestVersion, VersionNotice } from "./src/services/versionService";
@@ -77,9 +78,14 @@ import {
 import { subscribeIncomingBugSmashDuelActionCount } from "./src/services/bugSmashDuelService";
 import { setRadarRequestCounts } from "./src/services/movementRadarService";
 import { getOwnDuelSeasonClaim, previousDuelSeasonId } from "./src/services/duelSeasonService";
+import { getReleaseBossStatus } from "./src/services/releaseBossService";
+import { getSwarmSiegeStatus } from "./src/services/swarmSiegeService";
+import { getTeamHuntStatus } from "./src/services/teamHuntService";
+import { teamHuntWindow } from "./src/services/teamHuntSchedule";
 import { installWebUiSounds } from "./src/services/soundService";
 import { shouldPresentBugDexDropImmediately, shouldPresentPointDropAsForegroundCatch, shouldShowRewardSpin } from "./src/services/rewardPresentation";
 import { subscribeIncomingTradeRequestCount } from "./src/services/tradeService";
+import { encodeWebRouteSnapshot, readRecentWebRoute, webRouteLocalStorageKey } from "./src/services/webRouteRecovery";
 
 export type RouteName = "home" | "bugs" | "new" | "detail" | "leaderboard" | "profile" | "userProfile" | "bugdex" | "museum" | "realBugScan" | "fieldJournal" | "teamHunt" | "swarmSiege" | "seasonFinale" | "settings" | "duel";
 
@@ -96,14 +102,13 @@ const helpTourVersion = "visual-help-v3";
 const helpTourVersionKey = (uid: string) => `bugbaas:helpTour:${helpTourVersion}:${uid}`;
 const changelogSeenKey = (uid: string, version: string) => `bugbaas:changelog:${version}:${uid}`;
 const badgeUnlockSeenKey = (uid: string, badgeId: string) => `bugbaas:badgeUnlock:${uid}:${badgeId}`;
-const duelSeasonPopupSeenKey = (uid: string, seasonId: string) => `bugbaas:duelSeasonPopup:${uid}:${seasonId}`;
-const commentForegroundSpawnChance = 0.16;
-const upvoteForegroundSpawnChance = 0.1;
-const maxQueuedForegroundBugs = 12;
+const duelSeasonPopupSeenKey = (uid: string, seasonId: string) => `bugbaas:duelSeasonReward:v2:${uid}:${seasonId}`;
+const activeEventSeenKey = (uid: string, eventId: string) => `bugbaas:activeEvent:v1:${uid}:${eventId}`;
 const startupEngagementSyncDelayMs = 4000;
 const startupMovementCheckDelayMs = 2500;
 const startupNotificationRegistrationDelayMs = 3500;
 const startupVersionCheckDelayMs = 5000;
+const activeEventCheckTimeoutMs = 4000;
 const reportActionRewardSources = new Set<BugDexDropSource>(["bug_reported", "comment", "status_update", "bug_fixed", "upvote_given"]);
 const webRouteSessionKey = "bugbaas:active-route:v3";
 const routeNames = new Set<RouteName>(["home", "bugs", "new", "detail", "leaderboard", "profile", "userProfile", "bugdex", "museum", "realBugScan", "fieldJournal", "teamHunt", "swarmSiege", "seasonFinale", "settings", "duel"]);
@@ -115,7 +120,12 @@ function initialRoute(): RouteName {
   if (normalizedPath === "/real-bug-scan" || search.has("real-bug-scan")) return "realBugScan";
   try {
     const storedRoute = window.sessionStorage.getItem(webRouteSessionKey) as RouteName | null;
-    return storedRoute && routeNames.has(storedRoute) ? storedRoute : "home";
+    if (storedRoute && routeNames.has(storedRoute)) return storedRoute;
+  } catch {
+    // Safari private mode can disable session storage.
+  }
+  try {
+    return (readRecentWebRoute(window.localStorage.getItem(webRouteLocalStorageKey), routeNames) as RouteName | null) ?? "home";
   } catch {
     return "home";
   }
@@ -147,6 +157,7 @@ type PendingForegroundReward = {
   bugId: BugArtId;
   entry: BugDexEntry;
   id: string;
+  preGrantPromise?: Promise<BugDexDropResult | null>;
   preparedDrop?: BugDexDropResult;
   preGrantedDrop?: BugDexDropResult;
   source: BugDexDropSource;
@@ -172,22 +183,22 @@ type ChangelogFeature = {
 
 const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   "2.10.17": [
-    { key: "changelog.2.10.17.art", image: require("./assets/bugdex/grote-wegslak.png"), tone: "gold" },
-    { key: "changelog.2.10.17.scan", image: require("./assets/bugdex/lieveheersbeestje.png"), tone: "green" },
+    { key: "changelog.2.10.17.art", image: require("./assets/bugdex-webp/grote-wegslak.webp"), tone: "gold" },
+    { key: "changelog.2.10.17.scan", image: require("./assets/bugdex-webp/lieveheersbeestje.webp"), tone: "green" },
     { key: "changelog.2.10.17.fitness", image: require("./assets/badges/kilometer-colony.png"), tone: "purple" }
   ],
   "2.10.11": [
-    { key: "changelog.2.10.11.nest", image: require("./assets/bugdex/houtmier.png"), tone: "gold" },
+    { key: "changelog.2.10.11.nest", image: require("./assets/bugdex-webp/houtmier.webp"), tone: "gold" },
     { key: "changelog.2.10.11.fitness", image: require("./assets/generated/bug-radar-request-signal-hd.webp"), tone: "green" },
     { key: "changelog.2.10.11.security", image: require("./assets/badges/kilometer-colony.png"), tone: "purple" }
   ],
   "2.10.10": [
     { key: "changelog.2.10.10.categories", image: require("./assets/generated/bug-smash-duel-concept.jpg"), tone: "green" },
-    { key: "changelog.2.10.10.nest", image: require("./assets/bugdex/houtmier.png"), tone: "gold" },
+    { key: "changelog.2.10.10.nest", image: require("./assets/bugdex-webp/houtmier.webp"), tone: "gold" },
     { key: "changelog.2.10.10.unlocks", image: require("./assets/badges/badge-overview.webp"), tone: "purple" }
   ],
   "2.10.9": [
-    { key: "changelog.2.10.9.glide", image: require("./assets/bugdex/honingbij.png"), tone: "gold" },
+    { key: "changelog.2.10.9.glide", image: require("./assets/bugdex-webp/honingbij.webp"), tone: "gold" },
     { key: "changelog.2.10.9.tower", image: require("./assets/minigames/bug-tower/bug-tower-background.jpg"), tone: "purple" },
     { key: "changelog.2.10.9.bubbles", image: require("./assets/minigames/bubble-swarm/bubble-swarm-background.jpg"), tone: "green" }
   ],
@@ -264,25 +275,25 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   "2.0.5": [
     { key: "changelog.2.0.5.profileButtons", image: require("./assets/characters/character-rookie-bug-catcher.png"), tone: "green" },
     { key: "changelog.2.0.5.bugdexCollection", image: require("./assets/generated/bugdex-collection-view-hd.jpg"), tone: "gold" },
-    { key: "changelog.2.0.5.radarClaim", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "purple" },
+    { key: "changelog.2.0.5.radarClaim", image: require("./assets/bugdex-webp/schaatsenrijder.webp"), tone: "purple" },
     { key: "changelog.2.0.5.profileReward", image: require("./assets/generated/active-bug-squad-selection-hd.jpg"), tone: "green" }
   ],
   "2.0.3": [
-    { key: "changelog.2.0.3.bugdex", image: require("./assets/bugdex/atlaskever.png"), tone: "purple" },
+    { key: "changelog.2.0.3.bugdex", image: require("./assets/bugdex-webp/atlaskever.webp"), tone: "purple" },
     { key: "changelog.2.0.3.squad", image: require("./assets/generated/active-bug-squad-selection-hd.jpg"), tone: "green" },
-    { key: "changelog.2.0.3.radar", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "gold" }
+    { key: "changelog.2.0.3.radar", image: require("./assets/bugdex-webp/schaatsenrijder.webp"), tone: "gold" }
   ],
   "2.0.2": [
-    { key: "changelog.2.0.1.movement", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "green" },
-    { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
+    { key: "changelog.2.0.1.movement", image: require("./assets/bugdex-webp/schaatsenrijder.webp"), tone: "green" },
+    { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex-webp/koningin-alexandravlinder.webp"), tone: "purple" },
     { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.webp"), tone: "gold" },
     { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
     { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
     { key: "changelog.2.0.1.apk", image: require("./assets/generated/bugbaas-splash-badge-hd.webp"), tone: "purple" }
   ],
   "2.0.1": [
-    { key: "changelog.2.0.1.movement", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "green" },
-    { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
+    { key: "changelog.2.0.1.movement", image: require("./assets/bugdex-webp/schaatsenrijder.webp"), tone: "green" },
+    { key: "changelog.2.0.1.bugdex", image: require("./assets/bugdex-webp/koningin-alexandravlinder.webp"), tone: "purple" },
     { key: "changelog.2.0.1.badges", image: require("./assets/badges/badge-overview.webp"), tone: "gold" },
     { key: "changelog.2.0.1.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" },
     { key: "changelog.2.0.1.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
@@ -291,23 +302,23 @@ const usefulChangelogByVersion: Record<string, ChangelogFeature[]> = {
   "2.0.0": [
     { key: "changelog.2.0.0.badges", image: require("./assets/badges/badge-overview.webp"), tone: "gold" },
     { key: "changelog.2.0.0.squad", image: require("./assets/generated/bug-squad-empty-jar-hd.png"), tone: "green" },
-    { key: "changelog.2.0.0.rank", image: require("./assets/bugdex/atlaskever.png"), tone: "purple" }
+    { key: "changelog.2.0.0.rank", image: require("./assets/bugdex-webp/atlaskever.webp"), tone: "purple" }
   ],
   "1.5.9": [
-    { key: "changelog.1.5.9.badges", image: require("./assets/bugdex/lieveheersbeestje.png"), tone: "gold" },
-    { key: "changelog.1.5.9.movement", image: require("./assets/bugdex/schaatsenrijder.png"), tone: "green" },
-    { key: "changelog.1.5.9.rare", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
+    { key: "changelog.1.5.9.badges", image: require("./assets/bugdex-webp/lieveheersbeestje.webp"), tone: "gold" },
+    { key: "changelog.1.5.9.movement", image: require("./assets/bugdex-webp/schaatsenrijder.webp"), tone: "green" },
+    { key: "changelog.1.5.9.rare", image: require("./assets/bugdex-webp/koningin-alexandravlinder.webp"), tone: "purple" },
     { key: "changelog.1.5.9.characters", image: require("./assets/characters/character-golden-net-champion.png"), tone: "gold" }
   ],
   "1.5.8": [
     { key: "changelog.1.5.8.help", image: require("./assets/characters/bugcatcher-classic.png"), tone: "green" },
-    { key: "changelog.1.5.8.mythic", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
-    { key: "changelog.1.5.8.rewards", image: require("./assets/bugdex/pissebed.png"), tone: "gold" }
+    { key: "changelog.1.5.8.mythic", image: require("./assets/bugdex-webp/koningin-alexandravlinder.webp"), tone: "purple" },
+    { key: "changelog.1.5.8.rewards", image: require("./assets/bugdex-webp/pissebed.webp"), tone: "gold" }
   ],
   "1.5.7": [
     { key: "changelog.1.5.7.help", image: require("./assets/characters/bugcatcher-classic.png"), tone: "green" },
-    { key: "changelog.1.5.7.mythic", image: require("./assets/bugdex/koningin-alexandravlinder.png"), tone: "purple" },
-    { key: "changelog.1.5.7.rewards", image: require("./assets/bugdex/pissebed.png"), tone: "gold" }
+    { key: "changelog.1.5.7.mythic", image: require("./assets/bugdex-webp/koningin-alexandravlinder.webp"), tone: "purple" },
+    { key: "changelog.1.5.7.rewards", image: require("./assets/bugdex-webp/pissebed.webp"), tone: "gold" }
   ]
 };
 
@@ -320,7 +331,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const { t } = useI18n();
+  const { language, t } = useI18n();
   const responsiveLayout = useResponsiveLayout();
   const responsiveShellStyle = Platform.OS === "web" ? { maxWidth: responsiveLayout.shellMaxWidth } : undefined;
   const [route, setRoute] = useState<RouteName>(initialRoute);
@@ -348,13 +359,17 @@ function AppContent() {
   const [changelogVersion, setChangelogVersion] = useState("");
   const [splatBonusVisible, setSplatBonusVisible] = useState(false);
   const [versionNotice, setVersionNotice] = useState<VersionNotice | null>(null);
+  const [activeEventAnnouncement, setActiveEventAnnouncement] = useState<ActiveEventAnnouncement | null>(null);
+  const [activeEventQueue, setActiveEventQueue] = useState<ActiveEventAnnouncement[]>([]);
+  const [activeEventCheckComplete, setActiveEventCheckComplete] = useState(false);
   const [pendingForegroundRewards, setPendingForegroundRewards] = useState<PendingForegroundReward[]>([]);
   const [duelFullscreen, setDuelFullscreen] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
   const [walkingBugsReady, setWalkingBugsReady] = useState(false);
   const appState = useRef(AppState.currentState);
-  const movementCheckInProgress = useRef(false);
+  const movementCheckInProgress = useRef<Promise<void> | null>(null);
+  const radarClaimRequested = useRef(false);
   const versionCheckInProgress = useRef(false);
   const activeForegroundRewardRef = useRef<PendingForegroundReward | null>(null);
   const pendingForegroundRewardsRef = useRef<PendingForegroundReward[]>([]);
@@ -368,6 +383,7 @@ function AppContent() {
   const handledNotificationResponses = useRef(new Set<string>());
   const dailyLoginClaimedForUsers = useRef(new Set<string>());
   const reportActionRewardQueuedDay = useRef("");
+  const activeEventCheckInProgress = useRef("");
 
   useEffect(() => installWebUiSounds(), []);
 
@@ -377,6 +393,11 @@ function AppContent() {
       window.sessionStorage.setItem(webRouteSessionKey, route);
     } catch {
       // Safari private mode can disable session storage.
+    }
+    try {
+      window.localStorage.setItem(webRouteLocalStorageKey, encodeWebRouteSnapshot(route));
+    } catch {
+      // Safari private mode can also disable local storage.
     }
   }, [route]);
 
@@ -397,6 +418,7 @@ function AppContent() {
   const foregroundUiClear = Boolean(
     user
     && user.nameSet === true
+    && !appNavigation.overlay
     && !badgeUnlock
     && !bugDexDrop
     && !rankUpTier
@@ -405,6 +427,8 @@ function AppContent() {
     && !changelogVersion
     && !splatBonusVisible
     && !versionNotice
+    && !activeEventAnnouncement
+    && activeEventCheckComplete
   );
   const foregroundRewardPending = pendingForegroundRewards.length > 0;
   const foregroundBugEnabled = foregroundUiClear;
@@ -488,6 +512,11 @@ function AppContent() {
   }, [user]);
 
   useEffect(() => {
+    if (!radarClaimRequested.current || user?.nameSet !== true) return;
+    void claimRequestedRadarStack();
+  }, [user?.nameSet, user?.uid]);
+
+  useEffect(() => {
     setWalkingBugsReady(false);
     if (!user) return;
     const timer = setTimeout(() => setWalkingBugsReady(true), 2500);
@@ -499,8 +528,14 @@ function AppContent() {
   }, [pendingForegroundRewards]);
 
   useEffect(() => {
+    if (!user?.uid) return;
+    takePendingPointUnlockedBugDex(user.uid).forEach(showBugDexDrop);
+  }, [user?.bugDexCount, user?.totalPoints, user?.uid]);
+
+  useEffect(() => {
     const currentUser = user;
     if (!currentUser) return;
+    const seasonUser: User = currentUser;
     const uid = currentUser.uid;
     const seasonId = previousDuelSeasonId();
     let active = true;
@@ -510,11 +545,31 @@ function AppContent() {
       if (seen || !active) return;
       const claim = await getOwnDuelSeasonClaim(uid, seasonId).catch(() => null);
       if (!claim || !active) return;
+      const inventory = await listBugDexInventory(seasonUser, { force: true });
+      if (!active) return;
+      const newBugIds = new Set(claim.newBugIds ?? []);
+      const drops = claim.bugIds.flatMap((bugId) => {
+        const entry = entryByBugId(bugId);
+        const item = inventory.find((candidate) => candidate.bugId === bugId);
+        if (!entry || !item) return [];
+        const isNew = newBugIds.has(bugId) || (claim.newBugIds === undefined && item.count === 1);
+        newBugIds.delete(bugId);
+        return [{
+          entry,
+          isNew,
+          item,
+          rewardType: "bug" as const,
+          source: "duel_season" as const,
+          sourceDetail: language === "en"
+            ? `RANKED DUEL SEASON · PLACE #${claim.rank}`
+            : language === "fr"
+              ? `SAISON DE DUELS CLASSÉS · PLACE #${claim.rank}`
+              : `RANKED DUEL-SEIZOEN · PLEK #${claim.rank}`
+        }];
+      });
+      if (!drops.length) return;
       await AsyncStorage.setItem(seenKey, "1");
-      Alert.alert(
-        "Duel Season afgelopen",
-        `Je werd #${claim.rank}. Reward: ${claim.reward.label}. Iedereen begint deze maand weer op 1000 Duel rating.`
-      );
+      drops.forEach(showBugDexDrop);
     }
     void checkDuelSeasonPopup();
     return () => { active = false; };
@@ -668,18 +723,25 @@ function AppContent() {
         return;
       }
 
+      const claimRadarStack = radarStackClaimFromUrl(url);
       const bugId = radarBugIdFromUrl(url);
-      if (!bugId) return;
+      if (!claimRadarStack && !bugId) return;
       setSelectedBug(null);
       setSelectedUser(null);
       setRoute("home");
+      if (claimRadarStack) {
+        radarClaimRequested.current = true;
+        void claimRequestedRadarStack();
+        return;
+      }
+      if (!bugId) return;
       const entry = entryByBugId(bugId);
       if (!entry) return;
       queueForegroundReward({
         bugId,
         entry,
         id: `deeplink-${bugId}-${Date.now()}-${Math.random()}`,
-        source: "bug_splat"
+        source: "movement_radar"
       });
     };
 
@@ -693,7 +755,10 @@ function AppContent() {
       appState.current = nextState;
       if (nextState === "active") {
         const currentUser = userRef.current;
-        if (currentUser) recordUserActivity(currentUser);
+        if (currentUser) {
+          recordUserActivity(currentUser);
+          void checkActiveEventAnnouncements(currentUser);
+        }
         void checkMovementRadarBonuses();
         void checkForVersionUpdate();
       }
@@ -749,7 +814,18 @@ function AppContent() {
   }, [user?.helpSeen, user?.nameSet, user?.uid]);
 
   useEffect(() => {
-    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || badgeUnlock || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
+    setActiveEventAnnouncement(null);
+    setActiveEventQueue([]);
+    setActiveEventCheckComplete(false);
+    if (!user || user.nameSet !== true) {
+      setActiveEventCheckComplete(true);
+      return;
+    }
+    void checkActiveEventAnnouncements(user);
+  }, [user?.nameSet, user?.uid]);
+
+  useEffect(() => {
+    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || !activeEventCheckComplete || activeEventAnnouncement || activeEventQueue.length > 0 || badgeUnlock || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
     const currentVersion = currentAppVersion();
     const changelogItems = usefulChangelogByVersion[currentVersion];
     if (!currentVersion || !changelogItems?.length) return;
@@ -762,10 +838,10 @@ function AppContent() {
     return () => {
       active = false;
     };
-  }, [badgeUnlock, bugDexDrop, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
+  }, [activeEventAnnouncement, activeEventCheckComplete, activeEventQueue.length, badgeUnlock, bugDexDrop, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
 
   useEffect(() => {
-    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || changelogVersion || badgeUnlock || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
+    if (!user || user.nameSet !== true || !helpGateChecked || helpVisible || !activeEventCheckComplete || activeEventAnnouncement || activeEventQueue.length > 0 || changelogVersion || badgeUnlock || bugDexDrop || notification || splatBonusVisible || versionNotice) return;
     if (dailyLoginClaimedForUsers.current.has(user.uid)) return;
     dailyLoginClaimedForUsers.current.add(user.uid);
     void prepareDailyLoginBug(user).then((drop) => {
@@ -773,7 +849,7 @@ function AppContent() {
     }).catch(() => {
       dailyLoginClaimedForUsers.current.delete(user.uid);
     });
-  }, [badgeUnlock, bugDexDrop, changelogVersion, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
+  }, [activeEventAnnouncement, activeEventCheckComplete, activeEventQueue.length, badgeUnlock, bugDexDrop, changelogVersion, helpGateChecked, helpVisible, notification, splatBonusVisible, user?.nameSet, user?.uid, versionNotice]);
 
   useEffect(() => {
     if (!user) return () => undefined;
@@ -919,6 +995,55 @@ function AppContent() {
     }
   }
 
+  async function checkActiveEventAnnouncements(appUser: User) {
+    if (activeEventCheckInProgress.current === appUser.uid) return;
+    activeEventCheckInProgress.current = appUser.uid;
+    try {
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      const [swarmStatus, teamStatus, releaseStatus] = await Promise.race([
+        Promise.all([
+          getSwarmSiegeStatus(appUser).catch(() => null),
+          getTeamHuntStatus(appUser).catch(() => null),
+          getReleaseBossStatus(appUser).catch(() => null)
+        ]),
+        new Promise<[null, null, null]>((resolve) => {
+          timeout = setTimeout(() => resolve([null, null, null]), activeEventCheckTimeoutMs);
+        })
+      ]);
+      if (timeout) clearTimeout(timeout);
+      if (userRef.current?.uid !== appUser.uid) return;
+      const announcements: ActiveEventAnnouncement[] = [];
+      if (swarmStatus?.active && swarmStatus.eventId) announcements.push({ eventId: swarmStatus.eventId, kind: "swarmSiege" });
+      if (teamStatus?.active) announcements.push({ eventId: teamStatus.eventId || teamHuntWindow()?.id || `team-hunt-${localDayId()}`, kind: "teamHunt" });
+      if (releaseStatus?.state === "finale" && releaseStatus.seasonId) announcements.push({ eventId: `release-finale-${releaseStatus.seasonId}`, kind: "releaseBoss" });
+      const seen = await AsyncStorage.multiGet(announcements.map((announcement) => activeEventSeenKey(appUser.uid, announcement.eventId)));
+      if (userRef.current?.uid !== appUser.uid) return;
+      const unseen = announcements.filter((_, index) => !seen[index]?.[1]);
+      const [next, ...queue] = unseen;
+      setActiveEventAnnouncement(next ?? null);
+      setActiveEventQueue(queue);
+    } finally {
+      if (userRef.current?.uid === appUser.uid) setActiveEventCheckComplete(true);
+      if (activeEventCheckInProgress.current === appUser.uid) activeEventCheckInProgress.current = "";
+    }
+  }
+
+  function finishActiveEventAnnouncement(openEvent: boolean) {
+    const announcement = activeEventAnnouncement;
+    if (!announcement || !user) return;
+    void AsyncStorage.setItem(activeEventSeenKey(user.uid, announcement.eventId), "1").catch(() => undefined);
+    if (openEvent) {
+      setActiveEventAnnouncement(null);
+      setActiveEventQueue([]);
+      setRoute(announcement.kind === "swarmSiege" ? "swarmSiege" : announcement.kind === "teamHunt" ? "teamHunt" : "seasonFinale");
+      return;
+    }
+    const [next, ...remaining] = activeEventQueue;
+    setActiveEventAnnouncement(null);
+    setActiveEventQueue(remaining);
+    if (next) setTimeout(() => setActiveEventAnnouncement(next), 0);
+  }
+
   async function refreshUser() {
     if (!user) return;
     const synced = await syncEngagementPoints(user);
@@ -1010,7 +1135,7 @@ function AppContent() {
 
   function queueForegroundReward(reward: PendingForegroundReward) {
     setPendingForegroundRewards((queue) => {
-      const next = queue.length >= maxQueuedForegroundBugs ? queue : [...queue, reward];
+      const next = [...queue, reward];
       pendingForegroundRewardsRef.current = next;
       return next;
     });
@@ -1024,7 +1149,7 @@ function AppContent() {
       bugId: entry.id as BugArtId,
       entry,
       id: `starter-boost-${source}-${entry.id}-${Date.now()}-${Math.random()}`,
-      source,
+      source: "starter_boost",
       starterBoostBonus: true
     });
   }
@@ -1101,45 +1226,38 @@ function AppContent() {
     }).catch(() => undefined);
   }
 
-  async function showClaimedRadarBugs(bugIds: BugArtId[]) {
+  async function showClaimedRadarBugs(rewardIds: MovementRadarRewardId[]) {
     const currentUser = userRef.current;
-    if (!currentUser || bugIds.length === 0) return;
-    let nextUser = currentUser;
+    if (!currentUser || rewardIds.length === 0) return;
+    const bugIds = resolveMovementRadarBugIds(
+      rewardIds,
+      () => pickBugDexRewardEntry(currentUser, "movement_radar").id as BugArtId
+    );
+    let grantQueue: Promise<void> = Promise.resolve();
+    for (const bugId of bugIds) {
+      const entry = entryByBugId(bugId);
+      if (!entry) continue;
+      const preGrantPromise = grantQueue
+        .then(() => rollSpecificBugDexDrop(currentUser, entry.id, "movement_radar", 1))
+        .catch(() => null);
+      grantQueue = preGrantPromise.then(() => undefined);
+      queueForegroundReward({
+        bugId,
+        entry,
+        id: `radar-${bugId}-${Date.now()}-${Math.random()}`,
+        preGrantPromise,
+        source: "movement_radar"
+      });
+    }
     try {
       const xpUser = await applyUserPoints(currentUser.uid, bugIds.length * movementRadarXpPerBug, 0);
       if (xpUser) {
-        nextUser = xpUser;
         setUser(xpUser);
       }
     } catch {
       // Movement XP is additive; radar BugDex rewards should still be shown.
     }
-    for (const bugId of bugIds) {
-      const entry = entryByBugId(bugId);
-      if (!entry) continue;
-      queueForegroundReward({
-        bugId,
-        entry,
-        id: `radar-${bugId}-${Date.now()}-${Math.random()}`,
-        source: "bug_splat"
-      });
-    }
     await dismissPresentedNotificationsForTarget({ type: "movement" }).catch(() => undefined);
-  }
-
-  function queueForegroundBug(chance = 1) {
-    if (Math.random() > chance) return;
-    const currentUser = userRef.current;
-    if (!currentUser) return;
-    const entry = pickQueuedBugDexRewardEntry(currentUser, "bug_splat");
-    if (!entry) return;
-    const bugId = entry.id as BugArtId;
-    queueForegroundReward({
-      bugId,
-      entry,
-      id: `foreground-${bugId}-${Date.now()}-${Math.random()}`,
-      source: "bug_splat"
-    });
   }
 
   function rewardBugFixed() {
@@ -1191,17 +1309,27 @@ function AppContent() {
     try {
       if (pendingReward) {
         if (pendingReward.preGrantedDrop) {
-          presentBugDexDrop(pendingReward.preGrantedDrop);
+          presentBugDexDrop(pendingReward.preGrantedDrop, true);
           if (pendingReward.preGrantedDrop.rewardType === "bug" && !pendingReward.starterBoostBonus) {
             queueStarterBoostBugRoll(pendingReward.preGrantedDrop.source, rewardUser, bugDropEntryId(pendingReward.preGrantedDrop));
           }
           return;
         }
+        if (pendingReward.preGrantPromise) {
+          const preGrantedDrop = await pendingReward.preGrantPromise;
+          if (preGrantedDrop) {
+            presentBugDexDrop(preGrantedDrop, true);
+            if (preGrantedDrop.rewardType === "bug" && !pendingReward.starterBoostBonus) {
+              queueStarterBoostBugRoll(preGrantedDrop.source, rewardUser, bugDropEntryId(preGrantedDrop));
+            }
+            return;
+          }
+        }
         if (pendingReward.preparedDrop?.source === "daily_login") {
           const claimedDrop = await claimDailyLoginBug(rewardUser, pendingReward.preparedDrop);
           if (claimedDrop?.updatedUser) setUser(claimedDrop.updatedUser);
           if (claimedDrop) {
-            presentBugDexDrop(claimedDrop);
+            presentBugDexDrop(claimedDrop, true);
             if (!pendingReward.starterBoostBonus) queueStarterBoostBugRoll(claimedDrop.source, claimedDrop.updatedUser ?? rewardUser, bugDropEntryId(claimedDrop));
           }
           return;
@@ -1209,14 +1337,14 @@ function AppContent() {
         const rewardDrop = await rollSpecificBugDexDrop(rewardUser, pendingReward.entry.id, pendingReward.source, 1);
         if (rewardDrop?.updatedUser) setUser(rewardDrop.updatedUser);
         if (rewardDrop) {
-          presentBugDexDrop(rewardDrop);
+          presentBugDexDrop(rewardDrop, true);
           if (!pendingReward.starterBoostBonus) queueStarterBoostBugRoll(rewardDrop.source, rewardDrop.updatedUser ?? rewardUser, bugDropEntryId(rewardDrop));
         }
         return;
       }
       const caughtBugDrop = await rollSpecificBugDexDrop(rewardUser, bugId, "bug_splat", 1);
       if (caughtBugDrop) {
-        presentBugDexDrop(caughtBugDrop);
+        presentBugDexDrop(caughtBugDrop, true);
         queueStarterBoostBugRoll(caughtBugDrop.source, rewardUser, bugDropEntryId(caughtBugDrop));
       } else if (splatMilestone) {
         queueRolledBugDexReward("bug_splat", rewardUser);
@@ -1229,16 +1357,53 @@ function AppContent() {
   async function checkMovementRadarBonuses() {
     const currentUser = userRef.current;
     if (!currentUser || currentUser.nameSet !== true || movementCheckInProgress.current) return;
-    movementCheckInProgress.current = true;
+    const check = (async () => {
+      try {
+        const result = await claimMovementRadarBonusesForApp(currentUser.uid, movementBoostForUser(currentUser));
+        await registerMovementKilometers(result.estimatedKm, result.estimatedWeekKm);
+        if (result.bugIds.length > 0) await showClaimedRadarBugs(result.bugIds);
+      } catch {
+        // Movement radar bonuses are optional and must never interrupt the app.
+      }
+    })();
+    movementCheckInProgress.current = check;
     try {
-      const result = await claimMovementRadarBonusesForApp(currentUser.uid, movementBoostForUser(currentUser));
-      await registerMovementKilometers(result.estimatedKm, result.estimatedWeekKm);
-      if (result.bugIds.length > 0) await showClaimedRadarBugs(result.bugIds);
-    } catch {
-      // Movement radar bonuses are optional and must never interrupt the app.
+      await check;
     } finally {
-      movementCheckInProgress.current = false;
+      if (movementCheckInProgress.current === check) movementCheckInProgress.current = null;
     }
+  }
+
+  async function claimMovementRadarRewards() {
+    while (movementCheckInProgress.current) {
+      const activeCheck = movementCheckInProgress.current;
+      await activeCheck.catch(() => undefined);
+      if (movementCheckInProgress.current === activeCheck) movementCheckInProgress.current = null;
+    }
+    const currentUser = userRef.current;
+    if (!currentUser || currentUser.nameSet !== true) return;
+    const claim = (async () => {
+      try {
+        const result = await claimAllMovementRadarRewards(currentUser.uid, movementBoostForUser(currentUser));
+        await registerMovementKilometers(result.estimatedKm, result.estimatedWeekKm);
+        if (result.bugIds.length > 0) await showClaimedRadarBugs(result.bugIds);
+      } catch {
+        // Claiming movement rewards must not interrupt normal app use.
+      }
+    })();
+    movementCheckInProgress.current = claim;
+    try {
+      await claim;
+    } finally {
+      if (movementCheckInProgress.current === claim) movementCheckInProgress.current = null;
+    }
+  }
+
+  async function claimRequestedRadarStack() {
+    const currentUser = userRef.current;
+    if (!currentUser || currentUser.nameSet !== true) return;
+    radarClaimRequested.current = false;
+    await claimMovementRadarRewards();
   }
 
   async function registerMovementKilometers(estimatedKm: number, estimatedWeekKm?: number, source: MovementSyncSource = "health_connect") {
@@ -1313,13 +1478,8 @@ function AppContent() {
       setSelectedBug(null);
       setSelectedUser(null);
       setRoute("home");
-      const queuedBugIds = await claimQueuedRadarBugs().catch(() => []);
-      if (queuedBugIds.length > 0) {
-        await showClaimedRadarBugs(queuedBugIds);
-        return;
-      }
       if (currentUser) {
-        const result = await claimMovementRadarBonusesForApp(currentUser.uid, movementBoostForUser(currentUser)).catch(() => null);
+        const result = await claimAllMovementRadarRewards(currentUser.uid, movementBoostForUser(currentUser)).catch(() => null);
         if (result?.estimatedKm) await registerMovementKilometers(result.estimatedKm, result.estimatedWeekKm).catch(() => undefined);
         if (result?.bugIds.length) await showClaimedRadarBugs(result.bugIds);
       }
@@ -1449,6 +1609,7 @@ function AppContent() {
             onOpenTeamHunt={() => setRoute("teamHunt")}
             onOpenSwarmSiege={() => setRoute("swarmSiege")}
             onOpenSeasonFinale={() => setRoute("seasonFinale")}
+            onClaimMovementRewards={claimMovementRadarRewards}
             onSyncMovement={() => { void checkMovementRadarBonuses(); }}
             onRewardDrop={showBugDexDrop}
             onUserUpdated={setUser}
@@ -1472,7 +1633,6 @@ function AppContent() {
               void notifyNewBug(bug, user).catch(() => undefined);
               void refreshUser();
               if (bug.points > 0) {
-                queueForegroundBug();
                 if ((bug.reportType ?? "bug") === "bug") {
                   rewardGuaranteedActivity("bug_reported");
                   setSplatBonusVisible(true);
@@ -1493,7 +1653,6 @@ function AppContent() {
             onCommentAdded={(comment: BugComment) => {
               void notifyComment(selectedBug, comment, user).catch(() => undefined);
               rewardActivity("comment");
-              queueForegroundBug(commentForegroundSpawnChance);
               void refreshUser();
             }}
             onBugChanged={(bug) => {
@@ -1503,7 +1662,6 @@ function AppContent() {
                 else rewardActivity("status_update");
               } else if ((selectedBug?.upvoteCount ?? 0) !== (bug.upvoteCount ?? 0) && user.uid !== bug.reporterId) {
                 rewardActivity("upvote_given");
-                queueForegroundBug(upvoteForegroundSpawnChance);
               }
               setSelectedBug(bug);
               void refreshUser();
@@ -1558,7 +1716,7 @@ function AppContent() {
         {route === "realBugScan" && <RealBugScanScreen user={user} onBack={() => setRoute("home")} onOpenCollection={() => setRoute("bugdex")} onOpenJournal={() => { setFieldJournalBackRoute("realBugScan"); setRoute("fieldJournal"); }} onOpenWorld={() => setRoute("home")} onRewardDrop={showBugDexDrop} />}
         {route === "fieldJournal" && <CollectionScreen initialTab="journal" user={user} onBack={() => setRoute(fieldJournalBackRoute)} onUserUpdated={setUser} />}
         {route === "teamHunt" && <TeamHuntScreen user={user} onBack={() => setRoute("home")} />}
-        {route === "swarmSiege" && <SwarmSiegeScreen user={user} onBack={() => setRoute("home")} onUserUpdated={setUser} />}
+        {route === "swarmSiege" && <SwarmSiegeScreen user={user} onBack={() => setRoute("home")} onRewardDrop={showBugDexDrop} onUserUpdated={setUser} />}
         {route === "seasonFinale" && <ReleaseBossScreen user={user} onBack={() => setRoute("home")} onOpenJournal={() => { setFieldJournalBackRoute("seasonFinale"); setRoute("fieldJournal"); }} onRewardAwarded={() => { void refreshUser(); }} />}
         {route === "duel" && (
           <PlayScreen
@@ -1616,9 +1774,12 @@ function AppContent() {
           activeForegroundRewardRef.current = nextReward?.bugId === bugId ? nextReward : pendingForegroundRewards.find((reward) => reward.bugId === bugId) ?? null;
         }}
         onForcedBugMissed={(bugId) => {
-          const missedReward = activeForegroundRewardRef.current?.bugId === bugId ? activeForegroundRewardRef.current : null;
+          const missedReward = activeForegroundRewardRef.current?.bugId === bugId
+            ? activeForegroundRewardRef.current
+            : pendingForegroundRewardsRef.current.find((reward) => reward.bugId === bugId) ?? null;
           setPendingForegroundRewards((queue) => {
-            const next = missedReward ? queue.filter((reward) => reward.id !== missedReward.id) : queue.filter((reward) => reward.bugId !== bugId);
+            if (!missedReward) return queue;
+            const next = [...queue.filter((reward) => reward.id !== missedReward.id), missedReward];
             pendingForegroundRewardsRef.current = next;
             return next;
           });
@@ -1639,6 +1800,11 @@ function AppContent() {
         <BugDexUnlockModal drop={bugDexDrop} busy={bugDexClaiming} onClose={closeBugDexDrop} />
         <DisplayNameModal user={user} visible={Boolean(user && user.nameSet !== true)} onSave={handleDisplayNameSave} />
         <HelpTourOverlay visible={helpVisible && user.nameSet === true} onFinish={finishHelpTour} onNavigate={navigateHelp} />
+        <ActiveEventAnnouncementModal
+          announcement={helpVisible ? null : activeEventAnnouncement}
+          onClose={() => finishActiveEventAnnouncement(false)}
+          onOpen={() => finishActiveEventAnnouncement(true)}
+        />
         <ChangelogModal version={changelogVersion} onClose={closeChangelog} />
         <BugSplatBonusOverlay visible={splatBonusVisible} onSkip={() => setSplatBonusVisible(false)} />
         <AppOverlayHost
@@ -1654,7 +1820,7 @@ function AppContent() {
               }}
               onRewardDrop={(drop) => {
                 setAppNavigation((current) => closeOverlay(current));
-                presentBugDexDrop(drop, true, true);
+                setTimeout(() => showBugDexDrop(drop), 0);
               }}
               onUserUpdated={setUser}
             />
@@ -1744,6 +1910,11 @@ function radarBugIdFromUrl(url: string | null): BugArtId | null {
   if (!match) return null;
   const bugId = decodeURIComponent(match[1]);
   return allBugArtIds.includes(bugId as BugArtId) ? bugId as BugArtId : null;
+}
+
+function radarStackClaimFromUrl(url: string | null): boolean {
+  if (!url?.startsWith("bugbaas://radar")) return false;
+  return /[?&]claimAll=1(?:&|$)/.test(url);
 }
 
 const styles = StyleSheet.create({

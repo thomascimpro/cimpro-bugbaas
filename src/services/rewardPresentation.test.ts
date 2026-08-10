@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { shouldPresentBugDexDropImmediately, shouldPresentPointDropAsForegroundCatch, shouldShowRewardSpin } from "./rewardPresentation.ts";
 
-test("daily mission claim rewards use the roaming foreground catch first", () => {
+test("point rewards never pretend to be a BugDex catch", () => {
   assert.equal(shouldPresentBugDexDropImmediately("daily_mission_bonus"), false);
-  assert.equal(shouldPresentPointDropAsForegroundCatch("daily_mission_bonus"), true);
+  assert.equal(shouldPresentPointDropAsForegroundCatch("daily_mission_bonus"), false);
   assert.equal(shouldPresentPointDropAsForegroundCatch("weekly_mission"), false);
 });
 
@@ -13,8 +13,8 @@ test("ordinary activity drops keep the roaming catch presentation", () => {
   assert.equal(shouldPresentBugDexDropImmediately("bug_reported"), false);
 });
 
-test("confirmed real bug scans show their BugDex receipt immediately", () => {
-  assert.equal(shouldPresentBugDexDropImmediately("real_bug_scan"), true);
+test("confirmed real bug scans also use the foreground catch before their receipt", () => {
+  assert.equal(shouldPresentBugDexDropImmediately("real_bug_scan"), false);
 });
 
 test("every reward goes straight to the source-labelled discovery screen", () => {

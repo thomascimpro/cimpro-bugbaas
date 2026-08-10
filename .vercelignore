@@ -15,6 +15,7 @@ bugbaas-hd-batch-1-contact.png
 firebase
 release
 assets/Kenney assets
+assets/bugdex
 assets/animated/23 Steampunk Mechanical Butterflies
 assets/animated/Animated insect enemy assets
 assets/animated/Animated insect enemy assets.zip
@@ -27,6 +28,17 @@ assets/buddy/kenney/extracted/ui-audio
 assets/buddy/kenney/extracted/ui-pack-rpg-expansion
 dist
 dist-*
+output
+.chrome-local-*
+.playwright-cli
+.superpowers
+Tempbugbaas-*
+*.pid
+api-check.json
+api-release-check.json
+*-bundle.js
+*-index.html
+root-check*.html
 api/*.test.js
 *.apk
 *.aab

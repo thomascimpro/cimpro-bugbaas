@@ -46,6 +46,12 @@ export function WorldBiomeHero({
   const routeProgress = region.nextRequirement
     ? Math.min(100, Math.round((region.nextRequirement.current / Math.max(1, region.nextRequirement.target)) * 100))
     : 100;
+  const routeGoal = region.nextRequirement?.kind
+    ? t(`world.region.next.${region.nextRequirement.kind}`, {
+        current: region.nextRequirement.current,
+        target: region.nextRequirement.target
+      })
+    : t("world.region.repeat");
   const movementModel = movementGoalModel(todayKm, walkGoalKm);
   const movementProgress = Math.round(movementModel.progress * 100);
 
@@ -79,7 +85,8 @@ export function WorldBiomeHero({
             <View>
               <Text style={styles.routeKicker}>{region.tier >= 5 ? t("world.region.master") : t("world.region.level", { tier: region.tier })}</Text>
               <Text style={styles.routeMeta}>{t("map.findings", { count: region.verifiedObservations })}</Text>
-              {region.tier >= 5 ? <Text style={styles.masterHint}>{t("world.region.repeat")}</Text> : null}
+              <Text numberOfLines={2} style={styles.routeGoal}>{routeGoal}</Text>
+              {region.tier < 5 ? <Text numberOfLines={1} style={styles.routeOutcome}>{t("world.region.outcome")}</Text> : null}
             </View>
             <View style={styles.movementChip}>
               <Text style={styles.movementValue}>{movementModel.currentLabel}/{movementModel.goalLabel}</Text>
@@ -234,7 +241,8 @@ const styles = StyleSheet.create({
   routeHeader: { alignItems: "flex-end", flexDirection: "row", justifyContent: "space-between" },
   routeKicker: { color: gameTheme.colors.accentStrong, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
   routeMeta: { color: "#e1ece6", fontSize: 8, fontWeight: "800", marginTop: 2 },
-  masterHint: { color: "#f7e8a2", fontSize: 7, fontWeight: "800", marginTop: 2, maxWidth: 210 },
+  routeGoal: { color: "#f7f5e9", fontSize: 7.5, fontWeight: "800", lineHeight: 10, marginTop: 3, maxWidth: 235 },
+  routeOutcome: { color: "#f7e8a2", fontSize: 6.8, fontWeight: "800", marginTop: 2, maxWidth: 235 },
   movementChip: { alignItems: "flex-end", backgroundColor: "rgba(5,23,17,0.80)", borderColor: "rgba(255,255,255,0.18)", borderRadius: 12, borderWidth: 1, paddingHorizontal: 9, paddingVertical: 6 },
   movementValue: { color: "#ffffff", fontSize: 10, fontWeight: "900" },
   movementLabel: { color: gameTheme.colors.textMuted, fontSize: 6.5, fontWeight: "900", letterSpacing: 0.6, marginTop: 1 },

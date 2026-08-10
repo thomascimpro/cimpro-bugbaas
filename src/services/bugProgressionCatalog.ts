@@ -47,8 +47,12 @@ export const legacyRewardSourcePolicies = Object.freeze({
   solo_boss_common: "preserve_then_targeted_reward",
   solo_boss_rare: "preserve_then_targeted_reward",
   solo_campaign_clear: "preserve_then_targeted_reward",
+  duel_season: "preserve_then_targeted_reward",
   duel_win: "preserve_then_targeted_reward",
+  movement_radar: "preserve_then_targeted_reward",
+  rank_unlock: "preserve_then_targeted_reward",
   rank_up: "preserve_then_targeted_reward",
+  starter_boost: "preserve_then_targeted_reward",
   buddy_common: "preserve_then_targeted_reward",
   buddy_rare: "preserve_then_targeted_reward",
   buddy_epic: "preserve_then_targeted_reward",
@@ -57,6 +61,8 @@ export const legacyRewardSourcePolicies = Object.freeze({
   museum_reward: "preserve_then_targeted_reward",
   research_encounter: "preserve_then_targeted_reward",
   weekly_field_spotlight: "preserve_then_targeted_reward",
+  weekly_scan_contest: "preserve_then_targeted_reward",
+  swarm_event: "preserve_then_targeted_reward",
   combine: "preserve_then_directed_synthesis"
 } satisfies Record<string, LegacyRewardTransition>);
 
@@ -278,6 +284,7 @@ function acquisitionFor(entry: BugDexEntry): Pick<BugProgressionDefinition, "acq
   const eventPoolId = eventPools.get(entry.id);
   if (eventPoolId) return { acquisition: "event", eventPoolId };
 
+  if (entry.unlockMode === "drop") return { acquisition: "field" };
   if (fieldBugIds.has(entry.id)) return { acquisition: "field" };
   return { acquisition: "research", researchTier: researchTierForRarity(entry.rarity) };
 }

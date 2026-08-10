@@ -114,12 +114,13 @@ test("swarm result auto-claims once and shows reward feedback", () => {
   assert.match(swarmScreenSource, /swarm\.reward\.received/);
 });
 
-test("completed swarm result reveals the awarded eventpool bug", () => {
-  assert.match(swarmScreenSource, /import \{ BugArtImage \}/);
+test("completed swarm result queues the awarded eventpool bug behind the foreground catch", () => {
   assert.match(swarmScreenSource, /entryByBugId/);
-  assert.match(swarmScreenSource, /bugDexEntryName/);
+  assert.match(swarmScreenSource, /listBugDexInventory/);
+  assert.match(swarmScreenSource, /source: "swarm_event"/);
   assert.match(swarmScreenSource, /rewardReveal\?\.awardedBugId/);
-  assert.match(swarmScreenSource, /<BugArtImage bugId=\{rewardReveal\.awardedBugId\}/);
+  assert.match(swarmScreenSource, /onRewardDrop\?\.\(pendingBugDrop\)/);
+  assert.doesNotMatch(swarmScreenSource, /<BugArtImage bugId=\{rewardReveal\.awardedBugId\}/);
 });
 
 test("swarm boss art stays fully visible on small screens", () => {

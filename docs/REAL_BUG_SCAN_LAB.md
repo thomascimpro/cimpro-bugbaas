@@ -48,7 +48,7 @@ Lokaal in `.env.real-bug-scan.local`:
 
 ```dotenv
 OPENAI_API_KEY=<server-only key>
-OPENAI_BUG_SCAN_MODEL=gpt-5-mini
+OPENAI_BUG_SCAN_MODEL=gpt-5.6-luna
 FIREBASE_API_KEY=<BugBaas Firebase web API key>
 FIREBASE_PROJECT_ID=thomascimpro-6266f
 BUG_SCAN_ALLOWED_ORIGINS=http://localhost:8081,http://localhost:19006

@@ -6,7 +6,6 @@ import { CrownGlow } from "../components/CrownGlow";
 import { CrownUpgradeModal } from "../components/CrownUpgradeModal";
 import { BugJarArt } from "../components/BugJarArt";
 import { CharacterAvatarImage } from "../components/CharacterAvatarImage";
-import { BugDexUnlockModal } from "../components/BugDexUnlockModal";
 import {
   BugDexCategoryEmblem,
   LockedBugSilhouette,
@@ -39,6 +38,7 @@ type Props = {
   embedded?: boolean;
   openTradeRequest?: number;
   onOpenMuseum?: () => void;
+  onRewardDrop?: (drop: BugDexDropResult) => void;
   onUserUpdated?: (user: User) => void;
   user: User;
   onBack: () => void;
@@ -151,7 +151,7 @@ function RarityUpgradeRoute({ rarity, targetRarity, label }: { rarity: BugDexRar
   );
 }
 
-export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMuseum, onUserUpdated, user, onBack }: Props) {
+export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMuseum, onRewardDrop, onUserUpdated, user, onBack }: Props) {
   const { t, tr } = useI18n();
   const layout = useResponsiveLayout();
   const reducedMotion = useReducedMotion();
@@ -166,7 +166,6 @@ export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMus
   const [recipientInventory, setRecipientInventory] = useState<BugDexInventoryItem[]>([]);
   const [recipientUnlockHistory, setRecipientUnlockHistory] = useState<BugDexUnlock[]>([]);
   const [recipientUnlocksLoaded, setRecipientUnlocksLoaded] = useState(false);
-  const [drop, setDrop] = useState<BugDexDropResult | null>(null);
   const [completedTrade, setCompletedTrade] = useState<TradeRequest | null>(null);
   const [closedCompletedTradeIds, setClosedCompletedTradeIds] = useState<string[]>([]);
   const [closedCompletedTradeIdsLoaded, setClosedCompletedTradeIdsLoaded] = useState(false);
@@ -494,7 +493,8 @@ export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMus
     setUpgradeError("");
     try {
       const result = await combineDifferentBugDexUpgrade(user, bugIds);
-      setDrop(result);
+      setWorkspaceOpen(false);
+      setTimeout(() => onRewardDrop?.(result), 0);
       setUpgradeSelections((current) => ({ ...current, [rarity]: [] }));
       await Promise.all([refreshInventory(), refreshDailyUpgradeUsage()]);
     } catch (error) {
@@ -516,7 +516,8 @@ export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMus
     setUpgradeError("");
     try {
       const result = await combineBugDexDuplicates(user, bugId);
-      setDrop(result);
+      setWorkspaceOpen(false);
+      setTimeout(() => onRewardDrop?.(result), 0);
       setUpgradeSelections((current) => ({ ...current, [rarity]: [] }));
       await Promise.all([refreshInventory(), refreshDailyUpgradeUsage()]);
     } catch (error) {
@@ -852,9 +853,13 @@ export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMus
       comment: "bugdex.source.teamwork",
       daily_login: "bugdex.source.daily",
       duel_reward: "bugdex.source.duel",
+      duel_season: "bugdex.source.duel",
+      duel_win: "bugdex.source.duel",
+      movement_radar: "bugdex.source.exploration",
       rank_up: "bugdex.source.rank",
       rank_unlock: "bugdex.source.rank",
       real_bug_scan: "bugdex.source.scan",
+      starter_boost: "bugdex.source.daily",
       status_update: "bugdex.source.teamwork",
       upvote_given: "bugdex.source.teamwork",
       walking: "bugdex.source.exploration"
@@ -1786,7 +1791,6 @@ export function BugDexScreen({ embedded = false, openTradeRequest = 0, onOpenMus
       </Modal>
       {renderBugMasteryModal()}
       {crownUpgrade ? <CrownUpgradeModal bugId={crownUpgrade.bugId} rank={crownUpgrade.rank} onClose={() => setCrownUpgrade(null)} /> : null}
-      <BugDexUnlockModal drop={drop} onClose={() => setDrop(null)} />
       <TradeAnimationModal currentUser={user} trade={completedTrade} onClose={closeTradeResult} />
     </View>
   );

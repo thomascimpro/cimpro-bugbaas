@@ -21,6 +21,20 @@ const identification = {
   fact: "Mieren communiceren met geursporen.",
   factEn: "Ants communicate using scent trails.",
   factFr: "Les fourmis communiquent avec des pistes odorantes.",
+  quizQuestion: "Waarvoor gebruiken mieren geursporen?",
+  quizQuestionEn: "What do ants use scent trails for?",
+  quizQuestionFr: "À quoi servent les pistes odorantes des fourmis ?",
+  quizAnswer: "Om elkaar de weg te wijzen",
+  quizAnswerEn: "To show each other the way",
+  quizAnswerFr: "Pour se montrer le chemin",
+  quizWrongAnswers: ["Om te vliegen", "Om licht te maken", "Om te zwemmen"],
+  quizWrongAnswersEn: ["To fly", "To make light", "To swim"],
+  quizWrongAnswersFr: ["Pour voler", "Pour faire de la lumière", "Pour nager"],
+  quizExplanation: "Mieren gebruiken geursporen om nestgenoten naar voedsel en het nest te leiden.",
+  quizExplanationEn: "Ants use scent trails to guide nestmates to food and the nest.",
+  quizExplanationFr: "Les fourmis utilisent des pistes odorantes pour guider leur colonie.",
+  photoContestScore: 88,
+  photoContestReason: "De mier is scherp en de natuurlijke actie is duidelijk zichtbaar.",
   confidence: 0.91,
   reason: "Zes poten en geknikte antennes.",
   reasonEn: "Six legs and elbowed antennae.",
@@ -52,8 +66,9 @@ test("sends the image and returns structured identification", async () => {
   assert.equal(requestBodies.length, 1);
   assert.equal(requestBody.model, "gpt-test");
   assert.equal(requestBody.max_output_tokens, 6000);
-  assert.equal(requestBody.reasoning.effort, "medium");
+  assert.equal(requestBody.reasoning.effort, "max");
   assert.equal(requestBody.input[0].content[1].image_url, "data:image/jpeg;base64,YWJjZA==");
+  assert.equal(requestBody.input[0].content[1].detail, "original");
   assert.match(requestBody.input[0].content[0].text, /screenshots, photos of screens or prints, toys, and clearly AI-generated or manipulated images/i);
   assert.match(requestBody.input[0].content[0].text, /still fill commonName and scientificName/i);
   assert.match(requestBody.input[0].content[0].text, /not given the BugDex catalog/i);
@@ -61,11 +76,20 @@ test("sends the image and returns structured identification", async () => {
   assert.match(requestBody.input[0].content[0].text, /matchedBugId to null/i);
   assert.doesNotMatch(requestBody.input[0].content[0].text, /lieveheersbeestje|^mier$/im);
   assert.match(requestBody.input[0].content[0].text, /at most 140 characters per field/i);
-  assert.match(requestBody.input[0].content[0].text, /confidence of 0\.70 or higher is enough/i);
+  assert.match(requestBody.input[0].content[0].text, /two species-diagnostic traits/i);
+  assert.match(requestBody.input[0].content[0].text, /never inflate confidence to cross an acceptance threshold/i);
   assert.match(requestBody.input[0].content[0].text, /normal phone photo, crop, cluttered or plain background, mild motion blur/i);
   assert.match(requestBody.input[0].content[0].text, /body shape, wing structure, antennae, legs, markings, scale, and habitat/i);
+  assert.match(requestBody.input[0].content[0].text, /never ask for its name/i);
+  assert.match(requestBody.input[0].content[0].text, /diet, habitat, lifecycle, body, or behavior/i);
   assert.ok(requestBody.text.format.schema.required.includes("factFr"));
+  assert.ok(requestBody.text.format.schema.required.includes("quizQuestionFr"));
+  assert.ok(requestBody.text.format.schema.required.includes("quizWrongAnswers"));
   assert.ok(requestBody.text.format.schema.required.includes("reasonFr"));
+  assert.ok(requestBody.text.format.schema.required.includes("photoContestScore"));
+  assert.ok(requestBody.text.format.schema.required.includes("photoContestReason"));
+  assert.match(requestBody.input[0].content[0].text, /sharpness and detail/i);
+  assert.match(requestBody.input[0].content[0].text, /fun or striking natural moment/i);
   assert.equal(requestBody.text.format.type, "json_schema");
   assert.ok(requestBody.text.format.schema.required.includes("catalogStatus"));
   assert.ok(requestBody.text.format.schema.required.includes("captureAuthenticity"));

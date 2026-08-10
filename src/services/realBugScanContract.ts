@@ -16,6 +16,20 @@ export type RealBugIdentification = {
   fact: string;
   factEn: string;
   factFr: string;
+  quizQuestion?: string;
+  quizQuestionEn?: string;
+  quizQuestionFr?: string;
+  quizAnswer?: string;
+  quizAnswerEn?: string;
+  quizAnswerFr?: string;
+  quizWrongAnswers?: string[];
+  quizWrongAnswersEn?: string[];
+  quizWrongAnswersFr?: string[];
+  quizExplanation?: string;
+  quizExplanationEn?: string;
+  quizExplanationFr?: string;
+  photoContestScore?: number;
+  photoContestReason?: string;
   confidence: number;
   captureAuthenticity?: "live" | "reproduction" | "uncertain";
   authenticityReason?: string;
@@ -88,6 +102,10 @@ function normalizeIdentification(value: unknown): RealBugIdentification {
   const commonNameFr = typeof value.commonNameFr === "string" ? value.commonNameFr.trim() : value.commonName.trim();
   const factEn = typeof value.factEn === "string" ? value.factEn.trim() : fact;
   const factFr = typeof value.factFr === "string" ? value.factFr.trim() : fact;
+  const optionalString = (candidate: unknown) => typeof candidate === "string" && candidate.trim() ? candidate.trim() : undefined;
+  const optionalOptions = (candidate: unknown) => Array.isArray(candidate)
+    ? candidate.filter(isNonEmptyString).map((item) => item.trim()).slice(0, 3)
+    : undefined;
   if (typeof value.confidence !== "number" || value.confidence < 0 || value.confidence > 1) invalidResponse();
   if (!isNonEmptyString(value.reason)) invalidResponse();
   const reasonEn = typeof value.reasonEn === "string" ? value.reasonEn.trim() : value.reason.trim();
@@ -96,6 +114,9 @@ function normalizeIdentification(value: unknown): RealBugIdentification {
     ? value.captureAuthenticity
     : undefined;
   const authenticityReason = typeof value.authenticityReason === "string" ? value.authenticityReason.trim() : undefined;
+  const photoContestScore = typeof value.photoContestScore === "number" && Number.isFinite(value.photoContestScore)
+    ? Math.round(Math.min(100, Math.max(0, value.photoContestScore)))
+    : undefined;
   return {
     bugId,
     commonName: value.commonName.trim(),
@@ -105,6 +126,20 @@ function normalizeIdentification(value: unknown): RealBugIdentification {
     fact,
     factEn,
     factFr,
+    ...(optionalString(value.quizQuestion) ? { quizQuestion: optionalString(value.quizQuestion) } : {}),
+    ...(optionalString(value.quizQuestionEn) ? { quizQuestionEn: optionalString(value.quizQuestionEn) } : {}),
+    ...(optionalString(value.quizQuestionFr) ? { quizQuestionFr: optionalString(value.quizQuestionFr) } : {}),
+    ...(optionalString(value.quizAnswer) ? { quizAnswer: optionalString(value.quizAnswer) } : {}),
+    ...(optionalString(value.quizAnswerEn) ? { quizAnswerEn: optionalString(value.quizAnswerEn) } : {}),
+    ...(optionalString(value.quizAnswerFr) ? { quizAnswerFr: optionalString(value.quizAnswerFr) } : {}),
+    ...(optionalOptions(value.quizWrongAnswers)?.length === 3 ? { quizWrongAnswers: optionalOptions(value.quizWrongAnswers) } : {}),
+    ...(optionalOptions(value.quizWrongAnswersEn)?.length === 3 ? { quizWrongAnswersEn: optionalOptions(value.quizWrongAnswersEn) } : {}),
+    ...(optionalOptions(value.quizWrongAnswersFr)?.length === 3 ? { quizWrongAnswersFr: optionalOptions(value.quizWrongAnswersFr) } : {}),
+    ...(optionalString(value.quizExplanation) ? { quizExplanation: optionalString(value.quizExplanation) } : {}),
+    ...(optionalString(value.quizExplanationEn) ? { quizExplanationEn: optionalString(value.quizExplanationEn) } : {}),
+    ...(optionalString(value.quizExplanationFr) ? { quizExplanationFr: optionalString(value.quizExplanationFr) } : {}),
+    ...(photoContestScore !== undefined ? { photoContestScore } : {}),
+    ...(optionalString(value.photoContestReason) ? { photoContestReason: optionalString(value.photoContestReason)?.slice(0, 180) } : {}),
     confidence: value.confidence,
     ...(captureAuthenticity ? { captureAuthenticity } : {}),
     ...(authenticityReason !== undefined ? { authenticityReason } : {}),

@@ -18,11 +18,30 @@ test("scan capture hero uses the responsive field-scanner composition", () => {
   assert.match(source, /Animated\.spring\(stageReveal/);
 });
 
-test("scan keeps gallery reachable and gives the live camera a phone-safe frame", () => {
-  assert.match(source, /scrollEnabled=\{!cameraOpen \|\| scanStageAllowsPageScroll\(scanStage\)\}/);
-  assert.match(source, /cameraCard:\s*\{[\s\S]*?width: "100%"/);
-  assert.match(source, /cameraFrame:\s*\{[^}]*aspectRatio: 1\.1/s);
-  assert.match(source, /cameraFrameTablet:\s*\{[^}]*aspectRatio: 4 \/ 3/s);
+test("scan opens the phone camera first and keeps a fullscreen fallback", () => {
+  assert.match(source, /ImagePicker\.launchCameraAsync/);
+  assert.match(source, /ImagePicker\.getPendingResultAsync/);
+  assert.match(source, /quality: 1/);
+  assert.match(source, /presentationStyle="fullScreen"/);
+  assert.match(source, /visible=\{cameraOpen\}/);
+  assert.match(source, /styles\.cameraModal/);
+  assert.match(source, /styles\.cameraViewport/);
+  assert.match(source, /flash=\{cameraFlash\}/);
+  assert.match(source, /selectedLens=\{cameraLens\}/);
+  assert.match(source, /responsiveOrientationWhenOrientationLocked/);
+  assert.match(source, /nextRealBugFlashMode/);
+  assert.match(source, /realBugLensLabel/);
+  assert.match(source, /onTouchMove=\{moveCameraPinch\}/);
+  assert.doesNotMatch(source, /styles\.zoomButton/);
+});
+
+test("scan preserves the original photo until the final crop and compression", () => {
+  assert.match(source, /sourceUri: normalized\.uri/);
+  assert.match(source, /prepareSubmissionPhoto\(sourceUri, sourceWidth, sourceHeight, crop\)/);
+  assert.match(source, /fallbackRealBugPhotoPlan\(width, height\)/);
+  assert.match(source, /emergencyRealBugPhotoPlan\(width, height\)/);
+  assert.doesNotMatch(source, /fallbackRealBugPhotoPlan\(primary\.width/);
+  assert.doesNotMatch(source, /emergencyRealBugPhotoPlan\(prepared\.width/);
 });
 
 test("review keeps its controls above the fixed phone navigation", () => {
@@ -43,6 +62,9 @@ test("phone scan actions keep accessible hit targets above the decorative hero",
 test("scan professor offers exactly one rewarded question", () => {
   assert.doesNotMatch(source, /nextProfessorQuestion/);
   assert.doesNotMatch(source, /professor\.nextQuestionButton/);
+  assert.doesNotMatch(source, /professorQuizOpen/);
+  assert.match(source, /localized\?\.fact && professorQuizSelection/);
+  assert.doesNotMatch(source, /<Text style=\{styles\.professorFact\}>\{professor\.fact\}/);
 });
 
 test("confirmed scan rewards are handed to the BugDex unlock presentation", () => {
@@ -51,9 +73,12 @@ test("confirmed scan rewards are handed to the BugDex unlock presentation", () =
 });
 
 test("every successful scan requires an automatic private fieldnote before its reward", () => {
-  assert.match(source, /await saveAutomaticJournal\(nextResult, submission\.drop \?\? null\)/);
+  assert.match(source, /void prepareJournalLocation\(\)/);
   assert.match(source, /const locationResult = await requestPrivateSightingLocation\(\)/);
-  assert.match(source, /await saveFieldJournalEntry\(user, nextResult, habitat, behavior, locationResult\.location\)/);
-  assert.match(source, /Er is geen overslaanknop/);
+  assert.match(source, /!journalLocation \|\| !habitat \|\| !behavior/);
+  assert.match(source, /saveAutomaticJournal\(result, pendingScanDrop, habitat, behavior, journalLocation, contestReviewThumbnail\)/);
+  assert.match(source, /saveFieldJournalEntry\(user, nextResult, selectedHabitat, selectedBehavior, location, reviewThumbnailDataUrl\)/);
+  assert.match(source, /Kies 1 habitat en 1 gedrag/);
+  assert.match(source, /disabled=\{journalRequired\} onPress=\{onBack\}/);
   assert.doesNotMatch(source, /accessibilityRole="checkbox"/);
 });

@@ -63,9 +63,8 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
 
     val now = Calendar.getInstance()
     if (shouldSpawnOnRoll(context, now)) {
-      val bug = pickRadarBug()
-      appendActiveRadarBugs(context, listOf(bug.id))
-      for (widgetId in widgetIds) updateWidget(context, manager, widgetId, bug, 1)
+      val reward = appendActiveRadarBugs(context, listOf(movementRewardToken)).firstOrNull() ?: return
+      for (widgetId in widgetIds) updateWidget(context, manager, widgetId, reward, 1)
       noteSignal(context, now)
       return
     }
@@ -74,18 +73,11 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
   }
 
   private fun handleOpenBug(context: Context) {
-    val bugs = activeRadarBugs(context)
-    val bug = bugs.firstOrNull() ?: return
-    val remainingBugs = popActiveRadarBug(context)
-
-    val manager = AppWidgetManager.getInstance(context)
-    val widgetIds = manager.getAppWidgetIds(ComponentName(context, BugRadarWidgetProvider::class.java))
-    for (widgetId in widgetIds) updateWidget(context, manager, widgetId, remainingBugs.firstOrNull(), remainingBugs.size)
-    if (remainingBugs.isEmpty()) scheduleNextSignal(context)
+    if (activeRadarBugs(context).isEmpty()) return
 
     val intent = Intent(context, MainActivity::class.java).apply {
       action = Intent.ACTION_VIEW
-      data = Uri.parse("bugbaas://radar?bugId=${Uri.encode(bug.id)}")
+      data = Uri.parse("bugbaas://radar?claimAll=1")
       flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
     }
     context.startActivity(intent)
@@ -264,11 +256,6 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     return nextIds.mapNotNull { findRadarBug(it) }
   }
 
-  private fun popActiveRadarBug(context: Context): List<RadarBug> {
-    val nextIds = writeActiveRadarBugIds(context, readActiveRadarBugIds(context).drop(1))
-    return nextIds.mapNotNull { findRadarBug(it) }
-  }
-
   private fun noteSignal(context: Context, now: Calendar) {
     val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
     val today = dayId(now)
@@ -289,14 +276,8 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     return day != Calendar.SATURDAY && day != Calendar.SUNDAY
   }
 
-  private fun pickRadarBug(): RadarBug {
-    val rarity = pickRarity()
-    val candidates = radarBugs.filter { it.rarity == rarity }
-    return candidates.randomOrNull() ?: radarBugs.random()
-  }
-
   private fun findRadarBug(id: String): RadarBug? {
-    return radarBugs.firstOrNull { it.id == id }
+    return if (id == movementRewardToken) movementRewardBug else radarBugs.firstOrNull { it.id == id }
   }
 
   private fun rarityAuraRes(rarity: String): Int? {
@@ -304,16 +285,6 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
       "Episch" -> R.drawable.bug_radar_aura_epic_art
       "Legendarisch" -> R.drawable.bug_radar_aura_legendary_art
       else -> null
-    }
-  }
-
-  private fun pickRarity(): String {
-    val roll = Random.nextInt(100)
-    return when {
-      roll < 71 -> "Gewoon"
-      roll < 95 -> "Zeldzaam"
-      roll < 99 -> "Episch"
-      else -> "Legendarisch"
     }
   }
 
@@ -334,7 +305,8 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     private const val prefActiveBugId = "active_bug_id"
     private const val prefActiveBugIds = "active_bug_ids"
     private const val activeBugIdSeparator = "|"
-    private const val maxActiveRadarBugs = 5
+    private const val maxActiveRadarBugs = 10
+    private const val movementRewardToken = "__movement_reward__"
     private const val prefCount = "signal_count"
     private const val prefDay = "signal_day"
     private const val prefLastSignalAt = "last_signal_at"
@@ -349,7 +321,7 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
 
     fun enqueueRadarBugs(context: Context, bugIds: List<String>): Int {
       val before = readActiveRadarBugIds(context)
-      val validBugIds = bugIds.filter { id -> radarBugs.any { it.id == id } }
+      val validBugIds = bugIds.filter(::isValidRadarQueueId)
       val after = writeActiveRadarBugIds(context, before + validBugIds)
       BugRadarWidgetProvider().updateAllWidgets(context)
       return maxOf(0, after.size - before.size)
@@ -364,6 +336,7 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
       if (bugIds.isEmpty()) return emptyList()
       writeActiveRadarBugIds(context, emptyList())
       BugRadarWidgetProvider().updateAllWidgets(context)
+      BugRadarWidgetProvider().scheduleNextSignal(context)
       return bugIds
     }
 
@@ -377,23 +350,11 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
     }
 
     fun pickRandomRadarBugIds(count: Int): List<String> {
-      return List(maxOf(0, count)) { pickCompanionRadarBug().id }
+      return List(maxOf(0, count)) { movementRewardToken }
     }
 
-    private fun pickCompanionRadarBug(): RadarBug {
-      val rarity = pickCompanionRarity()
-      val candidates = radarBugs.filter { it.rarity == rarity }
-      return candidates.randomOrNull() ?: radarBugs.random()
-    }
-
-    private fun pickCompanionRarity(): String {
-      val roll = Random.nextInt(100)
-      return when {
-        roll < 71 -> "Gewoon"
-        roll < 95 -> "Zeldzaam"
-        roll < 99 -> "Episch"
-        else -> "Legendarisch"
-      }
+    private fun isValidRadarQueueId(id: String): Boolean {
+      return id == movementRewardToken || radarBugs.any { it.id == id }
     }
 
     private fun readActiveRadarBugIds(context: Context): List<String> {
@@ -406,13 +367,13 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
       }
       return ids
         .map { it.trim() }
-        .filter { id -> id.isNotEmpty() && radarBugs.any { it.id == id } }
+        .filter { id -> id.isNotEmpty() && isValidRadarQueueId(id) }
         .take(maxActiveRadarBugs)
     }
 
     private fun writeActiveRadarBugIds(context: Context, bugIds: List<String>): List<String> {
       val cleanIds = bugIds
-        .filter { id -> radarBugs.any { it.id == id } }
+        .filter(::isValidRadarQueueId)
         .take(maxActiveRadarBugs)
       context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         .edit()
@@ -421,6 +382,13 @@ class BugRadarWidgetProvider : AppWidgetProvider() {
         .apply()
       return cleanIds
     }
+
+    private val movementRewardBug = RadarBug(
+      movementRewardToken,
+      "BugDex-beloning",
+      "",
+      R.drawable.bug_radar_request_signal_hd
+    )
 
     private val radarBugs = listOf(
     RadarBug("zilvervisje", "Zilvervisje", "Gewoon", R.drawable.bugdex_zilvervisje),

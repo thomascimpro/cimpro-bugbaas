@@ -41,6 +41,7 @@ import { bugDexEntryName, rarityLabel, useI18n } from "../services/i18n";
 import { bugCrownPowerMultiplierForSquad, completedPveBattleBugIds, pveDamageWithCrown, stablePveBattleEventId } from "../services/bugCrownService";
 import { dismissPresentedNotificationsForTarget } from "../services/notificationService";
 import { presenceLabel } from "../services/presenceService";
+import { clearRankedDuelSession, loadRankedDuelSession, saveRankedDuelSession, type RankedDuelSession } from "../services/rankedDuelSession";
 import { masteryRewardForActivity } from "../services/masteryRewardModel";
 import { arcadeModeUnlockTarget } from "../services/playUnlockModel";
 import { BugDexRarity, bugDexEntries } from "../services/pointsService";
@@ -377,6 +378,8 @@ export function BugSmashDuelScreen({ user, embedded = false, workspaceTab = "due
   const [caughtBugIds, setCaughtBugIds] = useState<string[]>([]);
   const [helperImpacts, setHelperImpacts] = useState<HelperImpact[]>([]);
   const [localStartAtByDuelId, setLocalStartAtByDuelId] = useState<Record<string, string>>({});
+  const [restoredRankedSession, setRestoredRankedSession] = useState<RankedDuelSession | null>(null);
+  const [rankedDuelSessionLoaded, setRankedDuelSessionLoaded] = useState(false);
   const [localSubmittedScores, setLocalSubmittedScores] = useState<Record<string, BugSmashDuelScore>>({});
   const [acknowledgedWaitingDuelIds, setAcknowledgedWaitingDuelIds] = useState<Set<string>>(new Set());
   const [acknowledgedWaitingLoaded, setAcknowledgedWaitingLoaded] = useState(false);
@@ -603,6 +606,26 @@ export function BugSmashDuelScreen({ user, embedded = false, workspaceTab = "due
   }, [user.uid]);
 
   useEffect(() => {
+    let active = true;
+    setRankedDuelSessionLoaded(false);
+    setRestoredRankedSession(null);
+    void loadRankedDuelSession(user.uid).then((session) => {
+      if (!active) return;
+      if (session && (!initialDuelId || initialDuelId === session.duelId)) {
+        setRestoredRankedSession(session);
+        setActiveDuelId((current) => current || session.duelId);
+        setLocalStartAtByDuelId((current) => ({ ...current, [session.duelId]: session.startAt }));
+      }
+      setRankedDuelSessionLoaded(true);
+    }).catch(() => {
+      if (active) setRankedDuelSessionLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [initialDuelId, user.uid]);
+
+  useEffect(() => {
     if (!acknowledgedWaitingLoaded) return () => undefined;
     let active = true;
     void Promise.all([listUsersLight(), listBugSmashDuels(user), listBugDexInventory(user)]).then(([nextUsers, nextDuels, nextInventory]) => {
@@ -739,6 +762,26 @@ export function BugSmashDuelScreen({ user, embedded = false, workspaceTab = "due
   }, [activeDuel?.id, trainingDuel?.id]);
 
   useEffect(() => {
+    if (!restoredRankedSession || !activeDuel || restoredRankedSession.duelId !== activeDuel.id) return;
+    const canResume = isDuelParticipant(activeDuel, user)
+      && (activeDuel.status === "accepted" || (activeDuel.status === "pending" && activeDuel.fromUserId === user.uid))
+      && !activeDuel.scores?.[user.uid];
+    if (!canResume) {
+      setRestoredRankedSession(null);
+      void clearRankedDuelSession(user.uid).catch(() => undefined);
+      return;
+    }
+    scoreRef.current = restoredRankedSession.score;
+    caughtBugIdsRef.current = [...restoredRankedSession.caughtBugIds];
+    hitCountsRef.current = { ...restoredRankedSession.hitCounts };
+    setScore(restoredRankedSession.score);
+    setCaughtBugIds([...restoredRankedSession.caughtBugIds]);
+    setHitCounts({ ...restoredRankedSession.hitCounts });
+    setNow(Date.now());
+    setRestoredRankedSession(null);
+  }, [activeDuel, restoredRankedSession, user]);
+
+  useEffect(() => {
     scoreRef.current = score;
   }, [score]);
 
@@ -795,6 +838,34 @@ export function BugSmashDuelScreen({ user, embedded = false, workspaceTab = "due
   const playableDuel: BugSmashDuel | null = activeDuel && duelCanRun && activeLocalStartAt
     ? { ...activeDuel, startAt: activeLocalStartAt }
     : activeDuel;
+
+  useEffect(() => {
+    if (!rankedDuelSessionLoaded || trainingDuel) return () => undefined;
+    if (!activeDuelId) {
+      if (!restoredRankedSession) void clearRankedDuelSession(user.uid).catch(() => undefined);
+      return () => undefined;
+    }
+    if (!activeDuel) return () => undefined;
+    const canResume = isDuelParticipant(activeDuel, user)
+      && (activeDuel.status === "accepted" || (activeDuel.status === "pending" && activeDuel.fromUserId === user.uid))
+      && !activeDuel.scores?.[user.uid]
+      && !runSubmitted
+      && Boolean(activeLocalStartAt);
+    if (!canResume) {
+      void clearRankedDuelSession(user.uid).catch(() => undefined);
+      return () => undefined;
+    }
+    const saveTimer = setTimeout(() => {
+      void saveRankedDuelSession(user.uid, {
+        duelId: activeDuel.id,
+        startAt: activeLocalStartAt,
+        score,
+        caughtBugIds,
+        hitCounts,
+      }).catch(() => undefined);
+    }, 120);
+    return () => clearTimeout(saveTimer);
+  }, [activeDuel, activeDuelId, activeLocalStartAt, caughtBugIds, hitCounts, rankedDuelSessionLoaded, restoredRankedSession, runSubmitted, score, trainingDuel, user]);
 
   useEffect(() => {
     const runningDuel = trainingDuel ?? activeDuel;

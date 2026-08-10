@@ -62,6 +62,14 @@ test("world screen renders the simplified biome hero without obsolete callbacks"
   assert.doesNotMatch(screenSource, /nextAction=\{nextAction\}/);
 });
 
+test("world region levels explain the next goal, outcome and completed repeat loop", () => {
+  assert.match(heroSource, /region\.nextRequirement\?\.kind/);
+  assert.match(heroSource, /world\.region\.next\./);
+  assert.match(heroSource, /world\.region\.outcome/);
+  assert.match(heroSource, /world\.region\.repeat/);
+  assert.match(heroSource, /styles\.routeGoal/);
+});
+
 test("research is presented as a bug encounter", () => {
   assert.match(researchSource, /import \{ BugArtImage \}/);
   assert.match(researchSource, /styles\.encounterRow/);

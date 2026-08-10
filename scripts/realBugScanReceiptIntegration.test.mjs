@@ -13,11 +13,14 @@ function createReceipt(secret = sharedSecret) {
     uid: "integration-user",
     scanId: "integration-scan",
     status: "matched",
+    thumbnailSha256: "a".repeat(64),
     identification: {
       bugId: "lieveheersbeestje",
       confidence: 0.95,
       commonName: "Lieveheersbeestje",
-      scientificName: "Coccinellidae"
+      scientificName: "Coccinellidae",
+      photoContestScore: 91,
+      photoContestReason: "Scherpe echte foto."
     }
   });
   const [, payload] = receipt.split(".");
@@ -34,6 +37,8 @@ test("Vercel and Firebase accept a v2 receipt when configured with the same secr
 
   assert.equal(sharedClaims?.scanId, "integration-scan");
   assert.equal(firebaseClaims?.scanId, "integration-scan");
+  assert.equal(firebaseClaims?.thumbnailSha256, "a".repeat(64));
+  assert.equal(firebaseClaims?.photoContestScore, 91);
 });
 
 test("a v2 receipt signed with another secret is rejected", () => {

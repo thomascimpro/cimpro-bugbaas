@@ -37,6 +37,12 @@ export type BugDexDropSource =
   | "museum_reward"
   | "research_encounter"
   | "weekly_field_spotlight"
+  | "weekly_scan_contest"
+  | "swarm_event"
+  | "movement_radar"
+  | "duel_season"
+  | "starter_boost"
+  | "rank_unlock"
   | "combine";
 
 export type BugDexDropResult = {
@@ -45,6 +51,7 @@ export type BugDexDropResult = {
   item: BugDexInventoryItem;
   isNew: boolean;
   source: BugDexDropSource;
+  sourceDetail?: string;
   streakDay?: number;
   daysUntilBetterReward?: number;
   updatedUser?: User;
@@ -53,6 +60,7 @@ export type BugDexDropResult = {
   points: number;
   isNew: false;
   source: BugDexDropSource;
+  sourceDetail?: string;
   streakDay?: number;
   daysUntilBetterReward?: number;
   updatedUser?: User;
@@ -65,11 +73,20 @@ const demoUnlocks = new Map<string, Map<string, BugDexUnlock>>();
 const demoEvents = new Set<string>();
 const demoDailyStreaks = new Map<string, number>();
 const inventoryCache = new Map<string, { at: number; items: BugDexInventoryItem[] }>();
+const pendingPointUnlocks = new Map<string, BugDexDropResult[]>();
 const ownInventoryCacheTtlMs = 2 * 60 * 1000;
 const otherInventoryCacheTtlMs = 15 * 60 * 1000;
 
 const dailyStreakLength = 5;
 const upgradeSourceRarities: Array<Exclude<BugDexRarity, "Mythisch">> = ["Gewoon", "Zeldzaam", "Episch", "Legendarisch"];
+
+export const movementRadarRarityWeights: Array<[BugDexRarity, number]> = [
+  ["Gewoon", 70],
+  ["Zeldzaam", 24.4],
+  ["Episch", 4.9],
+  ["Legendarisch", 0.6],
+  ["Mythisch", 0.1]
+];
 
 export type UpgradeRouteId = "Gewoon-Zeldzaam" | "Zeldzaam-Episch" | "Episch-Legendarisch" | "Legendarisch-Mythisch";
 export type DailyUpgradeUsage = Record<UpgradeRouteId, boolean>;
@@ -101,6 +118,12 @@ const dropChances: Record<BugDexDropSource, number> = {
   museum_reward: 1,
   research_encounter: 1,
   weekly_field_spotlight: 1,
+  weekly_scan_contest: 1,
+  swarm_event: 1,
+  movement_radar: 1,
+  duel_season: 1,
+  starter_boost: 1,
+  rank_unlock: 1,
   combine: 1
 };
 
@@ -121,7 +144,7 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   solo_boss_common: [["Gewoon", 100]],
   solo_boss_rare: [["Gewoon", 75], ["Zeldzaam", 24], ["Episch", 1]],
   solo_campaign_clear: [["Gewoon", 75], ["Zeldzaam", 24], ["Episch", 1]],
-  duel_win: [["Gewoon", 71], ["Zeldzaam", 24], ["Episch", 4.5], ["Legendarisch", 0.5]],
+  duel_win: [["Gewoon", 71], ["Zeldzaam", 24], ["Episch", 4.5], ["Legendarisch", 0.4], ["Mythisch", 0.1]],
   rank_up: [["Gewoon", 60], ["Zeldzaam", 32], ["Episch", 7], ["Legendarisch", 1]],
   buddy_common: [["Gewoon", 100]],
   buddy_rare: [["Zeldzaam", 100]],
@@ -131,6 +154,12 @@ const rarityWeights: Record<BugDexDropSource, Array<[BugDexRarity, number]>> = {
   museum_reward: [["Mythisch", 100]],
   research_encounter: [["Gewoon", 100]],
   weekly_field_spotlight: [["Episch", 100]],
+  weekly_scan_contest: [["Legendarisch", 100]],
+  swarm_event: [["Legendarisch", 100]],
+  movement_radar: movementRadarRarityWeights,
+  duel_season: [["Mythisch", 100]],
+  starter_boost: [["Gewoon", 70], ["Zeldzaam", 24.4], ["Episch", 4.9], ["Legendarisch", 0.7]],
+  rank_unlock: [["Gewoon", 60], ["Zeldzaam", 32], ["Episch", 7], ["Legendarisch", 1]],
   combine: [["Zeldzaam", 100]]
 };
 
@@ -247,14 +276,16 @@ export async function syncPointUnlockedBugDex(user: Pick<User, "uid" | "totalPoi
     const inventory = demoInventory.get(user.uid) ?? new Map<string, BugDexInventoryItem>();
     for (const entry of unlockedEntries) {
       if (inventory.has(entry.id)) continue;
-      inventory.set(entry.id, {
+      const item: BugDexInventoryItem = {
         bugId: entry.id,
         count: 1,
         firstUnlockedAt: now,
         lastUnlockedAt: now,
         rarity: entry.rarity,
         sources: ["rank_unlock"]
-      });
+      };
+      inventory.set(entry.id, item);
+      queuePointUnlock(user.uid, { rewardType: "bug", entry, item, isNew: true, source: "rank_unlock" });
       updateDemoUnlock(user.uid, entry, "rank_unlock", now);
     }
     demoInventory.set(user.uid, inventory);
@@ -283,6 +314,20 @@ export async function syncPointUnlockedBugDex(user: Pick<User, "uid" | "totalPoi
   }
   await batch.commit();
   clearBugDexInventoryCache(user.uid);
+  for (const entry of missingEntries) {
+    const item: BugDexInventoryItem = { bugId: entry.id, count: 1, firstUnlockedAt: now, lastUnlockedAt: now, rarity: entry.rarity, sources: ["rank_unlock"] };
+    queuePointUnlock(user.uid, { rewardType: "bug", entry, item, isNew: true, source: "rank_unlock" });
+  }
+}
+
+export function takePendingPointUnlockedBugDex(uid: string): BugDexDropResult[] {
+  const drops = pendingPointUnlocks.get(uid) ?? [];
+  pendingPointUnlocks.delete(uid);
+  return drops;
+}
+
+function queuePointUnlock(uid: string, drop: BugDexDropResult) {
+  pendingPointUnlocks.set(uid, [...(pendingPointUnlocks.get(uid) ?? []), drop]);
 }
 
 export async function countBugDexInventory(userOrUid: Pick<User, "uid"> | string): Promise<number> {

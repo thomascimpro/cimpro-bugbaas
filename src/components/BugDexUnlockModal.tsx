@@ -110,14 +110,21 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
     : "";
   const bugFact = isPointsReward ? t("bugdex.dailyLogin") : bugDexEntryFact(drop.entry, t);
   const bugName = isPointsReward ? "" : bugDexEntryName(drop.entry, t);
-  const sourceLabel = rewardSourceLabel(drop.source, language);
+  const sourceLabel = drop.sourceDetail?.trim() || rewardSourceLabel(drop.source, language);
+  const sourceReason = language === "en"
+    ? `You earned this bug through: ${sourceLabel.toLowerCase()}.`
+    : language === "fr"
+      ? `Tu as gagné cet animal grâce à : ${sourceLabel.toLowerCase()}.`
+      : `Je kreeg deze bug door: ${sourceLabel.toLowerCase()}.`;
   const title = isPointsReward
     ? isDailyReward ? t("bugdex.daily") : t("bugdex.pointsFound")
-    : language === "en"
-      ? `${bugName} discovered!`
-      : language === "fr"
-        ? `${bugName} découvert !`
-        : `${bugName} ontdekt!`;
+    : drop.isNew
+      ? language === "en"
+        ? `${bugName} discovered!`
+        : language === "fr"
+          ? `${bugName} découvert !`
+          : `${bugName} ontdekt!`
+      : `+1 ${bugName}!`;
   const subtitle = isPointsReward
     ? `+${drop.points} ${t("profile.points").toLowerCase()}`
     : drop.source === "combine" && drop.isNew
@@ -153,6 +160,7 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
           <View style={[styles.sourceBadge, { borderColor: rarityColor }]}>
             <Text style={[styles.sourceBadgeText, { color: rarityColor }]}>{sourceLabel}</Text>
           </View>
+          {!isPointsReward ? <Text style={styles.sourceReason}>{sourceReason}</Text> : null}
           <Text style={styles.subtitle}>{subtitle}</Text>
           <View style={styles.artStage}>
             {premiumStyle && (
@@ -192,25 +200,43 @@ export function BugDexUnlockModal({ busy = false, drop, onClose }: Props) {
   );
 }
 
-function rewardSourceLabel(source: BugDexDropResult["source"], language: "nl" | "en" | "fr"): string {
-  const category =
-    source === "real_bug_scan" ? "photo"
-      : source === "duel_win" || source === "rank_up" ? "duel"
-        : source.startsWith("weekly_") ? "weekly"
-          : source === "daily_login" || source === "daily_mission_bonus" ? "daily"
-            : source.startsWith("solo_") ? "campaign"
-              : source.startsWith("buddy_") ? "buddy"
-                : source === "museum_reward" ? "museum"
-                  : source === "research_encounter" ? "research"
-                    : source === "bug_splat" ? "arcade"
-                      : source === "combine" ? "combine"
-                        : "activity";
-  const labels = {
-    nl: { photo: "VAN JE BUGFOTO", duel: "VAN EEN DUEL", weekly: "VAN JE WEEKMISSIE", daily: "VAN JE DAGBELONING", campaign: "VAN SOLO CAMPAIGN", buddy: "VAN JE BUDDY", museum: "VAN HET MUSEUM", research: "VAN ONDERZOEK", arcade: "VAN DE ARCADE", combine: "DOOR COMBINEREN", activity: "VAN JE ACTIVITEIT" },
-    en: { photo: "FROM YOUR BUG PHOTO", duel: "FROM A DUEL", weekly: "FROM YOUR WEEKLY MISSION", daily: "FROM YOUR DAILY REWARD", campaign: "FROM SOLO CAMPAIGN", buddy: "FROM YOUR BUDDY", museum: "FROM THE MUSEUM", research: "FROM RESEARCH", arcade: "FROM THE ARCADE", combine: "FROM COMBINING", activity: "FROM YOUR ACTIVITY" },
-    fr: { photo: "DE TA PHOTO", duel: "D'UN DUEL", weekly: "DE TA MISSION HEBDO", daily: "DE TA RÉCOMPENSE DU JOUR", campaign: "DE LA CAMPAGNE SOLO", buddy: "DE TON COMPAGNON", museum: "DU MUSÉE", research: "DE LA RECHERCHE", arcade: "DE L'ARCADE", combine: "PAR COMBINAISON", activity: "DE TON ACTIVITÉ" }
-  } as const;
-  return labels[language][category];
+export function rewardSourceLabel(source: BugDexDropResult["source"], language: "nl" | "en" | "fr"): string {
+  const labels: Record<BugDexDropResult["source"], Record<"nl" | "en" | "fr", string>> = {
+    daily_login: { nl: "JE DAGELIJKSE LOGIN", en: "YOUR DAILY LOGIN", fr: "TA CONNEXION DU JOUR" },
+    bug_reported: { nl: "EEN BUG MELDEN", en: "REPORTING A BUG", fr: "UN BUG SIGNALÉ" },
+    comment: { nl: "EEN REACTIE PLAATSEN", en: "POSTING A COMMENT", fr: "UN COMMENTAIRE" },
+    status_update: { nl: "EEN STATUS AANPASSEN", en: "UPDATING A STATUS", fr: "UN STATUT MODIFIÉ" },
+    bug_fixed: { nl: "EEN BUG OPLOSSEN", en: "FIXING A BUG", fr: "UN BUG RÉSOLU" },
+    upvote_given: { nl: "EEN STEM GEVEN", en: "GIVING AN UPVOTE", fr: "UN VOTE" },
+    profile_view: { nl: "EEN PROFIEL BEKIJKEN", en: "VIEWING A PROFILE", fr: "UN PROFIL CONSULTÉ" },
+    bug_splat: { nl: "EEN VANGMIJLPAAL", en: "A CATCH MILESTONE", fr: "UN PALIER DE CAPTURE" },
+    weekly_mission: { nl: "JE WEEKMISSIE", en: "YOUR WEEKLY MISSION", fr: "TA MISSION HEBDO" },
+    weekly_mission_common: { nl: "JE WEEKMISSIE", en: "YOUR WEEKLY MISSION", fr: "TA MISSION HEBDO" },
+    weekly_mission_rare: { nl: "JE WEEKMISSIE", en: "YOUR WEEKLY MISSION", fr: "TA MISSION HEBDO" },
+    weekly_mission_epic: { nl: "DE LAATSTE WEEKMISSIE", en: "THE FINAL WEEKLY MISSION", fr: "LA DERNIÈRE MISSION HEBDO" },
+    daily_mission_bonus: { nl: "JE DAGMISSIES", en: "YOUR DAILY MISSIONS", fr: "TES MISSIONS DU JOUR" },
+    solo_boss_common: { nl: "EEN SOLO-BAAS", en: "A SOLO BOSS", fr: "UN BOSS SOLO" },
+    solo_boss_rare: { nl: "EEN SOLO-BAAS", en: "A SOLO BOSS", fr: "UN BOSS SOLO" },
+    solo_campaign_clear: { nl: "SOLO CAMPAIGN", en: "SOLO CAMPAIGN", fr: "LA CAMPAGNE SOLO" },
+    duel_win: { nl: "EEN RANKED DUEL", en: "A RANKED DUEL", fr: "UN DUEL CLASSÉ" },
+    rank_up: { nl: "EEN NIEUWE RANK", en: "A NEW RANK", fr: "UN NOUVEAU RANG" },
+    buddy_common: { nl: "JE BUDDY-OPDRACHT", en: "YOUR BUDDY TASK", fr: "LA MISSION DE TON COMPAGNON" },
+    buddy_rare: { nl: "JE BUDDY-OPDRACHT", en: "YOUR BUDDY TASK", fr: "LA MISSION DE TON COMPAGNON" },
+    buddy_epic: { nl: "JE BUDDY-AVONTUUR", en: "YOUR BUDDY ADVENTURE", fr: "L'AVENTURE DE TON COMPAGNON" },
+    bug_brain_daily: { nl: "BUG BRAIN", en: "BUG BRAIN", fr: "BUG BRAIN" },
+    real_bug_scan: { nl: "JE BUGFOTO", en: "YOUR BUG PHOTO", fr: "TA PHOTO" },
+    museum_reward: { nl: "EEN MUSEUMDOEL", en: "A MUSEUM GOAL", fr: "UN OBJECTIF DU MUSÉE" },
+    research_encounter: { nl: "ONDERZOEK", en: "RESEARCH", fr: "LA RECHERCHE" },
+    weekly_field_spotlight: { nl: "JE WEEKVONDST", en: "YOUR WEEKLY FIND", fr: "TA TROUVAILLE HEBDO" },
+    weekly_scan_contest: { nl: "SCAN VAN DE WEEK", en: "SCAN OF THE WEEK", fr: "SCAN DE LA SEMAINE" },
+    swarm_event: { nl: "HET SWARM-EVENT", en: "THE SWARM EVENT", fr: "L'ÉVÉNEMENT ESSAIM" },
+    movement_radar: { nl: "LOPEN MET DE BUGRADAR", en: "WALKING WITH BUG RADAR", fr: "MARCHER AVEC LE RADAR" },
+    duel_season: { nl: "HET RANKED DUEL-SEIZOEN", en: "THE RANKED DUEL SEASON", fr: "LA SAISON DE DUELS CLASSÉS" },
+    starter_boost: { nl: "JE STARTERSBONUS", en: "YOUR STARTER BONUS", fr: "TON BONUS DÉBUTANT" },
+    rank_unlock: { nl: "JE RANKVOORTGANG", en: "YOUR RANK PROGRESS", fr: "TA PROGRESSION DE RANG" },
+    combine: { nl: "BUGS COMBINEREN", en: "COMBINING BUGS", fr: "LA COMBINAISON" }
+  };
+  return labels[source][language];
 }
 
 const styles = StyleSheet.create({
@@ -294,6 +320,13 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "900",
     letterSpacing: 0.8
+  },
+  sourceReason: {
+    color: "#4f5f57",
+    fontSize: 12,
+    fontWeight: "800",
+    marginBottom: 8,
+    textAlign: "center"
   },
   artStage: {
     alignItems: "center",

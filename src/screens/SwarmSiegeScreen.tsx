@@ -10,12 +10,11 @@ import {
   Text,
   View
 } from "react-native";
-import { BugArtImage } from "../components/BugArtImage";
 import { SwarmAssaultGame } from "../components/swarm/SwarmAssaultGame";
 import { SwarmBossStage } from "../components/swarm/SwarmBossStage";
-import { bugDexEntryName, useI18n } from "../services/i18n";
+import { useI18n } from "../services/i18n";
 import { awardBugMasteryBattleWin } from "../services/bugMasteryService";
-import { entryByBugId } from "../services/bugDexService";
+import { entryByBugId, listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
 import { completedPveBattleBugIds, stablePveBattleEventId } from "../services/bugCrownService";
 import { sanitizeActiveBugSquad } from "../services/bugSquadService";
 import { nativeDriver } from "../services/animationPlatform";
@@ -36,6 +35,7 @@ const bossArt = require("../../assets/generated/solo-boss-hornet-hd.webp");
 const SWARM_PHASES = ["signal_hunt", "armor_break", "nest_surge", "unstable_core"] as const;
 type Props = {
   onBack: () => void;
+  onRewardDrop?: (drop: BugDexDropResult) => void;
   onUserUpdated?: (user: User) => void;
   user: User;
 };
@@ -47,7 +47,7 @@ type RunState =
   | { damage: number; kind: "result"; score: number }
   | { kind: "submitting"; ticket: SwarmSiegeRunTicket; score: number };
 
-export function SwarmSiegeScreen({ onBack, onUserUpdated, user }: Props) {
+export function SwarmSiegeScreen({ onBack, onRewardDrop, onUserUpdated, user }: Props) {
   const { t } = useI18n();
   const layout = useResponsiveLayout();
   const reducedMotion = useReducedMotion();
@@ -57,6 +57,7 @@ export function SwarmSiegeScreen({ onBack, onUserUpdated, user }: Props) {
   const [claiming, setClaiming] = useState(false);
   const [loading, setLoading] = useState(true);
   const [rewardReveal, setRewardReveal] = useState<{ awardedBugId?: string; duplicate?: boolean; medalId?: string; xp: number } | null>(null);
+  const [pendingBugDrop, setPendingBugDrop] = useState<BugDexDropResult | null>(null);
   const autoClaimedEventRef = useRef("");
   const swarmDrift = useRef(new Animated.Value(0)).current;
   const swarmDriftReverse = useRef(new Animated.Value(0)).current;
@@ -167,6 +168,14 @@ export function SwarmSiegeScreen({ onBack, onUserUpdated, user }: Props) {
     try {
       const result = await claimSwarmSiegeReward(user, targetStatus.eventId);
       setStatus((current) => current ? { ...current, claimed: true, medalId: result.medalId } : current);
+      if (result.awardedBugId) {
+        const items = await listBugDexInventory(user, { force: true }).catch(() => []);
+        const entry = entryByBugId(result.awardedBugId);
+        const item = items.find((candidate) => candidate.bugId === result.awardedBugId);
+        if (entry && item) {
+          setPendingBugDrop({ rewardType: "bug", entry, item, isNew: !result.duplicate && item.count === 1, source: "swarm_event" });
+        }
+      }
       setRewardReveal({
         awardedBugId: result.awardedBugId,
         duplicate: result.duplicate,
@@ -180,6 +189,14 @@ export function SwarmSiegeScreen({ onBack, onUserUpdated, user }: Props) {
       setClaiming(false);
     }
   }, [claiming, onUserUpdated, t, user]);
+
+  function closeRewardReveal() {
+    setRewardReveal(null);
+    if (pendingBugDrop) {
+      onRewardDrop?.(pendingBugDrop);
+      setPendingBugDrop(null);
+    }
+  }
 
   useEffect(() => {
     if (!status || status.state !== "result" || status.personalDamage < 1 || status.claimed || claiming) return;
@@ -224,7 +241,6 @@ export function SwarmSiegeScreen({ onBack, onUserUpdated, user }: Props) {
     );
   }
 
-  const rewardEntry = rewardReveal?.awardedBugId ? entryByBugId(rewardReveal.awardedBugId) : undefined;
   const busy = runState.kind === "starting" || runState.kind === "submitting";
   const canAttack = status.active && !status.complete && status.attacksRemaining > 0 && !busy;
   const countdownTarget = swarmEventCountdownTarget(status);
@@ -367,22 +383,15 @@ export function SwarmSiegeScreen({ onBack, onUserUpdated, user }: Props) {
       </View>
       </View>
 
-      <Modal animationType="fade" onRequestClose={() => setRewardReveal(null)} transparent visible={Boolean(rewardReveal)}>
+      <Modal animationType="fade" onRequestClose={closeRewardReveal} transparent visible={Boolean(rewardReveal)}>
         <View style={styles.rewardBackdrop}>
           <View style={styles.rewardModal}>
             <Text style={styles.rewardModalKicker}>{t("swarm.reward.kicker")}</Text>
             <Text style={styles.rewardModalTitle}>{t("swarm.reward.received")}</Text>
-            {rewardReveal?.awardedBugId && rewardEntry ? (
-              <View style={styles.rewardModalBug}>
-                <BugArtImage bugId={rewardReveal.awardedBugId} size={92} />
-                <Text style={styles.rewardModalBugRarity}>{t("bugdex.legendary")}</Text>
-                <Text style={styles.rewardModalBugName}>{bugDexEntryName(rewardEntry, t)}</Text>
-                <Text style={styles.rewardModalBugMeta}>{rewardReveal.duplicate ? t("bugdex.extraCopy") : t("bugdex.newInDex")}</Text>
-              </View>
-            ) : null}
+            {rewardReveal?.awardedBugId ? <Text style={styles.rewardModalBugMeta}>{t("swarm.reward.bugCatchReady")}</Text> : null}
             <Text style={styles.rewardModalXp}>+{rewardReveal?.xp ?? 0} XP</Text>
             {rewardReveal?.medalId ? <Text style={styles.rewardModalMedal}>◆ {t("swarm.reward.medal")}</Text> : null}
-            <Pressable onPress={() => setRewardReveal(null)} style={styles.rewardModalButton}>
+            <Pressable onPress={closeRewardReveal} style={styles.rewardModalButton}>
               <Text style={styles.rewardModalButtonText}>{t("swarm.reward.close")}</Text>
             </Pressable>
           </View>

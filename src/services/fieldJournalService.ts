@@ -38,14 +38,20 @@ function canJournal(result: RealBugScanResponse): result is RealBugScanResponse 
   return Boolean(result.receipt) && (result.status === "matched" || result.status === "not_in_catalog");
 }
 
-export async function saveFieldJournalEntry(user: User, result: RealBugScanResponse, habitat: FieldJournalHabitat, behavior: FieldJournalBehavior, location?: PrivateSightingLocation): Promise<FieldJournalSaveResult> {
+export async function saveFieldJournalEntry(user: User, result: RealBugScanResponse, habitat: FieldJournalHabitat, behavior: FieldJournalBehavior, location?: PrivateSightingLocation, reviewThumbnailDataUrl?: string): Promise<FieldJournalSaveResult> {
   if (!canJournal(result)) throw new Error("Deze scan kan nog niet veilig als veldnotitie worden opgeslagen.");
   const currentUser = auth.currentUser;
   if (!currentUser || currentUser.uid !== user.uid) throw new Error("Log opnieuw in om een veldnotitie op te slaan.");
   const response = await fetch(`${functionBaseUrl()}/recordVerifiedObservation`, {
     method: "POST",
     headers: { Authorization: `Bearer ${await currentUser.getIdToken()}`, "Content-Type": "application/json" },
-    body: JSON.stringify(location ? { behavior, habitat, location, receipt: result.receipt } : { behavior, habitat, receipt: result.receipt })
+    body: JSON.stringify({
+      behavior,
+      habitat,
+      ...(location ? { location } : {}),
+      receipt: result.receipt,
+      ...(reviewThumbnailDataUrl ? { reviewThumbnailDataUrl } : {})
+    })
   });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || !payload?.entry) throw new Error(typeof payload?.error === "string" ? payload.error : "Veldnotitie opslaan mislukt.");

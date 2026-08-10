@@ -18,6 +18,20 @@ const responseSchema = {
     "fact",
     "factEn",
     "factFr",
+    "quizQuestion",
+    "quizQuestionEn",
+    "quizQuestionFr",
+    "quizAnswer",
+    "quizAnswerEn",
+    "quizAnswerFr",
+    "quizWrongAnswers",
+    "quizWrongAnswersEn",
+    "quizWrongAnswersFr",
+    "quizExplanation",
+    "quizExplanationEn",
+    "quizExplanationFr",
+    "photoContestScore",
+    "photoContestReason",
     "confidence",
     "reason",
     "reasonEn",
@@ -37,6 +51,20 @@ const responseSchema = {
     fact: { type: "string" },
     factEn: { type: "string" },
     factFr: { type: "string" },
+    quizQuestion: { type: "string" },
+    quizQuestionEn: { type: "string" },
+    quizQuestionFr: { type: "string" },
+    quizAnswer: { type: "string" },
+    quizAnswerEn: { type: "string" },
+    quizAnswerFr: { type: "string" },
+    quizWrongAnswers: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
+    quizWrongAnswersEn: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
+    quizWrongAnswersFr: { type: "array", minItems: 3, maxItems: 3, items: { type: "string" } },
+    quizExplanation: { type: "string" },
+    quizExplanationEn: { type: "string" },
+    quizExplanationFr: { type: "string" },
+    photoContestScore: { type: "number", minimum: 0, maximum: 100 },
+    photoContestReason: { type: "string" },
     confidence: { type: "number", minimum: 0, maximum: 1 },
     reason: { type: "string" },
     reasonEn: { type: "string" },
@@ -74,7 +102,7 @@ function parseStructuredOutput(payload) {
 
 export function createOpenAIImageIdentifier({
   apiKey,
-  model = "gpt-5-mini",
+  model = "gpt-5.6-luna",
   fetchImpl = fetch
 } = {}) {
   return async function identifyImage({ imageDataUrl }) {
@@ -84,13 +112,20 @@ export function createOpenAIImageIdentifier({
       "Always name what is actually visible in commonName and scientificName at the most specific defensible taxonomic level, even when imageQuality is poor or containsBug is false. Use a broader honest taxon such as beetle, moth, spider, or family when the exact species is uncertain; do not replace a recognizable subject with a generic unknown label.",
       "If the photo does not contain an arthropod, commonName must still briefly name the visible subject, while containsBug remains false.",
       "The server compares your independent name with BugDex afterward. Always set catalogStatus to uncertain and matchedBugId to null; do not invent or infer an app catalog ID.",
-      "If one taxon is clearly most likely, return that best identification and express residual doubt through confidence instead of replacing it with an unknown label.",
+      "Use a species name only when at least two species-diagnostic traits are actually visible. Otherwise return the most specific honest genus, family, or broader taxon supported by the pixels.",
+      "If one taxon is clearly most likely, return that best defensible identification and express residual doubt through confidence instead of inventing missing visual evidence.",
       "Use a two-pass assessment: first inspect body shape, wing structure, antennae, legs, markings, scale, and habitat; then challenge the first identification against the strongest visual alternative.",
-      "A confidence of 0.70 or higher is enough for the best identification when multiple visible anatomical features support it; do not require near-certainty or apply a stricter threshold to rare catalog entries.",
+      "Calibrate confidence only from visible diagnostic evidence. Never inflate confidence to cross an acceptance threshold, and do not lower it merely because a species is rare.",
       "Set imageQuality to poor only when no useful diagnostic feature can be assessed because of severe blur, darkness, distance, or obstruction. A normal phone photo, crop, cluttered or plain background, mild motion blur, or imperfect composition is not poor by itself.",
       "Do not invent IDs. Treat confidence as identification confidence, not image quality.",
       "Return commonName in Dutch, commonNameEn in English, and commonNameFr in French. Keep scientificName language-neutral.",
       "Return one short, verifiable species fact in Dutch, English, and French using fact, factEn, and factFr. Avoid medical or safety claims.",
+      "Create one simple multiple-choice question for a 10-year-old about the identified animal's diet, habitat, lifecycle, body, or behavior. Never ask for its name and never ask which animal was photographed.",
+      "Use quizQuestion, quizAnswer, three plausible quizWrongAnswers, and quizExplanation in Dutch. Provide matching English and French versions in the corresponding En and Fr fields. Keep each answer option short.",
+      "The question must have exactly one unambiguous correct answer. The explanation may reuse the species fact. Do not reveal the quiz answer in reason, reasonEn, or reasonFr.",
+      "Vary the question by the identified taxon so different bugs teach different facts.",
+      "Score the photo itself for the weekly photo contest from 0 to 100 in photoContestScore. Balance visible sharpness and detail (60%), composition and lighting (25%), and a fun or striking natural moment (15%). Score the photography, not species rarity. Reproductions and photos with no bug must score 0.",
+      "In photoContestReason, explain in one short Dutch sentence what makes the photo sharp, fun, or striking. Do not mention a numeric score and do not reveal private location clues.",
       "Return the identification explanation in Dutch, English, and French using reason, reasonEn, and reasonFr.",
       "Keep every translated fact and explanation concise: at most 140 characters per field.",
       "Before species classification, inspect capture authenticity and reject screenshots, photos of screens or prints, toys, and clearly AI-generated or manipulated images. Look for screen bezels, browser or app chrome, pixel grids, moire, display glare, print halftones, flat paper edges, repeated synthetic details, and impossible AI anatomy.",
@@ -109,7 +144,7 @@ export function createOpenAIImageIdentifier({
         body: JSON.stringify({
           model,
           max_output_tokens: maxOutputTokens,
-          reasoning: { effort: "medium" },
+          reasoning: { effort: "max" },
           input: [{
             role: "user",
             content: [
@@ -123,7 +158,7 @@ export function createOpenAIImageIdentifier({
               {
                 type: "input_image",
                 image_url: imageDataUrl,
-                detail: "high"
+                detail: "original"
               }
             ]
           }],

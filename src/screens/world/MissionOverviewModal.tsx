@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { DimensionValue, Modal, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { listBugs } from "../../services/bugService";
-import { listBugDexInventory } from "../../services/bugDexService";
+import { listBugDexInventory, type BugDexDropResult } from "../../services/bugDexService";
 import { listBugSmashDuels } from "../../services/bugSmashDuelService";
 import {
   claimedDailyMissionIds,
@@ -35,12 +35,13 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   initialTab?: MissionTab;
+  onRewardDrop?: (drop: BugDexDropResult) => void;
   onUserUpdated?: (user: User) => void;
 };
 
 const emptyBossProgress: SoloCampaignBossProgress = { dayCount: 0, dayId: "", updatedAt: "", weekCount: 0, weekId: "" };
 
-export function MissionOverviewModal({ user, visible, onClose, initialTab = "daily", onUserUpdated }: Props) {
+export function MissionOverviewModal({ user, visible, onClose, initialTab = "daily", onRewardDrop, onUserUpdated }: Props) {
   const { t, tr } = useI18n();
   const [tab, setTab] = useState<MissionTab>(initialTab);
   const [bugs, setBugs] = useState<BugReport[]>([]);
@@ -117,6 +118,7 @@ export function MissionOverviewModal({ user, visible, onClose, initialTab = "dai
       if (!active) return;
       let currentUser = user;
       let awardedCount = 0;
+      const bugRewards: BugDexDropResult[] = [];
 
       for (const missionId of autoClaimableMissionIds(dailyMissions, nextClaimedDaily)) {
         const mission = dailyMissions.find((item) => item.id === missionId);
@@ -124,6 +126,7 @@ export function MissionOverviewModal({ user, visible, onClose, initialTab = "dai
         const result = await claimDailyMissionReward(currentUser, mission);
         if (!result) continue;
         currentUser = result.user;
+        if (result.drop?.rewardType === "bug") bugRewards.push(result.drop);
         nextClaimedDaily.add(missionId);
         awardedCount += 1;
       }
@@ -131,6 +134,7 @@ export function MissionOverviewModal({ user, visible, onClose, initialTab = "dai
         const result = await claimDailyMissionBonusWithReward(currentUser, dailyMissions);
         if (result) {
           currentUser = result.user;
+          if (result.drop.rewardType === "bug") bugRewards.push(result.drop);
           awardedCount += 1;
         }
       }
@@ -141,6 +145,7 @@ export function MissionOverviewModal({ user, visible, onClose, initialTab = "dai
         const result = await claimWeeklyMissionReward(currentUser, mission);
         if (!result) continue;
         currentUser = result.user;
+        if (result.drop?.rewardType === "bug") bugRewards.push(result.drop);
         nextClaimedWeekly.add(missionId);
         awardedCount += 1;
       }
@@ -148,6 +153,7 @@ export function MissionOverviewModal({ user, visible, onClose, initialTab = "dai
         const result = await claimWeeklyMissionBonusWithReward(currentUser, weeklyMissions);
         if (result) {
           currentUser = result.user;
+          if (result.drop.rewardType === "bug") bugRewards.push(result.drop);
           awardedCount += 1;
         }
       }
@@ -159,12 +165,16 @@ export function MissionOverviewModal({ user, visible, onClose, initialTab = "dai
         setAutoClaimMessage(t("mission.autoAwarded", { count: awardedCount }));
         onUserUpdated?.(currentUser);
       }
+      if (bugRewards.length > 0) {
+        onClose();
+        setTimeout(() => bugRewards.forEach((drop) => onRewardDrop?.(drop)), 0);
+      }
     })().catch(() => {
       if (active) setAutoClaimMessage(t("mission.autoAwardUnavailable"));
     });
 
     return () => { active = false; };
-  }, [dailyMissions, onUserUpdated, t, user, visible, weeklyMissions]);
+  }, [dailyMissions, onClose, onRewardDrop, onUserUpdated, t, user, visible, weeklyMissions]);
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>

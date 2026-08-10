@@ -41,6 +41,9 @@ function validClaims(claims, { uid, now, ttlMs, version }) {
   if (typeof claims.speciesName !== "string" || typeof claims.scientificName !== "string") return undefined;
   if (!(claims.bugId === null || typeof claims.bugId === "string")) return undefined;
   if (typeof claims.confidence !== "number" || claims.confidence < 0 || claims.confidence > 1) return undefined;
+  if (claims.thumbnailSha256 !== undefined && (typeof claims.thumbnailSha256 !== "string" || !/^[a-f0-9]{64}$/.test(claims.thumbnailSha256))) return undefined;
+  if (claims.photoContestScore !== undefined && (!Number.isFinite(claims.photoContestScore) || claims.photoContestScore < 0 || claims.photoContestScore > 100)) return undefined;
+  if (claims.photoContestReason !== undefined && typeof claims.photoContestReason !== "string") return undefined;
   return claims;
 }
 

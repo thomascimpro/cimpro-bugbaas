@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-08-10 - BugBaas 3.0.9
+
+- De BugDex bevat nu exact 1.000 gekoppelde soorten met gecontroleerde transparante WebP-art, facts, sets en rarityverdeling.
+- BugScan gebruikt de vernieuwde fullscreen camera, behoudt meer fotodetail en analyseert onafhankelijk met Luna; een bruikbare niet-catalogussoort gaat naar developer-review in plaats van een geforceerde bestaande bug.
+- Beloningen tonen consequent eerst de foregroundvangst en daarna `ontdekt` of `+1` met de reden. Radarclaims leveren exact de getoonde soorten en aantallen; ranked kan Mythisch geven en actieve events kondigen zich bij openen aan.
+- Veldnotities, Museum-, onderzoek- en Weekvondstclaims gebruiken de live Firebase-regels en serverfuncties. Web houdt lichte iPhone-geluiden en vrije Vleugeljacht; Android houdt het 3D-slot met de vaste web-link.
+
+## Niet uitgebracht - 2026-08-10
+
+- BugScan-camera schermvullend gemaakt met flitsstanden, lamp, zoom, maximale 4:3-fotokwaliteit en iPhone-lenskeuze; web gebruikt de systeemcamera.
+- Fotoanalyse bewaart de originele foto tot de gekozen uitsnede, voorkomt dubbele compressie en levert meer detail aan zowel Luna als de developer-review.
+- Luna gebruikt `max` reasoning en originele beeld-detailmodus; de herkenningsprompt vereist zichtbare diagnostische kenmerken en eerlijk gekalibreerde confidence.
+- Alleen de bestaande BugDex-reward- en widgetketen geanalyseerd; geen beloningslogica gewijzigd en geen release uitgevoerd.
+
+## 2026-08-10 - BugBaas 3.0.8
+
+- Veldnotities kunnen na een geldige fotoscan weer automatisch worden opgeslagen; Vercel en Firebase controleren opnieuw hetzelfde korte, accountgebonden scanbewijs.
+- Movement Radar toont het werkelijke totaal dat klaarstaat en geeft na claimen precies iedere getoonde loop-/widgetbug als foregroundvangst en daarna als `ontdekt` of `+1` met bron.
+- Alle 907 BugDex-afbeeldingen blijven gekoppeld en transparant, maar zijn kleiner verpakt. De APK daalt van 157.293.992 naar 96.896.646 bytes.
+- Web behoudt de lichte iPhone-Safari-geluidsroute en vrije Vleugeljacht; Android behoudt het slot met link naar `https://bugbaas.vercel.app`.
+
+## 2026-08-02 - BugBaas 3.0.7
+
+- De BugDex groeit van 517 naar 915 gekoppelde soorten. Alle 398 toevoegingen gebruiken gecontroleerde transparante 768x768 WebP-art, facts en filters; catalogus, artregister en runtimebestanden zijn een-op-een.
+- De nieuwe soorten zijn visueel verdeeld over 221 Gewoon, 107 Zeldzaam, 58 Episch en 12 Legendarisch. Er is geen extra Mythisch niveau gemaakt en bestaande badge-eisen zijn niet verzwaard.
+- iPhone Safari herstelt na schermrotatie de actieve Play-/Ranking-workspace en een lopende ranked score, timer en vangststatus. De lichte iPhone-WebAudio-route blijft actief.
+- Web houdt Vleugeljacht 3D open; Android toont het slot met de link naar `https://bugbaas.vercel.app`.
+- Productie staat op `https://bugbaas.vercel.app` als deployment `dpl_7Zh4YHVqtK94qTz8ArmtWG8xKsiG`. Android 3.0.7 gebruikt `versionCode 316`.
+
+## 2026-08-10 - BugDex asset expansion checkpoint
+
+- De additieve Nederlandse BugDex-queue staat op **483/610**; de actieve catalogus heeft exact **1000 unieke soortentries** met transparante, soortspecifieke PNG/WebP-assets en gekoppelde facts/sets. De laatste actieve vijf zijn Schildstipspanner, Voorjaarskortvleugelmot, Wormkruidhaantje, Zuidelijke groene schildwants en Zwarte heidelibel. Drie extra PASS-renders zijn recoverable buiten runtime gehouden om niet boven 1000 te gaan; wave 471-478 bevatte de acht soorten daarvoor.
+- De acht nieuwe assets zijn na een naam-, wetenschappelijke naam- en manifest-gate additief gekoppeld; alle acht hebben een afzonderlijke PASS voor soort, anatomie, stijl, transparantie, afmetingen en dubbele-soortcontrole.
+- Drie vleugelrijke renders uit deze wave zijn op blauwe chroma opnieuw gegenereerd; alleen de finale varianten met afzonderlijke PASS voor alpha en anatomie zijn gemapt.
+- Vier renders uit deze wave zijn opnieuw met blauwe chroma-key en strengere alpha-matte verwerkt; alleen de finale transparante varianten zijn gepromoveerd.
+- Zilverstreepgrasmot en Rotsheidenetwants zijn pas na een tweede imagegen-poging met blauwe chroma-key en schone alpha-inspectie gepromoveerd; de eerste kleurfranje/wing-cell renders blijven buiten runtime.
+- De catalogus groeit hiermee van 517 naar 1000 unieke soortentries; de nieuwe assets zijn 768x768 RGBA/WebP en hebben elk een afzonderlijke PASS voor soort, anatomie, stijl, transparantie, afmetingen en dubbele-soortcontrole. Vermoedelijke dubbelen zijn niet gegenereerd of gemapt.
+- Koraaljuffer is pas na een tweede imagegen-poging met vier duidelijk zichtbare vleugels en magenta chroma-key gepromoveerd; de eerste render blijft buiten runtime.
+- De groefbijendoder en distelschildpadtor zijn na anatomische review opnieuw gegenereerd; de groene dwergspanner is met een blauwe chroma-key opnieuw gemaakt om groene vleugelranden schoon te houden.
+- Het goudoogje kreeg na een chroma-key FAIL een nieuwe imagegen-poging op een contrasterende magenta bronachtergrond; de uiteindelijke alpha-PNG/WebP is PASS.
+- Bestaande catalogus-ID's, afbeeldingen en mappings zijn behouden; de pilot-test staat op 4/4.
+- Bestaande catalogus-ID’s, afbeeldingen en mappings zijn behouden; afgekeurde renders blijven buiten runtime.
+
+## 2026-08-01 - Nederlandse BugDex-soortenwaves
+
+- 82 geaccepteerde transparante Nederlandse soortkaarten geïntegreerd, aangevuld met Asbij, Grijze zandbij, Gewone zijdebij, Gewone maskerbij, Glanzende houtmier, Franse veldwesp, Middelste wesp, Viervleklieveheersbeestje, Gewone doodgraver, Gewone kortschildkever, Bruine meelkever, Groene snuitkever, Gewone wespenboktor, Groene appelwants, Gewone daas, Oranje zandoogje, Kleine wintervlinder, Grote wintervlinder, Huiskrekel, Herfstspin, Herfsthangmatspin, Huiskogelspin, Gewone krabspin, Oosterse kakkerlak, Geelgerande waterroofkever, Doodskopzweefvlieg, Schaakbordlieveheersbeestje, Grauwe schildwants, Strontvlieg, Rode hooiwagen, Gewone meikever, Watersnuffel, Wespenspin, Roodpootschildwants, Blauwooggrasmot, Plakker, Bosmestkever, Citroenlieveheersbeestje, Grijze stipspanner, Paardenbloemspanner, Bladpootrandwants, Bessenschildwants, Gewone grasmot, Blauwe breedscheenjuffer en Zijdeglansbladsnuitkever. Schorsmarpissa en drie volgende foto-cut-outs zijn bewust op de stijlpoort afgekeurd en niet gekoppeld.
+- De vier nieuwe imagegen-assets zijn via een vlakke chroma-keybron naar schone alpha-PNG’s en WebP’s geconverteerd; iedere soort kreeg een afzonderlijke PASS-review voor soort, anatomie, stijl, transparantie, afmetingen en dubbelen.
+- Catalogus, wetenschappelijke aliases, Nederlandse habitatset, facts, WebP-art en BugScan-regressie zijn gekoppeld zonder bestaande generieke IDs te breken.
+- Slak- en pissebed-assets zijn als `out-of-scope-non-bug` vastgelegd en niet naar runtime/catalogus/art gepromoveerd. De te kleine eerste langpootmug-poging is recoverable bewaard; poging 2 is groter gekaderd.
+- Kandidatenlijst aangescherpt naar 610 insecten/spinachtigen in productiequeue; geen APK- of deploymentwijziging.
+
 ## 2026-07-31 - BugBaas 3.0.6
 
 - Ranked arcadegames gebruiken tijdens het spelen het volledige gamevlak zonder losse titelbalk. Normale Bug Defence gebruikt opnieuw de 2.10.19-tick en neutrale balans; eventmodifiers blijven alleen binnen Zwermbeleg actief.
@@ -1270,3 +1321,28 @@
 - Made Bug Glide and Bug Tower faster and moved four realtime arcade loops from interval timers to display-synchronized frames.
 - Forced fresh Museum inventory and mastery reads so goal progress updates immediately on entry.
 - Restored a tappable foreground bug after every claimed Daily while keeping the Daily XP safely pre-awarded.
+
+## 3.0.6 - production release
+
+- Made ranked game canvases fullscreen and restored Nest Defense timing to the 2.10.19 rules.
+- Repaired Research, Museum, Event and weekly claim presentation and made reward sources explicit; disabled the casino reveal.
+- Made scan field notes mandatory after location, habitat and behavior are available, with automatic save and map registration.
+- Changed BugScan to independent 70%+ identification with GPT-5.6 Luna, private missing-species review and species-specific fact questions that do not reveal their answer early.
+- Added whole-world map zoom, clearer repeatable/endgame copy, discovery-based Arcade counts and five common Netherlands species.
+- Kept lightweight procedural web audio and the reduced iPhone 3D profile; web Vleugeljacht 3D is unlocked while Android links to the web game.
+- Released web production, Firestore rules, the relevant Firebase Functions and Android 3.0.6.
+
+## 2026-08-01 - Dutch BugDex photo-candidate audit
+
+- Added a data-driven candidate generator for verifiable Dutch iNaturalist species observations.
+- Stored a 928-candidate analysis with 828 missing specific cards after current-catalog and alias comparison: 273 P0, 305 P1 and 226 P2.
+- Added the complete background-removal, semantic-review, WebP, catalog, art-registry and test plan for future waves.
+- Added the operational `asset-to-app` checklist with 91 review batches, checkpoints, subagent boundaries and strict `accepted` → `in-app` gates.
+- Kept the 28-image transparent pilot in the visual-factory output only; no unreviewed species was added to production runtime.
+
+## 2026-08-02 - Duidelijke BugDex-beloningen en eventmeldingen
+
+- Made every real BugDex reward show the catchable foreground bug first and then an `ontdekt` or `+1` popup with its exact source.
+- Routed Buddy, weekly, combine, movement, rank, points and duel-season rewards through the same retry-safe presentation queue.
+- Added a small Mythisch chance to ranked duel wins and made the guaranteed season-winner Mythisch reward visible through the normal reward flow.
+- Added a once-per-event announcement when Swarm, Team Hunt or the Release Boss finale is active at app open or resume.

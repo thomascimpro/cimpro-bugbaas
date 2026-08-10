@@ -1521,7 +1521,7 @@ service cloud.firestore {
         && request.resource.data.normalizedSpeciesKey is string
         && request.resource.data.normalizedSpeciesKey.matches('[a-z0-9][a-z0-9-]{0,99}')
         && request.resource.data.confidence is number
-        && request.resource.data.confidence >= 0.75
+        && request.resource.data.confidence >= 0.7
         && request.resource.data.confidence <= 1
         && request.resource.data.reason is string
         && request.resource.data.reason.size() > 0

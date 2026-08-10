@@ -1,5 +1,56 @@
 # Test Results
 
+## 2026-08-10 - BugBaas 3.0.9 productie-release
+
+- Typecheck en alle gerichte catalogus-, BugScan-, camera-, classificatie-, receipt-, reward-, radar-, ranked-, event-, platform-, audio-, rotatie- en 3D-tests zijn groen. Firebase Functions: **78/78**; BugDex-validatie: **3/3**; Nederlandse pilottest: **4/4**.
+- Catalogus/art-integriteit: exact **1000/1000/1000** unieke catalogusentries, `bugArt`-mappings en WebP-runtimebestanden. De lokale Expo-webexport slaagde met 1.858 modules en 1.159 assets.
+- Vercel `dpl_3msAij2mJpy48RhAZxnyzdvMFSZA`: READY. Live root en `/butterfly-catch-3d/`: HTTP 200; kaartservice: HTTP 200/JSON; BugScan-CORS voor `bugbaas.vercel.app` en `bugbaasv3.vercel.app`: HTTP 204 met exact de aangevraagde origin.
+- Firebase-productie: Firestore rules succesvol uitgebracht; **31/31** Functions ACTIVE in `us-central1`.
+- APK: package `nl.cimpro.bugbaas`, versionCode 318/versionName 3.0.9, arm64-v8a, 108.650.161 bytes, SHA-256 `E47D9A51BE77605BEBDC22FE00E3FF573793CEE3DA32628E55E4601B4F1365CD`, v2-signed met signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- Android-permissies gecontroleerd: internet, grove/precieze locatie, activity recognition en camera aanwezig; geen microfoon-, externe opslag- of overlaypermissie. Er was geen ADB-device aangesloten, dus installatie en fysieke camerakwaliteit zijn niet geclaimd.
+
+## 2026-08-10 - Fullscreen BugScan-camera (bron-only)
+
+- `npm run typecheck`: passed.
+- Volledige gerichte BugScan-clientset: 48/48 passed; server-, classificatie-, API- en receiptset: 47/47 passed.
+- Centrale rewardflow en Android-radarclaimmodel: 14/14 passed, inclusief FIFO-stapeling, opnieuw aanbieden na missen, bronlabels, geen casino-spin, Mythisch in ranked en exacte widget-IDs/aantallen.
+- Bronanalyse bevestigt dat FIFO alleen binnen de lopende appsessie duurzaam is; afsluiten/crashen tussen widgetclaim en foregroundvangst is niet crash-safe en is niet aangepast.
+- Lokale Expo-webexport: passed, 1.787 modules en 1.090 assets. Dit was een lokale compilecontrole en geen Vercel-deployment.
+- Niet geclaimd: fysieke iPhone-/Android-camera, echte OpenAI-fotobeoordeling en end-to-end devicegedrag. Er is geen APK gebouwd en niets gepubliceerd.
+
+## 2026-08-10 - BugBaas 3.0.8 productiehotfix
+
+- `npm run typecheck`: passed. Gerichte radarclaim-, iPhone-audio-, rewardflow-, Android-3D-slot-, rotatie- en Vleugeljachttests: 44/44 passed.
+- Real Bug Scan client via `tsx`: 30/30 passed; server: 43/43 passed; receipt-integratie: 4/4 passed. De bestaande kale npm-shortcut startte onder Node 24 met een ongeschikte TypeScript-runner, daarom is de volledige clientset rechtstreeks met `tsx` uitgevoerd.
+- BugDex-validatie: 3/3 passed; 907 catalogus-, registry- en WebP-bestanden zijn één-op-één, maximaal 512 px, echte alpha en samen 42,0 MiB binnen het 55 MiB-budget.
+- Vercel-webexport: passed, 1.771 modules en 1.074 assets. Live root, AppEntry en `/butterfly-catch-3d/` geven HTTP 200; BugScan CORS-preflight geeft 204.
+- Live geauthenticeerde veldnotitiesmoke: scan HTTP 200, Zevenstippelig lieveheersbeestje met 94%, receipt aanwezig; opslaan HTTP 200 met `Park`, `Vloog` en privé-locatie.
+- Firebase: alleen `recordVerifiedObservation` succesvol bijgewerkt. Vercel `dpl_EvdCQCvnJvgQSjSABbuBYyiXuAdf` is READY en `bugbaas.vercel.app` wijst ernaar.
+- APK-build: successful; package `nl.cimpro.bugbaas`, versionCode 317/versionName 3.0.8, 96.896.646 bytes, SHA-256 `E49B65CB099A0E8B27DB63F2329865A596C40B5E61A61B00A31A708BCA2329F1`, signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- Emulatorinstallatie is niet geclaimd: Small Phone was ADB-unauthorized, Pixel 8 bevatte een anders gesigneerde bestaande app en Codex Smooth verscheen niet in ADB. Er is niets gewist of verwijderd van die AVD's.
+
+## Actueel BugDex-checkpoint 2026-08-10
+
+- Queue: **483/610 in-app**; catalogus: **1000 unieke entries**.
+- Wave 479-486: vijf actieve nieuwe soorten (Schildstipspanner, Voorjaarskortvleugelmot, Wormkruidhaantje, Zuidelijke groene schildwants en Zwarte heidelibel) zijn afzonderlijk PASS voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole. Drie extra PASS-renders zijn buiten runtime gehouden om exact op 1000 te eindigen.
+- Wave 471-478: Vroege granietmot, Muisbeertje, *Phasia aurigera*, Zwarte speerkniptor, Zwartvlekgrasmot, Schijn-vierbandspanner, Noordse witsnuitlibel en Maanschietmot zijn afzonderlijk PASS voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole.
+- Wave 463-470: Micaplatvoetje, Witkopmot, Ruitijger, Slanke kogelspin, Langspriet-langsprietje, *Phaonia signata*, Ringspikkelspanner en Stompvleugelgrasuil zijn afzonderlijk PASS voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole; beide mogelijke naamdubbelen zijn vóór imagegen overgeslagen.
+- Wave 455-462: acht nieuwe soorten afzonderlijk PASS voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole; alle acht hebben geldige 768x768 RGBA PNG/WebP-assets.
+- Wave 447-454: acht nieuwe soorten afzonderlijk PASS voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole; alle acht hebben geldige 768x768 RGBA PNG/WebP-assets.
+- Wave 439-446: acht nieuwe soorten afzonderlijk PASS voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole; alle acht hebben geldige 768x768 RGBA PNG/WebP-assets.
+- Wave 431-438: acht nieuwe soorten afzonderlijk PASS voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole; alle acht hebben geldige 768x768 RGBA PNG/WebP-assets.
+- `validate:bug-art`: 3/3 passed; `typecheck`: passed; BugDex-pilottest: 4/4 passed.
+- De acht nieuwe soorten zijn vóór promotie gecontroleerd tegen bestaande Nederlandse en wetenschappelijke naamtokens; `gewone-krabspin-misumena-vatia` is als dubbel overgeslagen.
+
+## 2026-08-01 Nederlandse BugDex-soortenwaves
+
+- Catalogus/art-integriteit: **599/599** unieke catalogusentries, **599** actieve `bugArt.ts`-mappings en **602** fysieke PNG/WebP-bestanden.
+- Nederlandse soortenwave: **82/82** in-app; Wave 2: **0/1** geaccepteerd (Schorsmarpissa stijl-afgekeurd) plus twee `out-of-scope-non-bug`; Wave 3: **0/3** geaccepteerd wegens foto-cut-outstijl. Geen van deze afgekeurde of uitgesloten records staat in catalogus/art.
+- Asset-QA: alle 82 afzonderlijke reviews zijn **PASS** voor soort, anatomie, stijl, alpha/transparantie, afmetingen en dubbele-soortcontrole; alle productie-assets zijn **768×768 RGBA** met alpha-extrema `(0, 255)`. `gewone-langpootmug` is opnieuw gekaderd als poging 2 en opnieuw bekeken. Afgekeurde foto-cut-outs blijven buiten productie.
+- Kandidaat-datagate: **928** bronkandidaten, **610** productie-kandidaten (225 P0, 242 P1, 128 P2, 13 handmatig), **194** niet-bugs uitgesloten.
+- Voortgang: **82/610 klaar**; vier P0-soorten blijven `style FAIL` na fotografische cut-outreview, twee soorten blijven `alias-review` en zijn niet dubbel toegevoegd.
+- Groen: `npm run validate:bug-art` **1/1**, `npm run typecheck`, wave-test **3/3**, BugScan-classificatie **19/19**, Expo web-export (**1.404 modules, 712 assets**) en `git diff --check` zonder whitespacefouten. Geen APK/device/deployment-check uitgevoerd.
+
 ## 2026-07-31 BugBaas 3.0.6 releasecandidate
 
 - Releasepreflight: versie `3.0.6` is gelijk in `package.json`, `package-lock.json`, `app.json` en Android; `versionCode 315`; web- en Android-tools aanwezig.
@@ -1465,3 +1516,43 @@ Datum: 2026-06-02
 - Productie-webexport naar `dist-butterfly-catch-local`: passed.
 - Localhost root: HTTP 200.
 - Gevoel van native controls en frame pacing blijft een fysieke-devicecontrole; er is geen APK of productiebackend gewijzigd.
+
+## 2026-08-01 Dutch BugDex photo-candidate audit
+
+- `node scripts/build_bugdex_nederland_photo_candidates.mjs`: passed; fetched six Dutch taxon groups and wrote 928 deduplicated candidates.
+- Candidate diff: 828 missing specific cards, 97 exact catalog matches and 3 known alias reviews.
+- Pilot PNG alpha/dimension check: 28/28 processed assets are 768x768 RGBA with alpha extrema `(0,255)`.
+- Contact-sheet review: 28/28 pilot assets visually inspected; this is semantic pre-review evidence, not yet a production integration pass.
+- Full typecheck, art-registry and runtime integration were intentionally not claimed because this turn created the inventory and plan only; no new catalog mappings were promoted.
+- Operational asset-to-app plan file exists and its key gates, wave counts, checkpoints and Definition of Done were reviewed; no image was promoted by the plan-only change.
+
+## 2026-08-01 BugBaas 3.0.6 production release
+
+- `npm run typecheck`: passed.
+- Real Bug Scan client/server suites: 30/30 + 43/43 passed; Bug Professor/reward subset: 7/7 passed.
+- Source/structure suite: 122/122 passed; Firebase Functions: 74/74 passed; BugDex art validation: 1/1 passed.
+- GPT-5 mini versus GPT-5.6 Luna benchmark on four previously reviewed player thumbnails: mini 0/4 exact at 17.7 s average; Luna 2/4 exact at 8.3 s average.
+- Firestore rules compiled and deployed. `recordVerifiedObservation`, `listVerifiedObservations`, `claimMuseumRewards`, `researchTargetStatus`, `startResearchTarget`, `claimResearchEncounter`, `syncResearchProgress` and `claimSwarmSiegeReward` deployed successfully.
+- Vercel deployment `6fVm7RyUihtJ1XwyCYcxBtQLAf8K`: READY and aliased to `https://bugbaas.vercel.app`; root and 3D route return 200, API preflight 204 and unauthenticated identify 401.
+- WebKit mobile 390x844 loaded production with zero console errors. Vleugeljacht 3D started, rendered one canvas and showed the 100%-then-screen-tap net instruction without an app lock.
+- Android `:app:assembleRelease`: successful. `dist/BugBaas-3.0.6.apk` is versionCode 315/versionName 3.0.6, SHA-256 `351DD7E0A66CBFC8E0DC563E9818CE989D9C61ADEAAFC7D43A8DE2EE0474BBB2` and signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- APK manifest contains Internet, camera, fine/coarse location, activity-recognition and notification permissions; the bundled Android code contains the production scan API/web-game URL.
+- No Android device was connected, so camera/location permissions and real touch/audio performance still require a physical-device smoke test. The authenticated browser profile had expired; claim mutations were therefore verified through the server/core tests rather than by changing the test account in production.
+
+## 2026-08-02 BugDex reward flow en eventstart
+
+- `npm run typecheck`: passed.
+- `node --test src/services/rewardFlow.structure.test.mjs firebase/functions/swarmSiegeCore.test.js`: 22/22 passed.
+- Expo production web export: passed; 1,499 modules bundled successfully.
+- `git diff --check`: passed; only existing line-ending conversion warnings were reported.
+- No authenticated live claim, physical-device check, Vercel deploy or APK build was performed for this source-only change.
+
+## 2026-08-02 BugBaas 3.0.7 production release
+
+- TypeScript: passed. BugDex art/catalog/registry/category/tier suites: 11/11 passed voor 883 gekoppelde soorten en 366 nieuwe kaarten. Alle WebP-assets zijn RGBA met echte alpha en zonder randcontact.
+- iPhone-audio, Android-3D-slot en route/ranked-rotatieherstel: 31/31 tests passed. Real Bug Scan client/server: 30/30 + 43/43 passed; Firebase-projectconfig: passed.
+- Lokale en remote Expo-webexport: passed. Productiebundle `AppEntry-37da2aadce3be500f62c35d91469be8a.js`; de live bundle bevat iPhone WebAudio, routeherstel, ranked-duelherstel en de nieuwste soort `grijze-huisspin`.
+- Vercel deployment `dpl_7Zh4YHVqtK94qTz8ArmtWG8xKsiG` is READY en gealiast naar `https://bugbaas.vercel.app`; root/3D geven 200 en unauthenticated BugScan geeft de verwachte 401-authguard.
+- Firestore rules compileerden en zijn op project `thomascimpro-6266f` released; Firebase meldde dat de actuele 70%-ruleset al up-to-date was.
+- Android assembleRelease: successful. `dist/BugBaas-3.0.7.apk` is versionCode 316/versionName 3.0.7, arm64-v8a, 157293992 bytes, SHA-256 `CF3F6CC8E6C56D5F168CFC9B1CD692151D8A3E541C1E86B7354CB61D433C211A` en legacy signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- De APK installeerde en startte op de Small Phone-emulator met het bestaande testaccount. PID en MainActivity bleven gelijk na rotatie en het crashbuffer bleef leeg. Camera-, locatie- en echte iPhone-geluidsperformance blijven fysieke-devicecontroles.

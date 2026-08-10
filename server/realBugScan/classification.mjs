@@ -12,6 +12,10 @@ function cleanProse(value, fallback = "") {
   return cleaned.startsWith("{") && cleaned.endsWith("}") ? cleaned.slice(1, -1).trim() : cleaned;
 }
 
+function cleanStringArray(value) {
+  return Array.isArray(value) ? value.map((item) => cleanString(item)).filter(Boolean).slice(0, 3) : [];
+}
+
 function clampConfidence(value) {
   const number = Number(value);
   if (!Number.isFinite(number)) return 0;
@@ -86,6 +90,20 @@ export function normalizeIdentification(
   const fact = cleanProse(raw?.fact);
   const factEn = cleanProse(raw?.factEn, fact);
   const factFr = cleanProse(raw?.factFr, fact);
+  const quizQuestion = cleanProse(raw?.quizQuestion);
+  const quizQuestionEn = cleanProse(raw?.quizQuestionEn, quizQuestion);
+  const quizQuestionFr = cleanProse(raw?.quizQuestionFr, quizQuestion);
+  const quizAnswer = cleanProse(raw?.quizAnswer);
+  const quizAnswerEn = cleanProse(raw?.quizAnswerEn, quizAnswer);
+  const quizAnswerFr = cleanProse(raw?.quizAnswerFr, quizAnswer);
+  const quizWrongAnswers = cleanStringArray(raw?.quizWrongAnswers);
+  const quizWrongAnswersEn = cleanStringArray(raw?.quizWrongAnswersEn);
+  const quizWrongAnswersFr = cleanStringArray(raw?.quizWrongAnswersFr);
+  const quizExplanation = cleanProse(raw?.quizExplanation, fact);
+  const quizExplanationEn = cleanProse(raw?.quizExplanationEn, factEn);
+  const quizExplanationFr = cleanProse(raw?.quizExplanationFr, factFr);
+  const photoContestScore = Math.round(Math.min(100, Math.max(0, Number(raw?.photoContestScore) || 0)));
+  const photoContestReason = cleanProse(raw?.photoContestReason).slice(0, 180);
   const reason = cleanProse(raw?.reason, "De foto kon niet betrouwbaar worden beoordeeld.");
   const reasonEn = cleanProse(raw?.reasonEn, reason);
   const reasonFr = cleanProse(raw?.reasonFr, reason);
@@ -116,6 +134,20 @@ export function normalizeIdentification(
       fact,
       factEn,
       factFr,
+      quizQuestion,
+      quizQuestionEn,
+      quizQuestionFr,
+      quizAnswer,
+      quizAnswerEn,
+      quizAnswerFr,
+      quizWrongAnswers,
+      quizWrongAnswersEn,
+      quizWrongAnswersFr,
+      quizExplanation,
+      quizExplanationEn,
+      quizExplanationFr,
+      photoContestScore: status === "matched" || status === "not_in_catalog" ? photoContestScore : 0,
+      photoContestReason,
       confidence,
       captureAuthenticity,
       authenticityReason,

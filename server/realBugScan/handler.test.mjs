@@ -35,7 +35,8 @@ function validRequest(overrides = {}) {
     },
     body: {
       scanId: "scan-123",
-      imageDataUrl: "data:image/jpeg;base64,YWJjZA=="
+      imageDataUrl: "data:image/jpeg;base64,YWJjZA==",
+      reviewThumbnailDataUrl: "data:image/jpeg;base64,YWJjZA=="
     },
     ...overrides
   };
@@ -295,6 +296,42 @@ test("rejects non-image data URLs", async () => {
 
   assert.equal(response.statusCode, 400);
   assert.match(response.body.error, /afbeelding/i);
+});
+
+test("keeps scan requests without a contest thumbnail compatible with older app versions", async () => {
+  const handler = createRealBugIdentifyHandler({
+    catalog,
+    verifyIdToken: async () => ({ uid: "user-1" }),
+    checkUsage: async () => ({ remainingScans: 3 }),
+    reserveUsage: async () => ({ remainingScans: 2 }),
+    identifyImage: async () => ({
+      containsBug: true,
+      imageQuality: "good",
+      matchedBugId: "lieveheersbeestje",
+      commonName: "Lieveheersbeestje",
+      scientificName: "Coccinellidae",
+      confidence: 0.9,
+      reason: "Rood met zwarte stippen."
+    })
+  });
+  const response = createResponse();
+  await handler(validRequest({ body: { scanId: "scan-123", imageDataUrl: "data:image/jpeg;base64,YWJjZA==" } }), response);
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.body.status, "matched");
+});
+
+test("rejects an explicitly malformed contest thumbnail", async () => {
+  const handler = createRealBugIdentifyHandler({
+    catalog,
+    verifyIdToken: async () => ({ uid: "user-1" }),
+    checkUsage: async () => ({ remainingScans: 3 }),
+    reserveUsage: async () => ({ remainingScans: 2 }),
+    identifyImage: async () => { throw new Error("should not run"); }
+  });
+  const response = createResponse();
+  await handler(validRequest({ body: { scanId: "scan-123", imageDataUrl: "data:image/jpeg;base64,YWJjZA==", reviewThumbnailDataUrl: "data:image/png;base64,YWJjZA==" } }), response);
+  assert.equal(response.statusCode, 400);
+  assert.match(response.body.error, /miniatuur/i);
 });
 
 test("returns a safe upstream error when image analysis fails", async () => {

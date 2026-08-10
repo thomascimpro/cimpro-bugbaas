@@ -76,6 +76,13 @@ test("active ranked game hides and disables the workspace close action", () => {
   assert.match(playScreenSource, /onRankedActiveChange=\{handleRankedActiveChange\}/);
 });
 
+test("ranking workspace survives an iPhone orientation reload", () => {
+  assert.match(playScreenSource, /playTabSessionKey/);
+  assert.match(playScreenSource, /playRecoveryLocalKey/);
+  assert.match(playScreenSource, /readRecentPlaySession/);
+  assert.match(playScreenSource, /encodePlaySessionSnapshot\(workspaceOpen, tab\)/);
+});
+
 test("small phone play content scrolls instead of collapsing the primary action", () => {
   assert.match(playScreenSource, /import \{[^}]*ScrollView[^}]*\} from "react-native"/s);
   assert.match(playScreenSource, /<ScrollView[\s\S]*contentContainerStyle=\{\[styles\.screen/);
@@ -90,4 +97,13 @@ test("ranking gate is inspectable at fewer than ten species", () => {
   assert.match(playScreenSource, /accessibilityState=\{\{ disabled: locked, selected: tab === item \}\}/);
   assert.match(playScreenSource, /onPress=\{\(\) => setTab\(item\)\}/);
   assert.match(playScreenSource, /disabled=\{locked\}[\s\S]*onPress=\{tab === "arcade" \? openArcadeWorkspace : openRankingWorkspace\}/);
+});
+
+
+test("active arcade game removes the Choose a game workspace header", () => {
+  assert.match(playScreenSource, /const \[gameFullscreen, setGameFullscreen\] = useState\(false\)/);
+  assert.match(playScreenSource, /const handleFullscreenChange = useCallback/);
+  assert.match(playScreenSource, /onFullscreenChange\?\.\(active\)/);
+  assert.match(playScreenSource, /\{!gameFullscreen \? \([\s\S]*styles\.workspaceHeader/);
+  assert.match(playScreenSource, /onFullscreenChange=\{handleFullscreenChange\}/);
 });

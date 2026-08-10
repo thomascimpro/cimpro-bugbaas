@@ -34,7 +34,7 @@ const secretIsConfigured = (key, minimumLength) => {
 const result = {
   requiredVariables: required.length,
   missingCount: missing.length,
-  modelCorrect: values.OPENAI_BUG_SCAN_MODEL === "gpt-5-mini",
+  modelCorrect: values.OPENAI_BUG_SCAN_MODEL === "gpt-5.6-luna",
   firebaseProjectCorrect: values.FIREBASE_PROJECT_ID === "thomascimpro-6266f",
   firebaseAuthDomainCorrect: values.FIREBASE_AUTH_DOMAIN === "thomascimpro-6266f.firebaseapp.com",
   productionApiCorrect: values.REAL_BUG_SCAN_API_BASE_URL === "https://bugbaas.vercel.app",

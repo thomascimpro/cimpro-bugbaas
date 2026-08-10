@@ -5,6 +5,7 @@ const { FieldValue, Timestamp, getFirestore } = require("firebase-admin/firestor
 const { logger } = require("firebase-functions");
 const { defineSecret } = require("firebase-functions/params");
 const { onRequest } = require("firebase-functions/v2/https");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { activityImportId, activityMovement, aggregateActivityMovement, fitnessServerConfigurationStatus, fitnessUserConfigurationStatus, normalizeFitnessSyncerReturnUrl, tokenExpiryMs } = require("./fitnessSyncerCore");
 const { eligibleFieldMilestones } = require("./fieldMilestoneRewards");
 const { releaseBoss, releaseBossProgress, releaseBossShouldAutoAward } = require("./releaseBossCore");
@@ -37,6 +38,14 @@ const { normalizeResearchEvidenceRequest } = require("./researchEvidenceCore");
 const { eligibleMuseumClaimIds, rewardForClaimId } = require("./museumRewardsCore");
 const { bugBrainAwardedXp, bugBrainDailySeed, bugBrainStartStatus, normalizeBugBrainCorrectAnswers } = require("./bugBrainCore");
 const { buildWeeklyFieldSpotlightClaim, weeklyFieldSpotlight } = require("./weeklyFieldSpotlightCore");
+const {
+  contestRewardRarity,
+  contestRewardXp,
+  selectWeeklyScanNominees,
+  weeklyScanContestRewardBugId,
+  weeklyScanContestWeek,
+  weeklyScanContestWinner
+} = require("./weeklyScanContestCore");
 
 initializeApp();
 
@@ -223,12 +232,114 @@ exports.recordVerifiedObservation = onRequest({ cors: false, invoker: "public", 
       logger.error("Team Hunt contribution sync failed", safeError(error));
       return { active: false, unavailable: true };
     });
-    res.json({ entry, milestones, ok: true, research, teamHunt, weeklySpotlight });
+    const contestSubmission = await registerWeeklyScanContestCandidate({
+      claims,
+      reviewThumbnailDataUrl: req.body?.reviewThumbnailDataUrl,
+      uid
+    }).catch((error) => {
+      logger.error("Weekly scan contest registration failed", safeError(error));
+      return { registered: false, unavailable: true };
+    });
+    res.json({ contestSubmission, entry, milestones, ok: true, research, teamHunt, weeklySpotlight });
   } catch (error) {
     const status = Number(error?.status) || 500;
     if (status >= 500) logger.error("Verified observation failed", safeError(error));
     res.status(status).json({ error: status >= 500 ? "Field note is temporarily unavailable." : String(error?.message || "Request failed.") });
   }
+});
+
+exports.weeklyScanContestStatus = onRequest({ cors: false, invoker: "public", region: "us-central1" }, async (req, res) => {
+  if (!setCors(req, res) || req.method === "OPTIONS") return;
+  try {
+    requireGet(req);
+    const uid = await authenticatedUid(req);
+    res.json(await weeklyScanContestPayload(uid));
+  } catch (error) {
+    sendWeeklyScanContestError(res, error);
+  }
+});
+
+exports.voteWeeklyScanContest = onRequest({ cors: false, invoker: "public", region: "us-central1" }, async (req, res) => {
+  if (!setCors(req, res) || req.method === "OPTIONS") return;
+  try {
+    requirePost(req);
+    const uid = await authenticatedUid(req);
+    const candidateId = validContestCandidateId(req.body?.candidateId);
+    const week = weeklyScanContestWeek();
+    await ensureWeeklyScanContest(week);
+    const contestRef = db.collection("weeklyScanContests").doc(week.weekId);
+    const nomineeRef = contestRef.collection("nominees").doc(candidateId);
+    const voteRef = contestRef.collection("votes").doc(uid);
+    await db.runTransaction(async (transaction) => {
+      const [contestSnapshot, nomineeSnapshot, voteSnapshot] = await transaction.getAll(contestRef, nomineeRef, voteRef);
+      if (contestSnapshot.data()?.status !== "voting" || !nomineeSnapshot.exists) throw httpError(409, "Deze weekstemming is niet meer actief.");
+      if (nomineeSnapshot.data()?.uid === uid) throw httpError(400, "Je kunt niet op je eigen foto stemmen.");
+      if (voteSnapshot.exists) throw httpError(409, "Je hebt deze week al gestemd.");
+      transaction.create(voteRef, { candidateId, createdAt: FieldValue.serverTimestamp(), uid });
+      transaction.update(nomineeRef, { voteCount: FieldValue.increment(1) });
+    });
+    res.json(await weeklyScanContestPayload(uid));
+  } catch (error) {
+    sendWeeklyScanContestError(res, error);
+  }
+});
+
+exports.reportWeeklyScanContestPhoto = onRequest({ cors: false, invoker: "public", region: "us-central1" }, async (req, res) => {
+  if (!setCors(req, res) || req.method === "OPTIONS") return;
+  try {
+    requirePost(req);
+    const uid = await authenticatedUid(req);
+    const candidateId = validContestCandidateId(req.body?.candidateId);
+    const week = weeklyScanContestWeek();
+    await ensureWeeklyScanContest(week);
+    const contestRef = db.collection("weeklyScanContests").doc(week.weekId);
+    const nomineeRef = contestRef.collection("nominees").doc(candidateId);
+    const reportRef = contestRef.collection("reports").doc(`${uid}_${candidateId}`);
+    await db.runTransaction(async (transaction) => {
+      const [contestSnapshot, nomineeSnapshot, reportSnapshot] = await transaction.getAll(contestRef, nomineeRef, reportRef);
+      if (contestSnapshot.data()?.status !== "voting" || !nomineeSnapshot.exists) throw httpError(409, "Deze weekstemming is niet meer actief.");
+      if (nomineeSnapshot.data()?.uid === uid) throw httpError(400, "Je kunt je eigen foto niet rapporteren.");
+      if (reportSnapshot.exists) return;
+      transaction.create(reportRef, {
+        candidateId,
+        createdAt: FieldValue.serverTimestamp(),
+        reason: "fake_or_incorrect",
+        reporterUid: uid,
+        status: "pending_review"
+      });
+      transaction.update(nomineeRef, { reportCount: FieldValue.increment(1), reviewStatus: "flagged" });
+    });
+    res.json(await weeklyScanContestPayload(uid));
+  } catch (error) {
+    sendWeeklyScanContestError(res, error);
+  }
+});
+
+exports.acknowledgeWeeklyScanContestReward = onRequest({ cors: false, invoker: "public", region: "us-central1" }, async (req, res) => {
+  if (!setCors(req, res) || req.method === "OPTIONS") return;
+  try {
+    requirePost(req);
+    const uid = await authenticatedUid(req);
+    const weekId = String(req.body?.weekId || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekId)) throw httpError(400, "Ongeldige wedstrijdweek.");
+    const contestSnapshot = await db.collection("weeklyScanContests").doc(weekId).get();
+    if (!contestSnapshot.exists || contestSnapshot.data()?.winner?.uid !== uid) throw httpError(403, "Deze winnaarbeloning hoort niet bij jouw account.");
+    await db.collection("users").doc(uid).collection("weeklyScanContestRewardPresentations").doc(weekId).set({
+      acknowledgedAt: FieldValue.serverTimestamp(),
+      rewardBugId: contestSnapshot.data()?.winner?.rewardBugId || "",
+      weekId
+    }, { merge: true });
+    res.json({ ok: true });
+  } catch (error) {
+    sendWeeklyScanContestError(res, error);
+  }
+});
+
+exports.rotateWeeklyScanContest = onSchedule({ region: "us-central1", schedule: "10 0 * * 1", timeZone: "Europe/Amsterdam" }, async (event) => {
+  const now = new Date(event.scheduleTime || Date.now());
+  const current = weeklyScanContestWeek(now);
+  await finalizeWeeklyScanContest(weeklyScanContestWeek(now, -1));
+  await ensureWeeklyScanContest(current);
 });
 
 exports.claimFieldMilestones = onRequest({ cors: false, invoker: "public", region: "us-central1" }, async (req, res) => {
@@ -1946,6 +2057,215 @@ function decryptJson(value) {
   const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), Buffer.from(value.iv, "base64"));
   decipher.setAuthTag(Buffer.from(value.tag, "base64"));
   return JSON.parse(Buffer.concat([decipher.update(Buffer.from(value.ciphertext, "base64")), decipher.final()]).toString("utf8"));
+}
+
+const contestThumbnailPattern = /^data:image\/jpeg;base64,[a-z0-9+/=]+$/i;
+
+function validContestCandidateId(value) {
+  const id = String(value || "").trim();
+  if (!/^[a-zA-Z0-9_-]{8,100}$/.test(id)) throw httpError(400, "Ongeldige wedstrijdfoto.");
+  return id;
+}
+
+function verifiedContestThumbnail(claims, reviewThumbnailDataUrl) {
+  if (
+    !claims.thumbnailSha256
+    || typeof reviewThumbnailDataUrl !== "string"
+    || reviewThumbnailDataUrl.length > 220_000
+    || !contestThumbnailPattern.test(reviewThumbnailDataUrl)
+    || createHash("sha256").update(reviewThumbnailDataUrl).digest("hex") !== claims.thumbnailSha256
+  ) return undefined;
+  return reviewThumbnailDataUrl;
+}
+
+async function registerWeeklyScanContestCandidate({ claims, reviewThumbnailDataUrl, uid }) {
+  const photoUrl = verifiedContestThumbnail(claims, reviewThumbnailDataUrl);
+  if (!photoUrl || !["matched", "not_in_catalog"].includes(claims?.status)) return { registered: false };
+  const week = weeklyScanContestWeek();
+  const candidateRef = db.collection("weeklyScanContestSubmissions").doc(week.weekId).collection("candidates").doc(uid);
+  const profile = (await db.collection("users").doc(uid).get()).data() || {};
+  const displayName = String(profile.displayName || profile.name || "BugBaas-speler").trim().slice(0, 80) || "BugBaas-speler";
+  const candidate = {
+    confidence: claims.confidence,
+    displayName,
+    photoContestReason: String(claims.photoContestReason || "Een scherpe, opvallende echte bugfoto.").trim().slice(0, 180),
+    photoContestScore: Math.max(0, Math.min(100, Math.round(Number(claims.photoContestScore) || 0))),
+    photoUrl,
+    scanId: claims.scanId,
+    scientificName: String(claims.scientificName || "").slice(0, 160),
+    speciesName: String(claims.speciesName || "Bug").slice(0, 120),
+    submittedAt: new Date().toISOString(),
+    uid,
+    weekId: week.weekId
+  };
+  const selectedAsPersonalBest = await db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(candidateRef);
+    if (existing.data()?.scanId === claims.scanId) return true;
+    const currentScore = Number(existing.data()?.photoContestScore) || -1;
+    const currentConfidence = Number(existing.data()?.confidence) || -1;
+    if (existing.exists && (currentScore > candidate.photoContestScore || (currentScore === candidate.photoContestScore && currentConfidence >= candidate.confidence))) return false;
+    transaction.set(candidateRef, candidate);
+    return true;
+  });
+  return { registered: true, selectedAsPersonalBest, weekId: week.weekId };
+}
+
+async function ensureWeeklyScanContest(week = weeklyScanContestWeek()) {
+  const contestRef = db.collection("weeklyScanContests").doc(week.weekId);
+  if ((await contestRef.get()).exists) return;
+  const candidatesSnapshot = await db.collection("weeklyScanContestSubmissions").doc(week.sourceWeekId)
+    .collection("candidates").orderBy("photoContestScore", "desc").limit(3).get();
+  const nominees = selectWeeklyScanNominees(candidatesSnapshot.docs.map((item) => item.data()));
+  await db.runTransaction(async (transaction) => {
+    const existing = await transaction.get(contestRef);
+    if (existing.exists) return;
+    const ready = nominees.length === 3;
+    transaction.create(contestRef, {
+      createdAt: FieldValue.serverTimestamp(),
+      endsAt: week.endsAt,
+      nomineeCount: ready ? 3 : 0,
+      rewardXp: contestRewardXp,
+      sourceWeekId: week.sourceWeekId,
+      startsAt: week.startsAt,
+      status: ready ? "voting" : "insufficient_candidates",
+      weekId: week.weekId
+    });
+    if (!ready) return;
+    for (const nominee of nominees) {
+      transaction.create(contestRef.collection("nominees").doc(nominee.scanId), {
+        ...nominee,
+        reportCount: 0,
+        reviewStatus: "clear",
+        voteCount: 0
+      });
+    }
+  });
+}
+
+async function finalizeWeeklyScanContest(week) {
+  const contestRef = db.collection("weeklyScanContests").doc(week.weekId);
+  const contestSnapshot = await contestRef.get();
+  if (!contestSnapshot.exists || contestSnapshot.data()?.status !== "voting") return;
+  const nomineeSnapshot = await contestRef.collection("nominees").get();
+  const winner = weeklyScanContestWinner(nomineeSnapshot.docs.map((item) => item.data()));
+  await db.runTransaction(async (transaction) => {
+    const current = await transaction.get(contestRef);
+    if (current.data()?.status !== "voting") return;
+    if (!winner) {
+      transaction.update(contestRef, { closedAt: FieldValue.serverTimestamp(), status: "closed", winner: null });
+      return;
+    }
+    const winnerUserRef = db.collection("users").doc(winner.uid);
+    const rewardBugId = weeklyScanContestRewardBugId(winner.uid, week.weekId);
+    const rewardRef = winnerUserRef.collection("bugdex").doc(rewardBugId);
+    const unlockRef = winnerUserRef.collection("bugdexUnlocks").doc(rewardBugId);
+    const [winnerUser, rewardSnapshot, unlockSnapshot] = await transaction.getAll(winnerUserRef, rewardRef, unlockRef);
+    if (!winnerUser.exists) throw httpError(404, "Winnaarprofiel niet gevonden.");
+    const now = new Date().toISOString();
+    const existingReward = rewardSnapshot.exists ? rewardSnapshot.data() || {} : {};
+    const existingUnlock = unlockSnapshot.exists ? unlockSnapshot.data() || {} : {};
+    const previousCount = Math.max(0, Math.floor(Number(existingReward.count) || 0));
+    const rewardSources = Array.from(new Set([...(Array.isArray(existingReward.sources) ? existingReward.sources : []), "weekly_scan_contest"]));
+    const unlockSources = Array.from(new Set([...(Array.isArray(existingUnlock.sources) ? existingUnlock.sources : []), "weekly_scan_contest"]));
+    transaction.set(rewardRef, {
+      bugId: rewardBugId,
+      count: previousCount + 1,
+      firstUnlockedAt: existingReward.firstUnlockedAt || now,
+      lastUnlockedAt: now,
+      rarity: contestRewardRarity,
+      sources: rewardSources
+    });
+    transaction.set(unlockRef, {
+      bugId: rewardBugId,
+      firstUnlockedAt: existingUnlock.firstUnlockedAt || existingReward.firstUnlockedAt || now,
+      lastUnlockedAt: now,
+      rarity: contestRewardRarity,
+      sources: unlockSources
+    });
+    transaction.update(winnerUserRef, {
+      totalPoints: FieldValue.increment(contestRewardXp),
+      weeklyScanContestWins: FieldValue.increment(1)
+    });
+    transaction.update(contestRef, {
+      closedAt: FieldValue.serverTimestamp(),
+      status: "closed",
+      winner: {
+        displayName: winner.displayName,
+        photoUrl: winner.photoUrl,
+        scanId: winner.scanId,
+        speciesName: winner.speciesName,
+        uid: winner.uid,
+        voteCount: winner.voteCount,
+        rewardBugId,
+        rewardIsNew: previousCount === 0,
+        rewardRarity: contestRewardRarity
+      },
+      winnerRewardXp: contestRewardXp
+    });
+  });
+}
+
+async function weeklyScanContestPayload(uid) {
+  const currentWeek = weeklyScanContestWeek();
+  const previousWeek = weeklyScanContestWeek(new Date(), -1);
+  await finalizeWeeklyScanContest(previousWeek);
+  await ensureWeeklyScanContest(currentWeek);
+  const contestRef = db.collection("weeklyScanContests").doc(currentWeek.weekId);
+  const [contestSnapshot, nomineeSnapshot, voteSnapshot, previousSnapshot, rewardPresentationSnapshot] = await Promise.all([
+    contestRef.get(),
+    contestRef.collection("nominees").get(),
+    contestRef.collection("votes").doc(uid).get(),
+    db.collection("weeklyScanContests").doc(previousWeek.weekId).get(),
+    db.collection("users").doc(uid).collection("weeklyScanContestRewardPresentations").doc(previousWeek.weekId).get()
+  ]);
+  const reportSnapshots = await Promise.all(nomineeSnapshot.docs.map((item) => contestRef.collection("reports").doc(`${uid}_${item.id}`).get()));
+  const reports = new Set(reportSnapshots.filter((item) => item.exists).map((item) => String(item.data()?.candidateId || "")));
+  const contest = contestSnapshot.data() || {};
+  const previous = previousSnapshot.data() || {};
+  const winner = previous.winner && typeof previous.winner === "object" ? previous.winner : undefined;
+  return {
+    current: {
+      endsAt: contest.endsAt,
+      nominees: nomineeSnapshot.docs.map((item) => {
+        const data = item.data();
+        return {
+          displayName: data.displayName,
+          id: item.id,
+          isOwn: data.uid === uid,
+          photoContestReason: data.photoContestReason,
+          photoContestScore: data.photoContestScore,
+          photoUrl: data.photoUrl,
+          reportedByViewer: reports.has(item.id),
+          speciesName: data.speciesName,
+          voteCount: Math.max(0, Math.floor(Number(data.voteCount) || 0))
+        };
+      }),
+      rewardXp: contestRewardXp,
+      status: contest.status || "insufficient_candidates",
+      viewerVoteCandidateId: voteSnapshot.exists ? String(voteSnapshot.data()?.candidateId || "") : undefined,
+      weekId: currentWeek.weekId
+    },
+    lastWinner: winner ? {
+      displayName: winner.displayName,
+      photoUrl: winner.photoUrl,
+      speciesName: winner.speciesName,
+      voteCount: Math.max(0, Math.floor(Number(winner.voteCount) || 0)),
+      viewerWon: winner.uid === uid,
+      rewardBugId: winner.rewardBugId,
+      rewardIsNew: winner.rewardIsNew === true,
+      rewardPresentationPending: winner.uid === uid && Boolean(winner.rewardBugId) && !rewardPresentationSnapshot.exists,
+      rewardRarity: winner.rewardRarity || contestRewardRarity,
+      rewardXp: Number(previous.winnerRewardXp) || contestRewardXp,
+      weekId: previousWeek.weekId
+    } : undefined,
+    ok: true
+  };
+}
+
+function sendWeeklyScanContestError(res, error) {
+  const status = Number(error?.status) || 500;
+  if (status >= 500) logger.error("Weekly scan contest request failed", safeError(error));
+  res.status(status).json({ error: status >= 500 ? "De weekstemming is tijdelijk niet beschikbaar." : String(error?.message || "De weekstemming is mislukt.") });
 }
 
 function encryptionKey() {

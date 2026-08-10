@@ -91,7 +91,7 @@ export async function submitRealBugScan(
         Authorization: `Bearer ${idToken}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ scanId, imageDataUrl })
+      body: JSON.stringify({ scanId, imageDataUrl, reviewThumbnailDataUrl })
     });
     if (!response.ok) {
       if (response.status === 429) throw new RealBugScanLimitError();

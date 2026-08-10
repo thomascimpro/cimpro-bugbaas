@@ -14,6 +14,7 @@ export type DuelSeasonClaim = {
   bugIds: string[];
   claimedAt: string;
   displayName: string;
+  newBugIds?: string[];
   rank: number;
   reward: DuelSeasonReward;
   seasonId: string;
@@ -111,6 +112,7 @@ function normalizeSeasonClaim(seasonId: string, uid: string, value: Partial<Duel
     bugIds: Array.isArray(value.bugIds) ? value.bugIds.filter((bugId): bugId is string => typeof bugId === "string") : [],
     claimedAt: typeof value.claimedAt === "string" ? value.claimedAt : "",
     displayName: typeof value.displayName === "string" ? value.displayName : "Speler",
+    newBugIds: Array.isArray(value.newBugIds) ? value.newBugIds.filter((bugId): bugId is string => typeof bugId === "string") : undefined,
     rank,
     reward: normalizeReward(value.reward, rank),
     seasonId: typeof value.seasonId === "string" ? value.seasonId : seasonId,

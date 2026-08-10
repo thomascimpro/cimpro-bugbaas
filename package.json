@@ -1,6 +1,6 @@
 {
   "name": "bugbaas",
-  "version": "3.0.6",
+  "version": "3.0.9",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -45,5 +45,21 @@
     "@types/three": "^0.185.1",
     "babel-preset-expo": "~54.0.10",
     "typescript": "^5.9.0"
-  }
+  },
+  "description": "Android-first Expo/React Native app voor interne bugmeldingen, statusopvolging, punten, ranglijst en BugDex.",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thomascimpro/BugBaas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/thomascimpro/BugBaas/issues"
+  },
+  "homepage": "https://github.com/thomascimpro/BugBaas#readme"
 }

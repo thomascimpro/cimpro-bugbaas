@@ -200,17 +200,18 @@ async function updateUserCountersAndReset(token, userDoc, newUniqueCounts) {
   }, ["bugDexCount", "duelRating", "duelSeasonId", "duelSeasonResetAt", "legendaryBugDexCount", "mythicBugDexCount"]);
 }
 
-async function writeClaim(token, userDoc, rank, reward, bugIds) {
+async function writeClaim(token, userDoc, rank, reward, bugIds, newBugIds) {
   const uid = docId(userDoc.name);
   await patchDocument(`/users/${uid}/duelSeasonClaims/${seasonId}`, token, {
     bugIds: arrayValue(bugIds.map(stringValue)),
     claimedAt: stringValue(nowIso),
     displayName: stringValue(fieldString(userDoc, "displayName") || uid),
+    newBugIds: arrayValue(newBugIds.map(stringValue)),
     rank: integerValue(rank),
     reward: rewardFields(reward),
     seasonId: stringValue(seasonId),
     uid: stringValue(uid)
-  }, ["bugIds", "claimedAt", "displayName", "rank", "reward", "seasonId", "uid"]);
+  }, ["bugIds", "claimedAt", "displayName", "newBugIds", "rank", "reward", "seasonId", "uid"]);
 }
 
 async function main() {
@@ -236,6 +237,7 @@ async function main() {
     const reward = rewardPlan[rank];
     const existingClaim = await getDocument(`/users/${uid}/duelSeasonClaims/${seasonId}`, token);
     const bugIds = [];
+    const newBugIds = [];
     const newUniqueCounts = { legendary: 0, mythic: 0, total: 0 };
 
     if (!existingClaim) {
@@ -244,12 +246,13 @@ async function main() {
         bugIds.push(bugId);
         const isNew = await grantBug(token, user, bugId, reward.rarity, `duel_season_${seasonId}`);
         if (isNew) {
+          newBugIds.push(bugId);
           newUniqueCounts.total += 1;
           if (reward.rarity === "Legendarisch") newUniqueCounts.legendary += 1;
           if (reward.rarity === "Mythisch") newUniqueCounts.mythic += 1;
         }
       }
-      await writeClaim(token, user, rank, reward, bugIds);
+      await writeClaim(token, user, rank, reward, bugIds, newBugIds);
     } else {
       bugIds.push(...fieldStringArray(existingClaim, "bugIds"));
     }

@@ -1,5 +1,66 @@
 # Status
 
+## 2026-08-10 - BugBaas 3.0.9 uitgebracht
+
+- De actieve BugDex-release bevat exact **1000** unieke catalogusentries, **1000** WebP-runtimebestanden en **1000** artmappings. De ruwe generatie-PNG's worden niet meer naar Vercel gestuurd.
+- Vercel-productie staat READY op `https://bugbaasv3.vercel.app`, deployment `dpl_3msAij2mJpy48RhAZxnyzdvMFSZA`. Hoofdapp, Vleugeljacht 3D, kaartservice en BugScan-CORS zijn live gecontroleerd.
+- Firestore rules zijn uitgebracht op `thomascimpro-6266f`; alle **31/31** Firebase Functions staan ACTIVE. De vereiste OpenAI-, scanreceipt-, Firebase- en Google-envnamen zijn aanwezig zonder secrets in bron of releasebestanden.
+- Android 3.0.9 (`versionCode 318`) staat in `dist/BugBaas-3.0.9.apk`: 108.650.161 bytes, SHA-256 `E47D9A51BE77605BEBDC22FE00E3FF573793CEE3DA32628E55E4601B4F1365CD`, met dezelfde legacy signer.
+- Web behoudt de lichte iPhone-Safari-geluidsroute en vrije Vleugeljacht 3D. Android behoudt het slot en opent `https://bugbaas.vercel.app`.
+- Er was geen aangesloten ADB-apparaat; fysieke camera-, Health Connect- en installatiecontrole op een telefoon is daarom niet geclaimd.
+
+## 2026-08-10 - Fullscreen BugScan-camera en nauwkeuriger beeldanalyse (niet uitgebracht)
+
+- De native scan-camera opent schermvullend en biedt automatische/aan/uit-flits, continu scherpstellen, lamp, knijp- en knopzoom, een maximale 4:3-fotostand en op iPhone een lenswisselaar. Web blijft de volledige systeemcamera van de telefoon gebruiken.
+- De originele foto blijft behouden tot de definitieve uitsnede. Alleen die uitsnede wordt eenmaal naar maximaal 2560 px verwerkt; payloadfallbacks worden opnieuw vanaf de originele foto gemaakt en de developer-thumbnail is verhoogd naar 640 px.
+- BugScan gebruikt in bron `gpt-5.6-luna` met `max` reasoning en `detail: original`. De prompt mag een soort alleen noemen bij minimaal twee zichtbare diagnostische kenmerken en mag confidence niet kunstmatig boven de 70%-grens tillen.
+- De BugDex-rewardketen is alleen-lezen gecontroleerd: bugrewards gaan eerst via foregroundvangst en daarna naar het bron-gelabelde ontdekt/+1-scherm; meerdere rewards en Android-widgetbugs blijven in volgorde gestapeld.
+- Bekende analysegrens: die presentatiewachtrij leeft alleen in het appgeheugen. Geforceerd afsluiten midden in een reeks kan resterende schermen verbergen; een al uit de Android-widget gehaalde radarbug kan vóór de foregroundvangst zelfs nog zonder BugDex-toekenning verloren gaan. Dit is conform verzoek nog niet gewijzigd.
+- Er is bewust nog geen Vercel- of APK-release uitgevoerd.
+
+## 2026-08-10 - BugBaas 3.0.8 productiehotfix
+
+- `https://bugbaas.vercel.app` staat op Vercel-deployment `dpl_EvdCQCvnJvgQSjSABbuBYyiXuAdf`; de vereiste OpenAI/Firebase-envnamen zijn aanwezig en het gedeelde scanreceipt-secret is veilig opnieuw gesynchroniseerd.
+- Firebase Function `recordVerifiedObservation` is selectief bijgewerkt op project `thomascimpro-6266f`. Een geauthenticeerde productiescan is daarna met habitat, gedrag en privé-locatie als veldnotitie opgeslagen.
+- Movement Radar telt zichtbare widgetbugs en nieuw verdiende loopbugs nu op en claimt beide groepen in één actie met exact dezelfde bug-IDs en aantallen.
+- De 907 gekoppelde BugDex-WebP's blijven één-op-één aanwezig en zijn zonder achtergrondverlies geoptimaliseerd van ruim 100 MiB naar 42,0 MiB.
+- Android 3.0.8 (`versionCode 317`) staat in `dist/BugBaas-3.0.8.apk`: 96.896.646 bytes, ruim 38% kleiner dan 3.0.7, met dezelfde legacy signer.
+
+## Actueel BugDex-checkpoint 2026-08-10
+
+- Nederlandse productiequeue: **483/610 klaar**; de actieve catalogus staat exact op **1000 unieke soortentries**.
+- Laatste actieve toevoeging uit wave 479-486: Schildstipspanner, Voorjaarskortvleugelmot, Wormkruidhaantje, Zuidelijke groene schildwants en Zwarte heidelibel; alle vijf hebben afzonderlijk PASS. Roodpoothalmkruiper, Maskerspinnetje en poging 2 van Tengere grasjuffer zijn eveneens gegenereerd en gecontroleerd, maar recoverable buiten runtime gehouden om de catalogus exact op 1000 te stoppen.
+- Wave 471-478: Vroege granietmot, Muisbeertje, *Phasia aurigera*, Zwarte speerkniptor, Zwartvlekgrasmot, Schijn-vierbandspanner, Noordse witsnuitlibel en Maanschietmot; alle acht hebben afzonderlijk PASS.
+- Nieuwe laatste wave (463-470): Micaplatvoetje, Witkopmot, Ruitijger, Slanke kogelspin, Langspriet-langsprietje, *Phaonia signata*, Ringspikkelspanner en Stompvleugelgrasuil; alle acht hebben afzonderlijk PASS. Twee mogelijke dubbelen (`gewone-krabspin-misumena-vatia` en `gewone-doodgraver-nicrophorus-vespillo`) zijn vóór imagegen overgeslagen.
+- Nieuwe laatste wave (455-462): Oranje maanmug, Slakrups, Muurzesoog, Variabele dwergschaduwwants, Weidevlekoog, Peper-en-zoutvlinder, Tweekleurige smalboktor en V-dwergspanner; alle acht hebben afzonderlijk PASS.
+- De mogelijke alias `gewone-krabspin-misumena-vatia` is vóór imagegen overgeslagen omdat de bestaande Gewone krabspin al dezelfde genormaliseerde soortnaam heeft.
+- De actieve catalogus staat na deze wave op 1000 unieke soortentries; de nieuwe kaarten zijn additief gekoppeld aan facts, sets, `bugArt`, transparante PNG en WebP.
+- Nieuwe laatste wave (447-454): Loofboombladroller, Streepkokerbeertje, Zilveren groenuil, Plaatjesgalwesp, Variabele vierbandspanner, Viervlekbrandnetelsnuitkever, Paardenbloembladroller en Rode knopbladroller; alle acht hebben afzonderlijk PASS.
+- Nieuwe laatste wave (439-446): Waterleliemot, Zwart soldaatje, Nunvlinder, Roodbaardroofvlieg, Sneeuwwitte vedermot, Schedeldrager, Zandroofvlieg en *Mimela junii*; alle acht hebben afzonderlijk PASS.
+- Nieuwe laatste wave (431-438): Reebruine bladsnuitkever, Ringelrups, Witte grijsbandspanner, Zuringspanner, Tuinwolfspin, Zesvlekkige groefbij, Wollig Gitje en Rood weeskind; alle acht hebben afzonderlijk PASS. De Zesvlekkige groefbij en het Wollig Gitje gebruiken een tweede imagegen-poging met blauwe chroma voor schone transparante vleugels.
+- Nieuwe laatste wave (423–430): Zwervende Pantserjuffer, Zigzagtijger, Kustsprinkhaan, Oranje kruidenmot, Vaal kokerbeertje, Witte halvemaanzwever, Zomersmaragd en Meidoornstippelmot; alle acht hebben afzonderlijk PASS. Zwervende Pantserjuffer, Zigzagtijger en Witte halvemaanzwever zijn op blauwe chroma opnieuw gegenereerd voor schone transparante vleugels.
+- Vorige wave (415–422): Muurrouwzwever, Parelmoermot, Paardenkastanjemineermot, Viervlekglansmug, Moerassprinkhaan, Meidoornkielwants, Leverkleurige bladroller en Vloeivleklieveheersbeestje; alle acht hebben afzonderlijk PASS. Vier assets zijn op blauwe chroma opnieuw gegenereerd en met een strengere matte gecontroleerd om kleurfranje te verwijderen.
+- Vorige wave (407–414): Sint-jacobsvlinder, Pendelzweefvlieg, Zuringrandwants, Zilverstreepgrasmot, Populierenpijlstaart, Variabel elfje, Roodvlekweekkever en Rotsheidenetwants; alle acht hebben afzonderlijk PASS. Zilverstreepgrasmot en Rotsheidenetwants zijn op een contrasterende blauwe chroma opnieuw gegenereerd om kleurfranje en gevulde lace-wingcellen te voorkomen.
+- Vorige wave (399–406): Kleine heidehangmatspin, Kleine rouwvlieg, Kleine voorjaarsuil, Kleine zomervlinder, Koffieboonspin, Koolbladroller, Koperuil en Koraaljuffer; alle acht hebben afzonderlijk PASS. De eerste koraaljuffer-render is wegens een onduidelijke vleugelweergave afgekeurd; poging 2 met magenta chroma is gebruikt.
+- Vorige wave (391–398): Kempense heidelibel, Kerkzesoog, Kervelgitje, Klaverspanner, Klein vliegend hert, Kleine boskogelspin, Kleine broeikasspin en Kleine dikkaak; alle acht hebben afzonderlijk PASS. De Kempense heidelibel is op magenta chroma opnieuw gegenereerd om de vier transparante vleugels te behouden.
+- Vorige wave: Indische meelmot, Ingekeepte smalboktor, Julikever, Kaneelglasvleugelwants, Kaskaardespin, Kasspringspin, Kegelbijvlieg en Kegelspin; alle acht hebben afzonderlijk PASS. Een tijdelijke bronverwisseling tussen kaskaardespin en julikever is vóór promotie gecorrigeerd.
+- Vorige wave: Gewone velduil, Gewone viltvlieg, Gewone vliegendoder, Gewone witvlakbladroller, Gewone zandwolfspin, Goudoogje, Graphomya maculata en Grijze huisspin; alle acht hebben afzonderlijk PASS.
+- Vorige wave daarvoor: Gewone regendaas, Gewone renspin, gewone rietkever, Gewone schubsnipvlieg, Gewone snuitvlieg, Gewone spiegelmot, Gewone staartspin en gewone tandkaak; alle acht hebben afzonderlijk PASS.
+- Deze waves voegden Platte wielwebspin, Weideschorpioenvlieg, Bruin blauwtje, Gewone stofuil, Volgeling, Groen zuringhaantje, Bruine huismot, Sint-jansvlinder, Smalle randwants, Puntbijvlieg, Wapendrager, Hulstvlieg, Gewone huisspin, Grote beer, Gewone tweevleugel, Zuringuil, Strekpoot, Brandnetelprachtwants, Bruine korenbout, Bosbijvlieg, Stro-uiltje, Mediterrane prachtblindwants, Berkensmalsnuit, Gewone spikkelspanner, Groene eikenbladroller, Gewone prachtwapenvlieg, Vroege glazenmaker, Kroosvlindertje, Menuetzweefvlieg, Rode smalbok, Meeldauwlieveheersbeestje, Vlekstipspanner, Knikkergalwesp, Gewone rookwants, Zwartkopvuurkever, Rozemarijngoudhaantje, Maartse vlieg, Zandhalmuiltje, Oranje wortelboorder en Kardinaalsmutsstippelmot toe.
+- Nieuwe soorten zijn additief gekoppeld aan catalogus, facts, sets, `bugArt`, transparante PNG en WebP.
+- Laatste afgeronde wave daarvoor: Lieveling, Bruine grijsbandspanner, Schorsvlieg en Tuinbladroller; alle vier hebben afzonderlijk PASS.
+- Laatste afgeronde wave daarvoor: Miersikkelwants, Oedemera lurida, Bruine Snuituil en Bonte brandnetelmot; alle vier hebben afzonderlijk PASS.
+- `npm.cmd run validate:bug-art`, `npm.cmd run typecheck` en `node --test scripts/bugDexNederlandPilot.test.mjs` zijn groen (3/3, typecheck, 4/4).
+
+## 2026-08-01 Nederlandse BugDex-soortenwaves
+
+- De actieve catalogus staat op 599 unieke entries, met 599 art-registry-mappings en 602 fysieke PNG/WebP-bestanden; alle nieuwe pilot-assets zijn 768×768 RGBA met alpha-extrema `(0, 255)`.
+- De Nederlandse soortenwave bevat nu 82 geaccepteerde soortkaarten. Schorsmarpissa en drie foto-cut-outs uit Wave 3 zijn stijl-afgekeurd; Grove tuinslak en Ruwe pissebed zijn bewust buiten scope gehouden omdat het geen insecten/gevraagde spinachtigen zijn.
+- De kandidaten-datagate is aangescherpt naar insecten plus spinachtigen: 610 productie-kandidaten (225 P0, 242 P1, 128 P2 en 13 handmatig) en 194 `out-of-scope-non-bug` records.
+- Voortgang productiequeue: **82/610 klaar**; **4 style FAIL** wachten op een echte BugDex-3D-regeneratie, **2 alias-dubbelen** zijn overgeslagen en **528** productiekaarten zijn nog niet geaccepteerd/in-app.
+- De afgeronde P0/P1-batches zijn met imagegen, chroma-key-alpha, soortreview, WebP-conversie en runtimekoppeling afgerond: `Asbij`, `Grijze zandbij`, `Gewone zijdebij`, `Gewone maskerbij`, `Glanzende houtmier`, `Franse veldwesp`, `Middelste wesp`, `Viervleklieveheersbeestje`, `Gewone doodgraver`, `Gewone kortschildkever`, `Bruine meelkever`, `Groene snuitkever`, `Gewone wespenboktor`, `Groene appelwants`, `Gewone daas`, `Oranje zandoogje`, `Kleine wintervlinder`, `Grote wintervlinder`, `Huiskrekel`, `Herfstspin`, `Herfsthangmatspin`, `Huiskogelspin`, `Gewone krabspin`, `Oosterse kakkerlak`, `Geelgerande waterroofkever`, `Doodskopzweefvlieg`, `Schaakbordlieveheersbeestje`, `Grauwe schildwants`, `Strontvlieg`, `Rode hooiwagen`, `Gewone meikever`, `Watersnuffel`, `Wespenspin`, `Roodpootschildwants`, `Blauwooggrasmot`, `Plakker`, `Bosmestkever`, `Citroenlieveheersbeestje`, `Grijze stipspanner`, `Paardenbloemspanner`, `Bladpootrandwants`, `Bessenschildwants`, `Gewone grasmot`, `Blauwe breedscheenjuffer` en `Zijdeglansbladsnuitkever` plus de eerdere soorten. De volgende records blijven `planned` tot hun eigen gates groen zijn.
+- Gewone langpootmug is als nieuwe poging 2 opnieuw gekaderd; de eerste te kleine poging staat recoverable onder de wave-review. `npm run validate:bug-art`, `npm run typecheck`, de wave-regressietest, de BugScan-classificatiesuite, Expo web-export en `git diff --check` zijn groen. Er is geen APK gebouwd of deployment uitgevoerd.
+
 ## 2026-07-31 BugBaas 3.0.6 releasecandidate
 
 - Versies zijn uitgelijnd op `3.0.6`; Android gebruikt `versionCode 315`.
@@ -557,3 +618,37 @@
 - Museum haalt inventory en mastery bij openen geforceerd actueel op, zodat doelen niet meer tot twee minuten achterlopen.
 - Iedere geclaimde Daily-puntenbeloning wordt weer als tappable foreground bug aangeboden.
 - De vernieuwde localhost-export draait op `http://localhost:8088`; backend en productie zijn niet gewijzigd.
+
+# 2026-08-01 BugBaas 3.0.6 production release
+
+- BugBaas 3.0.6 is live op `https://bugbaas.vercel.app`; de productie-3D-game is op web ontgrendeld en gebruikt de lichte iPhone-audio/renderroute.
+- BugScan gebruikt standaard GPT-5.6 Luna, accepteert een bruikbare onafhankelijke identificatie vanaf 70%, bewaart soorten buiten de BugDex voor developer-review en stelt daarna een weetjesvraag over de gevonden soort.
+- Een geslaagde fotoscan vereist locatie, habitat en gedrag en slaat daarna de veldnotitie automatisch op. Weekly-, Research-, Event- en Museum-rewards gebruiken serverclaims en de vaste volgorde foreground-vangst gevolgd door ontdekt/+1 met bron.
+- De benodigde Firestore-rules en zeven relevante Functions zijn gedeployed naar `thomascimpro-6266f`.
+- Android 3.0.6 staat in `dist/BugBaas-3.0.6.apk`; Vleugeljacht 3D blijft daar vergrendeld met een link naar `https://bugbaas.vercel.app`.
+
+# 2026-08-01 BugDex Nederland photo-candidate audit
+
+- The catalog was compared with 928 verifiable Dutch iNaturalist species candidates across insects, arachnids, snails, pissebed/crustacean groups, centipedes and millipedes.
+- The data-driven diff contains 828 missing specific cards after exact-name and known-alias checks: 273 P0, 305 P1 and 226 P2.
+- The candidate data is stored in `docs/bugdex-nederland-photo-candidates.json`; the execution and review gates are in `docs/bugdex-nederland-honderden-plan.md`.
+- The concrete asset-to-app checklist is in `docs/bugdex-nederland-asset-to-app-plan.md`, including batch checkpoints, subagent boundaries and the `in-app` Definition of Done.
+- The current visual pilot has 28 processed 768x768 RGBA PNGs with alpha extrema `(0,255)` and contact-sheet review. They are not yet promoted to production catalog/art mappings.
+- No deployment, APK, Firebase collection, badge path or existing reward path was changed by this audit.
+
+# 2026-08-02 Eenduidige BugDex-beloningen en eventstart
+
+- Iedere echte BugDex-beloning gebruikt nu dezelfde volgorde: eerst de vangbare foreground bug, daarna een scherm met `ontdekt` of `+1` en de concrete reden.
+- Ook Buddy, weekmissies, combineren, punten-/rank-unlocks, radar en duel-seizoensbeloningen lopen door deze centrale wachtrij; gemiste vangsten worden opnieuw aangeboden.
+- Ranked duels kunnen een Mythische bug geven en plaats 1 van het maandseizoen blijft een gegarandeerde echte Mythische beloning.
+- Een actieve Swarm, Team Hunt of Release Boss-finale wordt per speler en event eenmaal duidelijk gemeld bij openen of terugkeren naar de app.
+- Bron-, type- en webexportcontroles zijn geslaagd. Deze wijziging is niet gedeployed en niet op een fysiek toestel getest.
+
+# 2026-08-02 BugBaas 3.0.7 production release
+
+- BugBaas 3.0.7 staat live op `https://bugbaas.vercel.app`; root en `/butterfly-catch-3d/` geven HTTP 200 en de scanroute bewaakt requests met Firebase Auth.
+- De runtime bevat 883 BugDex-soorten, waaronder 366 nieuwe gecontroleerde Nederlandse kaarten met transparante WebP-art en volledige appkoppeling.
+- Vercel gebruikt de lichte iPhone-Safari-audio/renderroute. Android houdt Vleugeljacht 3D op slot en verwijst naar de live webversie.
+- Firestore rules compileerden en zijn live op `thomascimpro-6266f`; de 70%-grens bleek al gelijk aan productie.
+- Vercel deployment `dpl_7Zh4YHVqtK94qTz8ArmtWG8xKsiG` is `READY`; live bundle `AppEntry-37da2aadce3be500f62c35d91469be8a.js` bevat de nieuwste soort en het iPhone-tonepad.
+- De installeerbare APK staat in `dist/BugBaas-3.0.7.apk` en is als versie 316/3.0.7 op de Small Phone-emulator gestart en geroteerd zonder crash.

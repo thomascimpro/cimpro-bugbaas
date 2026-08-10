@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, type GestureResponderEvent, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { BugBaasStateArt } from "../components/BugBaasStateArt";
+import { WeeklyScanContestCard } from "../components/WeeklyScanContestCard";
 import { GameUiIcon } from "../components/ui/GameUiIcon";
 import { nativeDriver } from "../services/animationPlatform";
 import { type Language, useI18n } from "../services/i18n";
@@ -24,12 +25,12 @@ import {
   type RealBugPhotoPlan
 } from "../services/realBugScanImagePolicy";
 import { normalizeRealBugCameraAsset, type RealBugPhotoAsset } from "../services/realBugCameraAsset";
-import { adjustRealBugCameraZoom, calculateRealBugPinchZoom, chooseBestRealBugPictureSize } from "../services/realBugCameraControls";
+import { calculateRealBugPinchZoom, chooseBestRealBugPictureSize, nextRealBugFlashMode, realBugLensLabel, type RealBugFlashMode } from "../services/realBugCameraControls";
 import { getRemainingRealBugScans, RealBugScanLimitError, submitRealBugScan } from "../services/realBugScanService";
 import { entryByBugId, listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
 import { applyUserPoints } from "../services/userService";
 import { fieldJournalBehaviors, fieldJournalHabitats, listFieldJournalEntries, saveFieldJournalEntry, type FieldJournalBehavior, type FieldJournalHabitat, type FieldMilestoneReward, type WeeklyFieldSpotlightReward } from "../services/fieldJournalService";
-import { requestPrivateSightingLocation } from "../services/privateSightingLocation";
+import { requestPrivateSightingLocation, type PrivateSightingLocation } from "../services/privateSightingLocation";
 import { type User } from "../types";
 
 const scanMedallion = require("../../assets/generated/bugbaas-scan-medallion-v1.png");
@@ -44,11 +45,22 @@ type Props = {
 };
 
 type PreparedPhoto = {
-  dataUrl: string;
+  sourceUri: string;
   previewUri: string;
-  reviewThumbnailDataUrl: string;
   width: number;
   height: number;
+};
+
+type SubmissionPhoto = {
+  dataUrl: string;
+  reviewThumbnailDataUrl: string;
+};
+
+type RealBugPhotoCrop = {
+  height: number;
+  originX: number;
+  originY: number;
+  width: number;
 };
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
@@ -129,6 +141,9 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraZoom, setCameraZoom] = useState(0);
   const [cameraPictureSize, setCameraPictureSize] = useState<string | undefined>();
+  const [cameraFlash, setCameraFlash] = useState<RealBugFlashMode>("auto");
+  const [cameraLenses, setCameraLenses] = useState<string[]>([]);
+  const [cameraLens, setCameraLens] = useState<string | undefined>();
   const [cameraTorch, setCameraTorch] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [photo, setPhoto] = useState<PreparedPhoto | null>(null);
@@ -139,16 +154,18 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   const [remainingScans, setRemainingScans] = useState(3);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [habitat, setHabitat] = useState<FieldJournalHabitat>("Tuin");
-  const [behavior, setBehavior] = useState<FieldJournalBehavior>("Onbekend");
+  const [habitat, setHabitat] = useState<FieldJournalHabitat | null>(null);
+  const [behavior, setBehavior] = useState<FieldJournalBehavior | null>(null);
   const [journalSaved, setJournalSaved] = useState(false);
+  const [journalSaving, setJournalSaving] = useState(false);
+  const [journalLocationBusy, setJournalLocationBusy] = useState(false);
+  const [journalLocation, setJournalLocation] = useState<PrivateSightingLocation | null>(null);
   const [journalLocationError, setJournalLocationError] = useState("");
   const [pendingScanDrop, setPendingScanDrop] = useState<BugDexDropResult | null>(null);
+  const [contestReviewThumbnail, setContestReviewThumbnail] = useState("");
   const [journalMilestones, setJournalMilestones] = useState<FieldMilestoneReward[]>([]);
   const [weeklySpotlightReward, setWeeklySpotlightReward] = useState<WeeklyFieldSpotlightReward>();
   const [fieldPhotoStamps, setFieldPhotoStamps] = useState<FieldPhotoStamp[]>([]);
-  const [professorQuizOpen, setProfessorQuizOpen] = useState(false);
-  const [professorQuizRound, setProfessorQuizRound] = useState(0);
   const [professorQuizSelection, setProfessorQuizSelection] = useState<string | null>(null);
   const [professorQuizReward, setProfessorQuizReward] = useState(0);
   const [professorQuizRewardClaimed, setProfessorQuizRewardClaimed] = useState(false);
@@ -157,6 +174,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   const stampReveal = useRef(new Animated.Value(0)).current;
   const stageReveal = useRef(new Animated.Value(0)).current;
   const scannerSweep = useRef(new Animated.Value(0)).current;
+  const journalSavingRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -170,57 +188,71 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     };
   }, [user]);
 
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    let active = true;
+    ImagePicker.getPendingResultAsync()
+      .then((pending) => {
+        if (!active || !pending || !("assets" in pending)) return;
+        const asset = pending.assets?.[0];
+        if (asset) void prepareAsset(asset);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function prepareSubmissionPhoto(sourceUri: string, width: number, height: number, crop?: RealBugPhotoCrop): Promise<SubmissionPhoto> {
+    const manipulatePhoto = (plan: RealBugPhotoPlan) => ImageManipulator.manipulateAsync(sourceUri, [
+      ...(crop ? [{ crop }] : []),
+      ...plan.resize
+    ], {
+      base64: true,
+      compress: plan.quality,
+      format: ImageManipulator.SaveFormat.JPEG
+    });
+    const primary = await manipulatePhoto(primaryRealBugPhotoPlan(width, height));
+    if (!primary.base64) throw new Error(t("bugScan.error.prepare"));
+
+    let prepared = shouldFallbackRealBugPhoto(primary.base64)
+      ? await manipulatePhoto(fallbackRealBugPhotoPlan(width, height))
+      : primary;
+    if (!prepared.base64) throw new Error(t("bugScan.error.prepare"));
+    if (shouldFallbackRealBugPhoto(prepared.base64)) {
+      prepared = await manipulatePhoto(emergencyRealBugPhotoPlan(width, height));
+    }
+    if (!prepared.base64) throw new Error(t("bugScan.error.prepare"));
+
+    const thumbnailPlan = reviewRealBugThumbnailPlan(prepared.width ?? 0, prepared.height ?? 0);
+    const thumbnail = await ImageManipulator.manipulateAsync(prepared.uri, thumbnailPlan.resize, {
+      base64: true,
+      compress: thumbnailPlan.quality,
+      format: ImageManipulator.SaveFormat.JPEG
+    });
+    if (!thumbnail.base64) throw new Error(t("bugScan.error.thumbnail"));
+    return {
+      dataUrl: `data:image/jpeg;base64,${prepared.base64}`,
+      reviewThumbnailDataUrl: `data:image/jpeg;base64,${thumbnail.base64}`
+    };
+  }
+
   async function prepareAsset(asset: RealBugPhotoAsset | ImagePicker.ImagePickerAsset) {
-    setBusy(true);
     setError("");
     setResult(null);
     try {
-      const manipulatePhoto = (uri: string, plan: RealBugPhotoPlan) => ImageManipulator.manipulateAsync(uri, plan.resize, {
-        base64: true,
-        compress: plan.quality,
-        format: ImageManipulator.SaveFormat.JPEG
-      });
-      const primary = await manipulatePhoto(
-        asset.uri,
-        primaryRealBugPhotoPlan(asset.width ?? 0, asset.height ?? 0)
-      );
-      if (!primary.base64) throw new Error(t("bugScan.error.prepare"));
-
-      let prepared = shouldFallbackRealBugPhoto(primary.base64)
-        ? await manipulatePhoto(
-            primary.uri,
-            fallbackRealBugPhotoPlan(primary.width ?? 0, primary.height ?? 0)
-          )
-        : primary;
-      if (!prepared.base64) throw new Error(t("bugScan.error.prepare"));
-      if (shouldFallbackRealBugPhoto(prepared.base64)) {
-        prepared = await manipulatePhoto(
-          prepared.uri,
-          emergencyRealBugPhotoPlan(prepared.width ?? 0, prepared.height ?? 0)
-        );
-      }
-      if (!prepared.base64) throw new Error(t("bugScan.error.prepare"));
-
-      const thumbnail = await manipulatePhoto(
-        prepared.uri,
-        reviewRealBugThumbnailPlan(prepared.width ?? 0, prepared.height ?? 0)
-      );
-      if (!thumbnail.base64) throw new Error(t("bugScan.error.thumbnail"));
-
+      const normalized = normalizeRealBugCameraAsset(asset);
       setPhotoZoom(1);
       setPhotoOffsetX(0);
       setPhotoOffsetY(0);
       setPhoto({
-        dataUrl: `data:image/jpeg;base64,${prepared.base64}`,
-        previewUri: prepared.uri,
-        reviewThumbnailDataUrl: `data:image/jpeg;base64,${thumbnail.base64}`,
-        width: prepared.width ?? 0,
-        height: prepared.height ?? 0
+        sourceUri: normalized.uri,
+        previewUri: normalized.uri,
+        width: normalized.width,
+        height: normalized.height
       });
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : t("bugScan.error.openPhoto"));
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -231,29 +263,42 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       return;
     }
     try {
+      if (Platform.OS !== "web") {
+        const permission = cameraPermission?.granted ? cameraPermission : await requestCameraPermission();
+        if (!permission.granted) {
+          setError(t("bugScan.error.cameraPermission"));
+          return;
+        }
+      }
+
+      setCapturing(true);
+      const picked = await ImagePicker.launchCameraAsync({
+        allowsEditing: false,
+        cameraType: ImagePicker.CameraType.back,
+        exif: false,
+        mediaTypes: ["images"],
+        quality: 1
+      });
+      if (!picked.canceled && picked.assets[0]) await prepareAsset(picked.assets[0]);
+    } catch (nextError) {
       if (Platform.OS === "web") {
-        const picked = await ImagePicker.launchCameraAsync({
-          allowsEditing: false,
-          cameraType: ImagePicker.CameraType.back,
-          mediaTypes: ["images"],
-          quality: 1
-        });
-        if (!picked.canceled && picked.assets[0]) await prepareAsset(picked.assets[0]);
+        setError(nextError instanceof Error ? nextError.message : t("bugScan.error.cameraOpen"));
         return;
       }
-      const permission = cameraPermission?.granted ? cameraPermission : await requestCameraPermission();
-      if (!permission.granted) {
-        setError(t("bugScan.error.cameraPermission"));
-        return;
-      }
+
+      // Some Android devices do not expose a compatible system camera activity.
+      // Keep the in-app camera as a full-screen fallback instead of blocking BugScan.
       cameraConfiguredRef.current = false;
       setCameraPictureSize(undefined);
+      setCameraFlash("auto");
+      setCameraLenses([]);
+      setCameraLens(undefined);
       setCameraTorch(false);
       setCameraZoom(0);
       setCameraReady(false);
       setCameraOpen(true);
-    } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : t("bugScan.error.cameraOpen"));
+    } finally {
+      setCapturing(false);
     }
   }
 
@@ -281,6 +326,23 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     pinchStartDistanceRef.current = null;
   }
 
+  function closeCamera() {
+    setCameraOpen(false);
+    setCameraReady(false);
+    setCameraPictureSize(undefined);
+    setCameraTorch(false);
+    setCameraZoom(0);
+    setCameraLenses([]);
+    setCameraLens(undefined);
+  }
+
+  function cycleCameraLens() {
+    if (cameraLenses.length < 2) return;
+    const currentIndex = cameraLens ? cameraLenses.indexOf(cameraLens) : -1;
+    setCameraLens(cameraLenses[(currentIndex + 1 + cameraLenses.length) % cameraLenses.length]);
+    setCameraZoom(0);
+  }
+
   async function handleCameraReady() {
     if (!cameraRef.current) return;
     if (cameraConfiguredRef.current) {
@@ -294,9 +356,20 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       setCameraPictureSize(chooseBestRealBugPictureSize(sizes));
     } catch {
       setCameraPictureSize(undefined);
-    } finally {
-      setCameraReady(true);
     }
+    if (Platform.OS === "ios") {
+      try {
+        const lenses = await cameraRef.current.getAvailableLensesAsync();
+        setCameraLenses(lenses);
+        setCameraLens((current) => current && lenses.includes(current)
+          ? current
+          : lenses.find((lens) => lens.toLowerCase().includes("wideangle") && !lens.toLowerCase().includes("ultrawide")) ?? lenses[0]);
+      } catch {
+        setCameraLenses([]);
+        setCameraLens(undefined);
+      }
+    }
+    setCameraReady(true);
   }
 
   async function capturePhoto() {
@@ -304,11 +377,9 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     setCapturing(true);
     setError("");
     try {
-      const captured = await cameraRef.current.takePictureAsync({ quality: 1 });
+      const captured = await cameraRef.current.takePictureAsync({ quality: 1, skipProcessing: false });
       if (!captured) throw new Error(t("bugScan.error.noCapture"));
-      setCameraOpen(false);
-      setCameraReady(false);
-      setCameraTorch(false);
+      closeCamera();
       await prepareAsset(normalizeRealBugCameraAsset(captured));
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : t("bugScan.error.capture"));
@@ -340,8 +411,10 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     setBusy(true);
     setError("");
     try {
-      let dataUrl = photo.dataUrl;
-      let thumbnailDataUrl = photo.reviewThumbnailDataUrl;
+      let sourceUri = photo.sourceUri;
+      let sourceWidth = photo.width;
+      let sourceHeight = photo.height;
+      let crop: RealBugPhotoCrop | undefined;
       if (photoZoom > 1 && photo.width > 0 && photo.height > 0) {
         const cropWidth = Math.max(1, Math.round(photo.width / photoZoom));
         const cropHeight = Math.max(1, Math.round(photo.height / photoZoom));
@@ -349,33 +422,30 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
         const maxOriginY = photo.height - cropHeight;
         const originX = Math.round(((photoOffsetX + 1) / 2) * maxOriginX);
         const originY = Math.round(((photoOffsetY + 1) / 2) * maxOriginY);
-        const edited = await ImageManipulator.manipulateAsync(
-          photo.previewUri,
-          [{ crop: { originX, originY, width: cropWidth, height: cropHeight } }],
-          { base64: true, compress: primaryRealBugPhotoPlan(cropWidth, cropHeight).quality, format: ImageManipulator.SaveFormat.JPEG }
-        );
-        if (!edited.base64) throw new Error(t("bugScan.error.prepare"));
-        const thumbnailPlan = reviewRealBugThumbnailPlan(edited.width ?? 0, edited.height ?? 0);
-        const thumbnail = await ImageManipulator.manipulateAsync(
-          edited.uri,
-          thumbnailPlan.resize,
-          { base64: true, compress: thumbnailPlan.quality, format: ImageManipulator.SaveFormat.JPEG }
-        );
-        if (!thumbnail.base64) throw new Error(t("bugScan.error.thumbnail"));
-        dataUrl = `data:image/jpeg;base64,${edited.base64}`;
-        thumbnailDataUrl = `data:image/jpeg;base64,${thumbnail.base64}`;
+        crop = { originX, originY, width: cropWidth, height: cropHeight };
+        sourceWidth = cropWidth;
+        sourceHeight = cropHeight;
       }
-      const submission = await submitRealBugScan(user, dataUrl, thumbnailDataUrl);
+      const prepared = await prepareSubmissionPhoto(sourceUri, sourceWidth, sourceHeight, crop);
+      const submission = await submitRealBugScan(user, prepared.dataUrl, prepared.reviewThumbnailDataUrl);
       const nextResult = submission.result;
       setResult(nextResult);
       setJournalSaved(false);
+      setJournalSaving(false);
+      journalSavingRef.current = false;
+      setHabitat(null);
+      setBehavior(null);
+      setJournalLocation(null);
       setJournalLocationError("");
       setPendingScanDrop(submission.drop ?? null);
+      setContestReviewThumbnail(prepared.reviewThumbnailDataUrl);
       setWeeklySpotlightReward(undefined);
-      setProfessorQuizOpen(false);
+      setProfessorQuizSelection(null);
+      setProfessorQuizReward(0);
+      setProfessorQuizRewardClaimed(false);
       setRemainingScans(nextResult.remainingScans);
       if (nextResult.receipt && (nextResult.status === "matched" || nextResult.status === "not_in_catalog")) {
-        await saveAutomaticJournal(nextResult, submission.drop ?? null);
+        void prepareJournalLocation();
       } else {
         setPendingScanDrop(null);
         if (submission.drop) onRewardDrop(submission.drop);
@@ -389,24 +459,24 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   }
 
   function resetScan() {
-    setCameraOpen(false);
-    setCameraReady(false);
-    setCameraPictureSize(undefined);
-    setCameraTorch(false);
-    setCameraZoom(0);
+    closeCamera();
     setPhotoZoom(1);
     setPhotoOffsetX(0);
     setPhotoOffsetY(0);
     setPhoto(null);
     setResult(null);
     setJournalSaved(false);
+    setJournalSaving(false);
+    journalSavingRef.current = false;
+    setHabitat(null);
+    setBehavior(null);
+    setJournalLocation(null);
     setJournalLocationError("");
     setPendingScanDrop(null);
+    setContestReviewThumbnail("");
     setJournalMilestones([]);
     setWeeklySpotlightReward(undefined);
     setFieldPhotoStamps([]);
-    setProfessorQuizOpen(false);
-    setProfessorQuizRound(0);
     setProfessorQuizSelection(null);
     setProfessorQuizReward(0);
     setProfessorQuizRewardClaimed(false);
@@ -418,10 +488,16 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   const copy = result && localized ? resultCopy(result, t, localized.name) : null;
   const matchedBugId = result?.reward?.bugId ?? result?.identification.bugId ?? undefined;
   const canJournal = Boolean(result?.receipt) && (result?.status === "matched" || result?.status === "not_in_catalog");
+  const journalRequired = canJournal && !journalSaved;
   const professor = useMemo(
     () => result ? getBugProfessorBrief(result, language) : null,
-    [language, professorQuizRound, result]
+    [language, result]
   );
+
+  useEffect(() => {
+    if (!result || !canJournal || journalSaved || journalSaving || journalSavingRef.current || journalLocationError || !journalLocation || !habitat || !behavior) return;
+    void saveAutomaticJournal(result, pendingScanDrop, habitat, behavior, journalLocation, contestReviewThumbnail);
+  }, [behavior, canJournal, contestReviewThumbnail, habitat, journalLocation, journalLocationError, journalSaved, journalSaving, pendingScanDrop, result]);
   const scanStage = deriveRealBugScanStage({
     busy,
     cameraOpen,
@@ -533,32 +609,38 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     });
   }
 
-  async function saveAutomaticJournal(nextResult: RealBugScanResponse, drop: BugDexDropResult | null) {
+  async function prepareJournalLocation() {
+    if (journalLocationBusy || journalLocation) return;
+    setJournalLocationBusy(true);
+    setJournalLocationError("");
     const locationResult = await requestPrivateSightingLocation();
     if (!locationResult.available) {
       const message = locationResult.reason === "denied"
         ? "Sta locatie toe om deze veldnotitie automatisch op je kaart te zetten."
         : "Je locatie kon niet worden bepaald. Tik hieronder om het opnieuw te proberen.";
       setJournalLocationError(message);
-      throw new Error(message);
+      setJournalLocationBusy(false);
+      return;
     }
-    const saved = await saveFieldJournalEntry(user, nextResult, habitat, behavior, locationResult.location);
-    await applySavedJournal(saved);
-    setPendingScanDrop(null);
-    if (drop) onRewardDrop(drop);
-    await showWeeklySpotlightDiscovery(saved.weeklySpotlight);
+    setJournalLocation(locationResult.location);
+    setJournalLocationBusy(false);
   }
 
-  async function saveJournal() {
-    if (!result || !canJournal || busy || journalSaved) return;
-    setBusy(true);
-    setError("");
+  async function saveAutomaticJournal(nextResult: RealBugScanResponse, drop: BugDexDropResult | null, selectedHabitat: FieldJournalHabitat, selectedBehavior: FieldJournalBehavior, location: PrivateSightingLocation, reviewThumbnailDataUrl: string) {
+    if (journalSavingRef.current || journalSaved) return;
+    journalSavingRef.current = true;
+    setJournalSaving(true);
     try {
-      await saveAutomaticJournal(result, pendingScanDrop);
+      const saved = await saveFieldJournalEntry(user, nextResult, selectedHabitat, selectedBehavior, location, reviewThumbnailDataUrl);
+      await applySavedJournal(saved);
+      setPendingScanDrop(null);
+      if (drop) onRewardDrop(drop);
+      await showWeeklySpotlightDiscovery(saved.weeklySpotlight);
     } catch (nextError) {
-      setError(nextError instanceof Error ? nextError.message : "Veldnotitie opslaan mislukt.");
+      setJournalLocationError(nextError instanceof Error ? nextError.message : "Veldnotitie opslaan mislukt. Kies opnieuw of probeer je locatie opnieuw.");
     } finally {
-      setBusy(false);
+      journalSavingRef.current = false;
+      setJournalSaving(false);
     }
   }
 
@@ -578,7 +660,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerRow}>
-        <Pressable accessibilityRole="button" onPress={onBack} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
+        <Pressable accessibilityRole="button" disabled={journalRequired} onPress={onBack} style={({ pressed }) => [styles.backButton, journalRequired && styles.disabledButton, pressed && styles.pressed]}>
           <GameUiIcon name="back" size={22} />
         </Pressable>
         <View style={styles.headerCopy}>
@@ -592,83 +674,107 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       </View>
       <ScanStageHeader stage={scanStage} />
 
-      {!photo && !result && cameraOpen && (
-        <Animated.View style={[styles.cameraCard, stageAnimatedStyle, layout.isTablet && styles.stageCardTablet]}>
+      <Modal animationType="fade" onRequestClose={closeCamera} presentationStyle="fullScreen" visible={cameraOpen}>
+        <View style={[styles.cameraModal, { paddingBottom: Math.max(14, layout.bottomNavInset), paddingTop: Math.max(14, layout.headerTop) }]}>
+          <View style={styles.cameraModalTopBar}>
+            <Pressable accessibilityLabel={t("bugScan.camera.close")} accessibilityRole="button" disabled={capturing} onPress={closeCamera} style={({ pressed }) => [styles.cameraTopButton, pressed && styles.pressed]}>
+              <Text style={styles.cameraTopButtonText}>×</Text>
+            </Pressable>
+            <View style={styles.cameraModalHeading}>
+              <Text style={styles.cameraModalKicker}>BUGSCAN CAMERA</Text>
+              <Text style={styles.cameraModalTitle}>{t("bugScan.camera.fullscreenTitle")}</Text>
+            </View>
+            <Pressable
+              accessibilityLabel={t("bugScan.camera.flash")}
+              accessibilityRole="button"
+              disabled={capturing}
+              onPress={() => {
+                setCameraTorch(false);
+                setCameraFlash((current) => nextRealBugFlashMode(current));
+              }}
+              style={({ pressed }) => [styles.cameraModeButton, cameraFlash !== "off" && styles.cameraModeButtonActive, pressed && styles.pressed]}
+            >
+              <Text style={styles.cameraModeButtonLabel}>{t("bugScan.camera.flash")}</Text>
+              <Text style={styles.cameraModeButtonValue}>{t(`bugScan.camera.flash.${cameraFlash}`)}</Text>
+            </Pressable>
+          </View>
           <View
             onTouchEnd={endCameraPinch}
             onTouchMove={moveCameraPinch}
             onTouchStart={startCameraPinch}
-            style={[styles.cameraFrame, layout.isTablet && styles.cameraFrameTablet, layout.tier === "wide" && styles.cameraFrameWide]}
+            style={styles.cameraViewport}
           >
             <CameraView
+              active={cameraOpen}
               ref={cameraRef}
               autofocus="off"
               enableTorch={cameraTorch}
               facing="back"
+              flash={cameraFlash}
               mode="picture"
-              pictureSize={cameraPictureSize}
-              zoom={cameraZoom}
+              onAvailableLensesChanged={({ lenses }) => {
+                setCameraLenses(lenses);
+                setCameraLens((current) => current && lenses.includes(current)
+                  ? current
+                  : lenses.find((lens) => lens.toLowerCase().includes("wideangle") && !lens.toLowerCase().includes("ultrawide")) ?? lenses[0]);
+              }}
               onCameraReady={() => void handleCameraReady()}
               onMountError={(event) => {
-                setCameraOpen(false);
-                setCameraReady(false);
+                closeCamera();
                 setError(event.message || t("bugScan.error.cameraStart"));
               }}
+              pictureSize={cameraPictureSize}
+              ratio="4:3"
+              responsiveOrientationWhenOrientationLocked
+              selectedLens={cameraLens}
               style={styles.cameraView}
+              zoom={cameraZoom}
             />
             <View pointerEvents="none" style={styles.cameraGuide}>
               <View style={styles.cameraGuideBox} />
               <Animated.View style={[styles.cameraSweep, scannerSweepStyle]} />
               <Text style={styles.cameraGuideText}>{t("bugScan.camera.place")}</Text>
-              <Text style={styles.cameraZoomHint}>{t("bugScan.camera.zoomHint")}</Text>
+              <Text style={styles.cameraZoomHint}>{t("bugScan.camera.focusHint")}</Text>
             </View>
-            <Pressable
-              accessibilityLabel={t("bugScan.camera.light")}
-              accessibilityRole="button"
-              onPress={() => setCameraTorch((current) => !current)}
-              style={({ pressed }) => [styles.lightButton, cameraTorch && styles.lightButtonActive, pressed && styles.pressed]}
-            >
-              <Text style={styles.lightButtonIcon}>{cameraTorch ? "☀" : "○"}</Text>
-              <Text style={styles.lightButtonText}>{t("bugScan.camera.light")}</Text>
-            </Pressable>
-            <View style={styles.zoomControls}>
+            <View style={styles.cameraSideControls}>
               <Pressable
-                accessibilityLabel="Zoom out"
+                accessibilityLabel={t("bugScan.camera.light")}
                 accessibilityRole="button"
-                disabled={cameraZoom <= 0 || capturing}
-                onPress={() => setCameraZoom((current) => adjustRealBugCameraZoom(current, -1))}
-                style={({ pressed }) => [styles.zoomButton, (cameraZoom <= 0 || capturing) && styles.zoomButtonDisabled, pressed && styles.pressed]}
+                onPress={() => {
+                  setCameraFlash("off");
+                  setCameraTorch((current) => !current);
+                }}
+                style={({ pressed }) => [styles.cameraSideButton, cameraTorch && styles.cameraSideButtonActive, pressed && styles.pressed]}
               >
-                <Text style={styles.zoomButtonText}>−</Text>
+                <Text style={styles.cameraSideButtonIcon}>☀</Text>
+                <Text style={styles.cameraSideButtonText}>{t("bugScan.camera.light")}</Text>
               </Pressable>
-              <Text style={styles.zoomValue}>{Math.round(cameraZoom * 100)}%</Text>
-              <Pressable
-                accessibilityLabel="Zoom in"
-                accessibilityRole="button"
-                disabled={cameraZoom >= 1 || capturing}
-                onPress={() => setCameraZoom((current) => adjustRealBugCameraZoom(current, 1))}
-                style={({ pressed }) => [styles.zoomButton, (cameraZoom >= 1 || capturing) && styles.zoomButtonDisabled, pressed && styles.pressed]}
-              >
-                <Text style={styles.zoomButtonText}>+</Text>
-              </Pressable>
+              {cameraLenses.length > 1 ? (
+                <Pressable accessibilityRole="button" onPress={cycleCameraLens} style={({ pressed }) => [styles.cameraSideButton, pressed && styles.pressed]}>
+                  <Text style={styles.cameraSideButtonIcon}>{realBugLensLabel(cameraLens ?? cameraLenses[0])}</Text>
+                  <Text style={styles.cameraSideButtonText}>{t("bugScan.camera.lens")}</Text>
+                </Pressable>
+              ) : null}
             </View>
           </View>
-          <Pressable accessibilityRole="button" disabled={!cameraReady || capturing} onPress={() => void capturePhoto()} style={({ pressed }) => [styles.primaryButton, (!cameraReady || capturing) && styles.disabledButton, pressed && styles.pressed]}>
-            {capturing ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryButtonText}>{t("bugScan.camera.take")}</Text>}
-          </Pressable>
-          <Pressable accessibilityRole="button" disabled={capturing} onPress={() => {
-            setCameraOpen(false);
-            setCameraReady(false);
-            setCameraPictureSize(undefined);
-            setCameraTorch(false);
-            setCameraZoom(0);
-          }} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
-            <Text style={styles.secondaryButtonText}>{t("bugScan.camera.close")}</Text>
-          </Pressable>
-        </Animated.View>
-      )}
+          <View style={styles.cameraBottomBar}>
+            <Pressable accessibilityLabel={t("bugScan.chooseGallery")} accessibilityRole="button" disabled={capturing} onPress={() => { closeCamera(); void selectPhoto(); }} style={({ pressed }) => [styles.cameraBottomAction, pressed && styles.pressed]}>
+              <GameUiIcon name="gallery" size={25} />
+              <Text style={styles.cameraBottomActionText}>{t("bugScan.camera.galleryShort")}</Text>
+            </Pressable>
+            <Pressable accessibilityLabel={t("bugScan.camera.take")} accessibilityRole="button" disabled={!cameraReady || capturing} onPress={() => void capturePhoto()} style={({ pressed }) => [styles.cameraShutterOuter, (!cameraReady || capturing) && styles.disabledButton, pressed && styles.cameraShutterPressed]}>
+              <View style={styles.cameraShutterInner}>{capturing ? <ActivityIndicator color="#08364a" /> : null}</View>
+            </Pressable>
+            <View style={styles.cameraQualityBadge}>
+              <Text style={styles.cameraQualityValue}>MAX</Text>
+              <Text numberOfLines={1} style={styles.cameraQualityLabel}>{cameraPictureSize ? cameraPictureSize.replace("x", "×") : "4:3"}</Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {!photo && !result && !cameraOpen && (
+        <>
         <Animated.View style={[styles.captureWorkspace, layout.isTablet && styles.captureWorkspaceTablet, stageAnimatedStyle]}>
           <View style={[
             styles.heroCard,
@@ -726,9 +832,9 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
               <Text style={styles.actionBody}>{remainingScans > 0 ? t("bugScan.remainingToday", { count: remainingScans }) : t("bugScan.limitReached")}</Text>
             </View>
             <View>
-              <Pressable accessibilityRole="button" disabled={busy || remainingScans <= 0} onPress={() => void openCamera()} style={({ pressed }) => [styles.primaryButton, styles.capturePrimaryButton, densePhone && styles.capturePrimaryButtonPhone, (busy || remainingScans <= 0) && styles.disabledButton, pressed && styles.pressed]}>
+              <Pressable accessibilityRole="button" disabled={busy || capturing || remainingScans <= 0} onPress={() => void openCamera()} style={({ pressed }) => [styles.primaryButton, styles.capturePrimaryButton, densePhone && styles.capturePrimaryButtonPhone, (busy || capturing || remainingScans <= 0) && styles.disabledButton, pressed && styles.pressed]}>
                 <View style={styles.primaryButtonIconCircle}><GameUiIcon name="scan" size={28} /></View>
-                <Text style={styles.primaryButtonText}>{remainingScans > 0 ? t("bugScan.openCamera") : t("bugScan.limitReached")}</Text>
+                {capturing ? <ActivityIndicator color="#ffffff" /> : <Text style={styles.primaryButtonText}>{remainingScans > 0 ? t("bugScan.openCamera") : t("bugScan.limitReached")}</Text>}
               </Pressable>
               <Pressable accessibilityRole="button" disabled={busy || remainingScans <= 0} onPress={() => void selectPhoto()} style={({ pressed }) => [styles.secondaryButton, styles.galleryButton, densePhone && styles.galleryButtonPhone, (busy || remainingScans <= 0) && styles.disabledSecondaryButton, pressed && styles.pressed]}>
                 <GameUiIcon name="gallery" size={26} />
@@ -737,13 +843,15 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
             </View>
           </View>
         </Animated.View>
+        <WeeklyScanContestCard onRewardDrop={onRewardDrop} user={user} />
+        </>
       )}
 
       {photo && !result && !busy && (
         <Animated.View style={[styles.previewCard, densePhone && styles.previewCardPhone, stageAnimatedStyle, layout.isTablet && styles.stageCardTablet]}>
           <View style={[styles.previewFrame, densePhone && styles.previewFramePhone, layout.isTablet && styles.previewFrameTablet]}>
             <Image
-              resizeMode="cover"
+              resizeMode="contain"
               source={{ uri: photo.previewUri }}
               style={[
                 styles.previewImage,
@@ -810,21 +918,14 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
             <Text style={styles.identificationName}>{localized?.name}</Text>
             {result.identification.scientificName ? <Text style={styles.scientificName}>{result.identification.scientificName}</Text> : null}
             <Text style={styles.reason}>{localized?.reason}</Text>
-            {localized?.fact ? <Text style={styles.reason}>{t("bugScan.fact", { fact: localized.fact })}</Text> : null}
+            {localized?.fact && professorQuizSelection ? <Text style={styles.reason}>{t("bugScan.fact", { fact: localized.fact })}</Text> : null}
           </View>
           {professor && <View style={styles.professorCard}>
             <Text style={styles.professorTitle}>{professor.title}</Text>
             <Text style={styles.professorConfidence}>{professor.confidence}</Text>
-            <Text style={styles.professorFact}>{professor.fact}</Text>
-            {!professorQuizOpen ? (
-              <Pressable accessibilityRole="button" onPress={() => setProfessorQuizOpen(true)} style={styles.professorQuizButton}>
-                <Text style={styles.professorQuizButtonText}>{professor.quizButton}</Text>
-              </Pressable>
-            ) : null}
-            {professorQuizOpen && (
               <View style={styles.professorQuiz}>
                 <View style={styles.professorQuizMetaRow}>
-                  <Text style={styles.professorQuizDifficulty}>{professor.quizDifficulty.toUpperCase()}</Text>
+                  <Text style={styles.professorQuizDifficulty}>{professor.quizCategory.toUpperCase()} · {professor.quizDifficulty.toUpperCase()}</Text>
                   <Text style={styles.professorQuizRewardHint}>+{professor.quizRewardPoints} XP</Text>
                 </View>
                 <Text style={styles.professorQuizQuestion}>{professor.quizQuestion}</Text>
@@ -861,19 +962,19 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
                   </View>
                 ) : null}
               </View>
-            )}
           </View>}
           {canJournal && <View style={styles.journalCard}>
-            <Text style={styles.journalTitle}>{journalSaved ? "Veldnotitie automatisch opgeslagen" : "Locatie nodig voor je veldnotitie"}</Text>
-            <Text style={styles.journalBody}>{journalSaved ? "Je bugfoto, tijd en privélocatie staan nu op je kaart en tellen meteen mee voor je weekmissie." : "Na een geslaagde bugfoto bewaart BugBaas altijd een veldnotitie met je telefoonlocatie. Er is geen overslaanknop."}</Text>
-            <Text style={styles.journalLabel}>Habitat</Text><View style={styles.journalChoices}>{fieldJournalHabitats.map((item) => <Pressable disabled={busy || journalSaved} key={item} onPress={() => setHabitat(item)} style={[styles.journalChoice, habitat === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, habitat === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
-            <Text style={styles.journalLabel}>Gedrag</Text><View style={styles.journalChoices}>{fieldJournalBehaviors.map((item) => <Pressable disabled={busy || journalSaved} key={item} onPress={() => setBehavior(item)} style={[styles.journalChoice, behavior === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, behavior === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
-            <View style={[styles.privateMapChoice, journalSaved && styles.privateMapChoiceActive]}>
-              <View style={[styles.privateMapCheck, journalSaved && styles.privateMapCheckActive]}><Text style={styles.privateMapCheckText}>{journalSaved ? "✓" : "!"}</Text></View>
-              <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>{journalSaved ? "Privé-kaartmarkering bewaard" : "Telefoonlocatie nog niet beschikbaar"}</Text><Text style={styles.privateMapBody}>Je precieze locatie blijft privé en alleen jij ziet de afgeronde markering op je kaart.</Text></View>
+            <Text style={styles.journalTitle}>{journalSaved ? "Veldnotitie automatisch opgeslagen" : journalSaving ? "Veldnotitie wordt opgeslagen..." : "Maak je veldnotitie af"}</Text>
+            <Text style={styles.journalBody}>{journalSaved ? "Je bugfoto, tijd en privélocatie staan nu op je kaart en tellen meteen mee voor je weekmissie." : "Kies 1 habitat en 1 gedrag. Zodra je telefoonlocatie klaar is, slaat BugBaas de notitie vanzelf op. Je hoeft niet op opslaan te tikken."}</Text>
+            <Text style={styles.journalLabel}>Habitat</Text><View style={styles.journalChoices}>{fieldJournalHabitats.map((item) => <Pressable disabled={journalSaving || journalSaved} key={item} onPress={() => { setJournalLocationError(""); setHabitat(item); }} style={[styles.journalChoice, habitat === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, habitat === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
+            <Text style={styles.journalLabel}>Gedrag</Text><View style={styles.journalChoices}>{fieldJournalBehaviors.map((item) => <Pressable disabled={journalSaving || journalSaved} key={item} onPress={() => { setJournalLocationError(""); setBehavior(item); }} style={[styles.journalChoice, behavior === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, behavior === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
+            <View style={[styles.privateMapChoice, (journalSaved || journalLocation) && styles.privateMapChoiceActive]}>
+              <View style={[styles.privateMapCheck, (journalSaved || journalLocation) && styles.privateMapCheckActive]}><Text style={styles.privateMapCheckText}>{journalSaved || journalLocation ? "✓" : journalLocationBusy ? "…" : "!"}</Text></View>
+              <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>{journalSaved ? "Privé-kaartmarkering bewaard" : journalLocation ? "Telefoonlocatie klaar" : journalLocationBusy ? "Telefoonlocatie bepalen..." : "Telefoonlocatie nog niet beschikbaar"}</Text><Text style={styles.privateMapBody}>Je precieze locatie blijft privé en alleen jij ziet de afgeronde markering op je kaart.</Text></View>
             </View>
             {journalLocationError ? <Text style={styles.journalLocationError}>{journalLocationError}</Text> : null}
-            {!journalSaved ? <Pressable disabled={busy} onPress={() => void saveJournal()} style={[styles.journalSave, busy && styles.disabledButton]}><Text style={styles.primaryButtonText}>{busy ? "Locatie bepalen..." : "Probeer locatie opnieuw"}</Text></Pressable> : null}
+            {!journalSaved && !journalLocation && !journalLocationBusy ? <Pressable onPress={() => void prepareJournalLocation()} style={styles.journalSave}><Text style={styles.primaryButtonText}>Probeer locatie opnieuw</Text></Pressable> : null}
+            {!journalSaved && journalLocation && journalLocationError ? <Pressable onPress={() => setJournalLocationError("")} style={styles.journalSave}><Text style={styles.primaryButtonText}>Probeer opslaan opnieuw</Text></Pressable> : null}
             {fieldPhotoStamps.length > 0 && <Animated.View style={[styles.stampReveal, { opacity: stampReveal, transform: [{ scale: stampReveal.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }) }] }]}>
               <Text style={styles.stampRevealKicker}>VELDFOTOSTEMPELS</Text>
               <Text style={styles.stampRevealBody}>Vastgelegd uit deze echte vondst. Geen AI-fotocijfer en geen extra XP.</Text>
@@ -888,15 +989,15 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
               <Text style={styles.rewardReceiptKicker}>YOUR DISCOVERY CHANGED</Text>
               <View style={styles.rewardReceiptRow}><View style={styles.rewardReceiptMark}><Text style={styles.rewardReceiptMarkText}>1</Text></View><View style={styles.rewardReceiptCopy}><Text style={styles.rewardReceiptTitle}>BugDex</Text><Text style={styles.rewardReceiptBody}>{result.reward?.granted ? "A new specimen was added to your collection." : "This identification strengthens your collection record."}</Text></View></View>
               <View style={styles.rewardReceiptRow}><View style={styles.rewardReceiptMark}><Text style={styles.rewardReceiptMarkText}>2</Text></View><View style={styles.rewardReceiptCopy}><Text style={styles.rewardReceiptTitle}>Museum</Text><Text style={styles.rewardReceiptBody}>Your real BugDex collection can now reveal its next wing.</Text></View></View>
-              <View style={styles.rewardReceiptRow}><View style={styles.rewardReceiptMark}><Text style={styles.rewardReceiptMarkText}>3</Text></View><View style={styles.rewardReceiptCopy}><Text style={styles.rewardReceiptTitle}>Expedition World</Text><Text style={styles.rewardReceiptBody}>Your {habitat.toLowerCase()} field note helps awaken your private map.</Text></View></View>
+              <View style={styles.rewardReceiptRow}><View style={styles.rewardReceiptMark}><Text style={styles.rewardReceiptMarkText}>3</Text></View><View style={styles.rewardReceiptCopy}><Text style={styles.rewardReceiptTitle}>Expedition World</Text><Text style={styles.rewardReceiptBody}>Your {(habitat ?? "field").toLowerCase()} field note helps awaken your private map.</Text></View></View>
               <View style={styles.rewardReceiptActions}><Pressable onPress={onOpenCollection} style={styles.rewardReceiptAction}><Text style={styles.rewardReceiptActionText}>View collection</Text></Pressable><Pressable onPress={onOpenWorld} style={[styles.rewardReceiptAction, styles.rewardReceiptActionPrimary]}><Text style={[styles.rewardReceiptActionText, styles.rewardReceiptActionPrimaryText]}>Explore world</Text></Pressable></View>
             </View>}
             {journalSaved && <Pressable onPress={onOpenJournal} style={styles.journalOpen}><Text style={styles.journalOpenText}>Bekijk mijn Veldjournaal</Text></Pressable>}
           </View>}
-          <Pressable accessibilityRole="button" disabled={remainingScans <= 0} onPress={resetScan} style={({ pressed }) => [styles.primaryButton, remainingScans <= 0 && styles.disabledButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" disabled={remainingScans <= 0 || journalRequired} onPress={resetScan} style={({ pressed }) => [styles.primaryButton, (remainingScans <= 0 || journalRequired) && styles.disabledButton, pressed && styles.pressed]}>
             <Text style={styles.primaryButtonText}>{remainingScans > 0 ? t("bugScan.scanAgain") : t("bugScan.scanTomorrow")}</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={onBack} style={({ pressed }) => [styles.secondaryButton, pressed && styles.pressed]}>
+          <Pressable accessibilityRole="button" disabled={journalRequired} onPress={onBack} style={({ pressed }) => [styles.secondaryButton, journalRequired && styles.disabledButton, pressed && styles.pressed]}>
             <Text style={styles.secondaryButtonText}>{t("bugScan.backHome")}</Text>
           </Pressable>
         </Animated.View>
@@ -1028,33 +1129,60 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textTransform: "uppercase"
   },
-  cameraCard: {
-    alignSelf: "center",
-    backgroundColor: "rgba(7,24,38,0.98)",
-    borderColor: "#2c829b",
-    borderRadius: 24,
-    borderWidth: 1,
-    maxWidth: 780,
-    padding: 14,
-    width: "100%"
+  cameraModal: {
+    backgroundColor: "#02090e",
+    flex: 1,
+    paddingHorizontal: 12
   },
+  cameraModalTopBar: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    minHeight: 66,
+    paddingBottom: 10
+  },
+  cameraTopButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.24)",
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44
+  },
+  cameraTopButtonText: { color: "#ffffff", fontSize: 30, fontWeight: "500", lineHeight: 32 },
+  cameraModalHeading: { alignItems: "center", flex: 1 },
+  cameraModalKicker: { color: "#71e7ff", fontSize: 9, fontWeight: "900", letterSpacing: 1.4 },
+  cameraModalTitle: { color: "#ffffff", fontSize: 15, fontWeight: "900", marginTop: 2 },
+  cameraModeButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(255,255,255,0.22)",
+    borderRadius: 14,
+    borderWidth: 1,
+    minHeight: 44,
+    minWidth: 66,
+    paddingHorizontal: 9,
+    paddingVertical: 5
+  },
+  cameraModeButtonActive: { borderColor: "#f4bd55" },
+  cameraModeButtonLabel: { color: "#bed3da", fontSize: 8, fontWeight: "800", textTransform: "uppercase" },
+  cameraModeButtonValue: { color: "#ffffff", fontSize: 11, fontWeight: "900", marginTop: 1 },
   stageCardTablet: {
     maxWidth: 680,
     width: "100%"
   },
-  cameraFrame: {
-    aspectRatio: 1.1,
+  cameraViewport: {
     backgroundColor: "#03101a",
-    borderRadius: 20,
+    borderColor: "rgba(108,226,255,0.4)",
+    borderRadius: 24,
+    borderWidth: 1,
+    flex: 1,
     overflow: "hidden",
     position: "relative",
     width: "100%"
-  },
-  cameraFrameTablet: {
-    aspectRatio: 4 / 3
-  },
-  cameraFrameWide: {
-    aspectRatio: 16 / 9
   },
   cameraView: {
     height: "100%",
@@ -1103,6 +1231,26 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 18
   },
+  cameraSideControls: {
+    gap: 10,
+    position: "absolute",
+    right: 12,
+    top: 72
+  },
+  cameraSideButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(2,18,30,0.84)",
+    borderColor: "rgba(120,223,246,0.52)",
+    borderRadius: 18,
+    borderWidth: 1,
+    justifyContent: "center",
+    minHeight: 54,
+    minWidth: 54,
+    padding: 6
+  },
+  cameraSideButtonActive: { backgroundColor: "rgba(226,145,31,0.94)", borderColor: "#ffd58a" },
+  cameraSideButtonIcon: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
+  cameraSideButtonText: { color: "#ffffff", fontSize: 8, fontWeight: "900", marginTop: 2, textTransform: "uppercase" },
   lightButton: {
     alignItems: "center",
     backgroundColor: "rgba(2,18,30,0.88)",
@@ -1120,22 +1268,6 @@ const styles = StyleSheet.create({
   lightButtonActive: { backgroundColor: "rgba(226,145,31,0.96)", borderColor: "#ffd58a" },
   lightButtonIcon: { color: "#ffffff", fontSize: 16, fontWeight: "900" },
   lightButtonText: { color: "#ffffff", fontSize: 11, fontWeight: "900" },
-  zoomControls: {
-    alignItems: "center",
-    backgroundColor: "rgba(2,18,30,0.88)",
-    borderColor: "#3a899e",
-    borderWidth: 1,
-    borderRadius: 18,
-    flexDirection: "row",
-    gap: 10,
-    position: "absolute",
-    right: 14,
-    top: 14
-  },
-  zoomButton: { alignItems: "center", height: 42, justifyContent: "center", width: 42 },
-  zoomButtonDisabled: { opacity: 0.35 },
-  zoomButtonText: { color: "#ffffff", fontSize: 25, fontWeight: "900" },
-  zoomValue: { color: "#ffffff", fontSize: 12, fontWeight: "900", minWidth: 34, textAlign: "center" },
   cameraSweep: {
     backgroundColor: "rgba(92,226,255,0.92)",
     height: 2,
@@ -1147,6 +1279,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.9,
     shadowRadius: 8
   },
+  cameraBottomBar: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 104,
+    paddingHorizontal: 12,
+    paddingTop: 12
+  },
+  cameraBottomAction: { alignItems: "center", justifyContent: "center", minHeight: 58, minWidth: 72 },
+  cameraBottomActionText: { color: "#d9edf2", fontSize: 10, fontWeight: "900", marginTop: 4 },
+  cameraShutterOuter: {
+    alignItems: "center",
+    borderColor: "#ffffff",
+    borderRadius: 42,
+    borderWidth: 4,
+    height: 84,
+    justifyContent: "center",
+    width: 84
+  },
+  cameraShutterInner: { alignItems: "center", backgroundColor: "#ffffff", borderRadius: 33, height: 66, justifyContent: "center", width: 66 },
+  cameraShutterPressed: { transform: [{ scale: 0.94 }] },
+  cameraQualityBadge: { alignItems: "center", justifyContent: "center", minHeight: 58, minWidth: 72 },
+  cameraQualityValue: { color: "#f4bd55", fontSize: 12, fontWeight: "900" },
+  cameraQualityLabel: { color: "#b8cbd2", fontSize: 8, fontWeight: "800", marginTop: 3, maxWidth: 82 },
   captureWorkspace: {
     flexDirection: "column-reverse",
     gap: 12

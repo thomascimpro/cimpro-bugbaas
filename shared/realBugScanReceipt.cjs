@@ -39,15 +39,18 @@ function verificationKeys(secret, publicKey) {
   return keys;
 }
 
-function receiptClaims({ uid, scanId, status, identification, version }) {
+function receiptClaims({ uid, scanId, status, identification, thumbnailSha256, version }) {
   return {
     bugId: identification.bugId,
     confidence: identification.confidence,
     issuedAt: Date.now(),
+    photoContestReason: typeof identification.photoContestReason === "string" ? identification.photoContestReason.slice(0, 180) : "",
+    photoContestScore: Math.round(Math.min(100, Math.max(0, Number(identification.photoContestScore) || 0))),
     scanId,
     scientificName: identification.scientificName,
     speciesName: identification.commonName,
     status,
+    ...(thumbnailSha256 ? { thumbnailSha256 } : {}),
     uid,
     v: version
   };
@@ -56,8 +59,8 @@ function receiptClaims({ uid, scanId, status, identification, version }) {
 function createScanReceiptSigner({ secret } = {}) {
   if (!secret) return undefined;
   const privateKey = privateKeyFromSecret(secret);
-  return ({ uid, scanId, status, identification }) => {
-    const payload = encode(receiptClaims({ uid, scanId, status, identification, version: 2 }));
+  return ({ uid, scanId, status, identification, thumbnailSha256 }) => {
+    const payload = encode(receiptClaims({ uid, scanId, status, identification, thumbnailSha256, version: 2 }));
     const signature = signAsymmetric(null, Buffer.from(payload), privateKey).toString("base64url");
     return `v2.${payload}.${signature}`;
   };
@@ -70,6 +73,9 @@ function validClaims(claims, { uid, now, ttlMs, version }) {
   if (typeof claims.speciesName !== "string" || typeof claims.scientificName !== "string") return undefined;
   if (!(claims.bugId === null || typeof claims.bugId === "string")) return undefined;
   if (typeof claims.confidence !== "number" || claims.confidence < 0 || claims.confidence > 1) return undefined;
+  if (claims.thumbnailSha256 !== undefined && (typeof claims.thumbnailSha256 !== "string" || !/^[a-f0-9]{64}$/.test(claims.thumbnailSha256))) return undefined;
+  if (claims.photoContestScore !== undefined && (!Number.isFinite(claims.photoContestScore) || claims.photoContestScore < 0 || claims.photoContestScore > 100)) return undefined;
+  if (claims.photoContestReason !== undefined && typeof claims.photoContestReason !== "string") return undefined;
   return claims;
 }
 

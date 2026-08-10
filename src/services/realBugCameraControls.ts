@@ -1,13 +1,23 @@
-const REAL_BUG_CAMERA_ZOOM_STEP = 0.15;
 const REAL_BUG_PINCH_SENSITIVITY = 0.005;
 const REAL_BUG_MAX_CAMERA_PIXELS = 12_000_000;
 
-function clampRealBugCameraZoom(zoom: number): number {
-  return Math.min(1, Math.max(0, Number(zoom.toFixed(2))));
+export type RealBugFlashMode = "auto" | "on" | "off";
+
+export function nextRealBugFlashMode(current: RealBugFlashMode): RealBugFlashMode {
+  if (current === "auto") return "on";
+  if (current === "on") return "off";
+  return "auto";
 }
 
-export function adjustRealBugCameraZoom(currentZoom: number, direction: -1 | 1): number {
-  return clampRealBugCameraZoom(currentZoom + direction * REAL_BUG_CAMERA_ZOOM_STEP);
+export function realBugLensLabel(lens: string): string {
+  const normalized = lens.toLowerCase();
+  if (normalized.includes("ultrawide")) return "0.5×";
+  if (normalized.includes("telephoto")) return "2×";
+  return "1×";
+}
+
+function clampRealBugCameraZoom(zoom: number): number {
+  return Math.min(1, Math.max(0, Number(zoom.toFixed(2))));
 }
 
 export function calculateRealBugPinchZoom(startZoom: number, startDistance: number, currentDistance: number): number {

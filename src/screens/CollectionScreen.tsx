@@ -92,7 +92,7 @@ export function CollectionScreen({ initialTab, onBack, onRewardDrop, onUserUpdat
             : layout.bottomNavHeight + layout.bottomNavInset
         }
       ]}>
-        {tab === "bugdex" ? <BugDexScreen embedded openTradeRequest={openTradeRequest} onBack={onBack} onOpenMuseum={() => setTab("museum")} onUserUpdated={onUserUpdated} user={user} /> : null}
+        {tab === "bugdex" ? <BugDexScreen embedded openTradeRequest={openTradeRequest} onBack={onBack} onOpenMuseum={() => setTab("museum")} onRewardDrop={onRewardDrop} onUserUpdated={onUserUpdated} user={user} /> : null}
         {tab === "museum" ? <MuseumScreen embedded onBack={() => setTab("bugdex")} onRewardDrop={onRewardDrop} user={user} /> : null}
         {tab === "journal" ? <FieldJournalScreen embedded onBack={() => setTab("bugdex")} user={user} /> : null}
       </View>

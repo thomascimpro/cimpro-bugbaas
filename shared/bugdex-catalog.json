@@ -883,7 +883,8 @@
   {
     "id": "honingbij",
     "name": "Honingbij",
-    "rarity": "Gewoon"
+    "rarity": "Gewoon",
+    "scientificAliases": ["Apis mellifera"]
   },
   {
     "id": "dambordvlieg",
@@ -2613,5 +2614,2903 @@
     "scientificAliases": [
       "Leptophyes punctatissima"
     ]
+  },
+  {
+    "id": "aziatisch-lieveheersbeestje",
+    "name": "Aziatisch lieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Harmonia axyridis"]
+  },
+  {
+    "id": "duitse-wesp",
+    "name": "Duitse wesp",
+    "rarity": "Episch",
+    "scientificAliases": ["Vespula germanica"]
+  },
+  {
+    "id": "europese-hoornaar",
+    "name": "Europese hoornaar",
+    "rarity": "Episch",
+    "scientificAliases": ["Vespa crabro"]
+  },
+  {
+    "id": "gehoornde-metselbij",
+    "name": "Gehoornde metselbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Osmia cornuta"]
+  },
+  {
+    "id": "gele-weidemier",
+    "name": "Gele weidemier",
+    "rarity": "Episch",
+    "scientificAliases": ["Lasius flavus"]
+  },
+  {
+    "id": "gewone-bromvlieg",
+    "name": "Gewone bromvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Calliphora vicina"]
+  },
+  {
+    "id": "gewone-huisvlieg",
+    "name": "Gewone huisvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Musca domestica"]
+  },
+  {
+    "id": "gewone-langpootmug",
+    "name": "Gewone langpootmug",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tipula paludosa"]
+  },
+  {
+    "id": "gewone-sachembij",
+    "name": "Gewone sachembij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anthophora plumipes"]
+  },
+  {
+    "id": "gewone-steekmug",
+    "name": "Gewone steekmug",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Culex pipiens"]
+  },
+  {
+    "id": "gewone-tapijtkever",
+    "name": "Gewone tapijtkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anthrenus verbasci"]
+  },
+  {
+    "id": "gewone-wesp",
+    "name": "Gewone wesp",
+    "rarity": "Episch",
+    "scientificAliases": ["Vespula vulgaris"]
+  },
+  {
+    "id": "gewone-zweefvlieg",
+    "name": "Gewone zweefvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Episyrphus balteatus"]
+  },
+  {
+    "id": "groene-perzikluis",
+    "name": "Groene perzikluis",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Myzus persicae"]
+  },
+  {
+    "id": "groene-stinkwants",
+    "name": "Groene stinkwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Palomena prasina"]
+  },
+  {
+    "id": "grote-bladsnijderbij",
+    "name": "Grote bladsnijderbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Megachile willughbiella"]
+  },
+  {
+    "id": "grote-wolbij",
+    "name": "Grote wolbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anthidium manicatum"]
+  },
+  {
+    "id": "rode-steekmier",
+    "name": "Rode steekmier",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Myrmica rubra"]
+  },
+  {
+    "id": "rode-weekschildkever",
+    "name": "Rode weekschildkever",
+    "rarity": "Episch",
+    "scientificAliases": ["Rhagonycha fulva"]
+  },
+  {
+    "id": "rozenluis",
+    "name": "Rozenluis",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Macrosiphum rosae"]
+  },
+  {
+    "id": "tuinbladsnijderbij",
+    "name": "Tuinbladsnijderbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Megachile centuncularis"]
+  },
+  {
+    "id": "tuinkever",
+    "name": "Tuinkever",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Phyllopertha horticola"]
+  },
+  {
+    "id": "tweestippelig-lieveheersbeestje",
+    "name": "Tweestippelig lieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Adalia bipunctata"]
+  },
+  {
+    "id": "vosje",
+    "name": "Vosje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Andrena fulva"]
+  },
+  {
+    "id": "weidebij",
+    "name": "Weidebij",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Andrena flavipes"]
+  },
+  {
+    "id": "zevenstippelig-lieveheersbeestje",
+    "name": "Zevenstippelig lieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Coccinella septempunctata"]
+  },
+  {
+    "id": "zwarte-bonenluis",
+    "name": "Zwarte bonenluis",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Aphis fabae"]
+  },
+  {
+    "id": "zwartsprietdikkopje",
+    "name": "Zwartsprietdikkopje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Thymelicus lineola"]
+  },
+  {
+    "id": "groot-dikkopje",
+    "name": "Groot dikkopje",
+    "rarity": "Episch",
+    "scientificAliases": ["Ochlodes sylvanus"]
+  },
+  {
+    "id": "houtpantserjuffer",
+    "name": "Houtpantserjuffer",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chalcolestes viridis"]
+  },
+  {
+    "id": "bruine-sprinkhaan",
+    "name": "Bruine sprinkhaan",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Chorthippus brunneus"]
+  },
+  {
+    "id": "weidesprinkhaan",
+    "name": "Weidesprinkhaan",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Chorthippus parallelus"]
+  },
+  {
+    "id": "grote-trilspin",
+    "name": "Grote trilspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pholcus phalangioides"]
+  },
+  {
+    "id": "gewone-celspin",
+    "name": "Gewone celspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Amaurobius similis"]
+  },
+  {
+    "id": "schapenteek",
+    "name": "Schapenteek",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Ixodes ricinus"]
+  },
+  {
+    "id": "gewone-oorworm",
+    "name": "Gewone oorworm",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Forficula auricularia"]
+  },
+  {
+    "id": "duitse-kakkerlak",
+    "name": "Duitse kakkerlak",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Blattella germanica"]
+  },
+  {
+    "id": "asbij",
+    "name": "Asbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Andrena cineraria"]
+  },
+  {
+    "id": "grijze-zandbij",
+    "name": "Grijze zandbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Andrena vaga"]
+  },
+  {
+    "id": "gewone-zijdebij",
+    "name": "Gewone zijdebij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Colletes daviesanus"]
+  },
+  {
+    "id": "gewone-maskerbij",
+    "name": "Gewone maskerbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hylaeus communis"]
+  },
+  {
+    "id": "glanzende-houtmier",
+    "name": "Glanzende houtmier",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lasius fuliginosus"]
+  },
+  {
+    "id": "franse-veldwesp",
+    "name": "Franse veldwesp",
+    "rarity": "Episch",
+    "scientificAliases": ["Polistes dominula"]
+  },
+  {
+    "id": "middelste-wesp",
+    "name": "Middelste wesp",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Dolichovespula media"]
+  },
+  {
+    "id": "viervleklieveheersbeestje",
+    "name": "Viervleklieveheersbeestje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Exochomus quadripustulatus"]
+  },
+  {
+    "id": "gewone-doodgraver",
+    "name": "Gewone doodgraver",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Nicrophorus vespillo"]
+  },
+  {
+    "id": "gewone-kortschildkever",
+    "name": "Gewone kortschildkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ocypus olens"]
+  },
+  {
+    "id": "bruine-meelkever",
+    "name": "Bruine meelkever",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Tribolium castaneum"]
+  },
+  {
+    "id": "groene-snuitkever",
+    "name": "Groene snuitkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phyllobius pomaceus"]
+  },
+  {
+    "id": "gewone-wespenboktor",
+    "name": "Gewone wespenboktor",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Clytus arietis"]
+  },
+  {
+    "id": "groene-appelwants",
+    "name": "Groene appelwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Lygocoris pabulinus"]
+  },
+  {
+    "id": "gewone-daas",
+    "name": "Gewone daas",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tabanus bromius"]
+  },
+  {
+    "id": "oranje-zandoogje",
+    "name": "Oranje zandoogje",
+    "rarity": "Episch",
+    "scientificAliases": ["Pyronia tithonus"]
+  },
+  {
+    "id": "kleine-wintervlinder",
+    "name": "Kleine wintervlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Operophtera brumata"]
+  },
+  {
+    "id": "grote-wintervlinder",
+    "name": "Grote wintervlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Erannis defoliaria"]
+  },
+  {
+    "id": "huiskrekel",
+    "name": "Huiskrekel",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Acheta domesticus"]
+  },
+  {
+    "id": "herfstspin",
+    "name": "Herfstspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Metellina segmentata"]
+  },
+  {
+    "id": "herfsthangmatspin",
+    "name": "Herfsthangmatspin",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Linyphia triangularis"]
+  },
+  {
+    "id": "huiskogelspin",
+    "name": "Huiskogelspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Steatoda grossa"]
+  },
+  {
+    "id": "gewone-krabspin",
+    "name": "Gewone krabspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Misumena vatia"]
+  },
+  {
+    "id": "oosterse-kakkerlak",
+    "name": "Oosterse kakkerlak",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Blatta orientalis"]
+  },
+  {
+    "id": "geelgerande-waterroofkever",
+    "name": "Geelgerande waterroofkever",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Dytiscus marginalis"]
+  },
+  {
+    "id": "doodskopzweefvlieg",
+    "name": "Doodskopzweefvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Myathropa florea"]
+  },
+  {
+    "id": "schaakbordlieveheersbeestje",
+    "name": "Schaakbordlieveheersbeestje",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Propylea quatuordecimpunctata"]
+  },
+  {
+    "id": "grauwe-schildwants",
+    "name": "Grauwe schildwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Rhaphigaster nebulosa"]
+  },
+  {
+    "id": "strontvlieg",
+    "name": "Strontvlieg",
+    "rarity": "Episch",
+    "scientificAliases": ["Scathophaga stercoraria"]
+  },
+  {
+    "id": "rode-hooiwagen",
+    "name": "Rode hooiwagen",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Opilio canestrinii"]
+  },
+  {
+    "id": "gewone-meikever",
+    "name": "Gewone meikever",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Melolontha melolontha"]
+  },
+  {
+    "id": "watersnuffel",
+    "name": "Watersnuffel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Enallagma cyathigerum"]
+  },
+  {
+    "id": "wespenspin",
+    "name": "Wespenspin",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Argiope bruennichi"]
+  },
+  {
+    "id": "roodpootschildwants",
+    "name": "Roodpootschildwants",
+    "rarity": "Episch",
+    "scientificAliases": ["Pentatoma rufipes"]
+  },
+  {
+    "id": "blauwooggrasmot",
+    "name": "Blauwooggrasmot",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Agriphila straminella"]
+  },
+  {
+    "id": "plakker",
+    "name": "Plakker",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lymantria dispar"]
+  },
+  {
+    "id": "bosmestkever",
+    "name": "Bosmestkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anoplotrupes stercorosus"]
+  },
+  {
+    "id": "citroenlieveheersbeestje",
+    "name": "Citroenlieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Psyllobora vigintiduopunctata"]
+  },
+  {
+    "id": "grijze-stipspanner",
+    "name": "Grijze stipspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Idaea aversata"]
+  },
+  {
+    "id": "paardenbloemspanner",
+    "name": "Paardenbloemspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Idaea seriata"]
+  },
+  {
+    "id": "bladpootrandwants",
+    "name": "Bladpootrandwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Leptoglossus occidentalis"]
+  },
+  {
+    "id": "bessenschildwants",
+    "name": "Bessenschildwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Dolycoris baccarum"]
+  },
+  {
+    "id": "gewone-grasmot",
+    "name": "Gewone grasmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chrysoteuchia culmella"]
+  },
+  {
+    "id": "blauwe-breedscheenjuffer",
+    "name": "Blauwe breedscheenjuffer",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Platycnemis pennipes"]
+  },
+  {
+    "id": "zijdeglansbladsnuitkever",
+    "name": "Zijdeglansbladsnuitkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Polydrusus formosus"]
+  },
+  {
+    "id": "zwartpootsoldaatje",
+    "name": "Zwartpootsoldaatje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cantharis fusca"]
+  },
+  {
+    "id": "geel-soldaatje",
+    "name": "Geel soldaatje",
+    "rarity": "Episch",
+    "scientificAliases": ["Cantharis livida"]
+  },
+  {
+    "id": "gestreepte-goudspanner",
+    "name": "Gestreepte goudspanner",
+    "rarity": "Episch",
+    "scientificAliases": ["Camptogramma bilineata"]
+  },
+  {
+    "id": "zuidelijke-boomsprinkhaan",
+    "name": "Zuidelijke boomsprinkhaan",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Meconema meridionale"]
+  },
+  {
+    "id": "schaduwspikkelspanner",
+    "name": "Schaduwspikkelspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Peribatodes rhomboidaria"]
+  },
+  {
+    "id": "duitse-schorpioenvlieg",
+    "name": "Duitse schorpioenvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Panorpa germanica"]
+  },
+  {
+    "id": "kleine-beer",
+    "name": "Kleine beer",
+    "rarity": "Episch",
+    "scientificAliases": ["Phragmatobia fuliginosa"]
+  },
+  {
+    "id": "brugspin",
+    "name": "Brugspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Larinioides sclopetarius"]
+  },
+  {
+    "id": "klimopkevercicade",
+    "name": "Klimopkevercicade",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Issus coleoptratus"]
+  },
+  {
+    "id": "brandnetelbladroller",
+    "name": "Brandnetelbladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Syricoris lacunana"]
+  },
+  {
+    "id": "grote-dansvlieg",
+    "name": "Grote dansvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Empis tessellata"]
+  },
+  {
+    "id": "bloedcicade",
+    "name": "Bloedcicade",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Cercopis vulnerata"]
+  },
+  {
+    "id": "muntvlindertje",
+    "name": "Muntvlindertje",
+    "rarity": "Episch",
+    "scientificAliases": ["Pyrausta aurata"]
+  },
+  {
+    "id": "bruine-winterjuffer",
+    "name": "Bruine winterjuffer",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Sympecma fusca"]
+  },
+  {
+    "id": "terrasjeskommazweefvlieg",
+    "name": "Terrasjeskommazweefvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eupeodes corollae"]
+  },
+  {
+    "id": "roodaarskniptor",
+    "name": "Roodaarskniptor",
+    "rarity": "Episch",
+    "scientificAliases": ["Athous haemorrhoidalis"]
+  },
+  {
+    "id": "grote-langlijf",
+    "name": "Grote langlijf",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Sphaerophoria scripta"]
+  },
+  {
+    "id": "zwarte-c-uil",
+    "name": "Zwarte c-uil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Xestia c-nigrum"]
+  },
+  {
+    "id": "bastaardzandloopkever",
+    "name": "Bastaardzandloopkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cicindela hybrida"]
+  },
+  {
+    "id": "zwartkamdwergspanner",
+    "name": "Zwartkamdwergspanner",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Gymnoscelis rufifasciata"]
+  },
+  {
+    "id": "gewone-hooiwagen",
+    "name": "Gewone hooiwagen",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phalangium opilio"]
+  },
+  {
+    "id": "kleine-bijvlieg",
+    "name": "Kleine bijvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eristalis arbustorum"]
+  },
+  {
+    "id": "vogelkersstippelmot",
+    "name": "Vogelkersstippelmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Yponomeuta evonymella"]
+  },
+  {
+    "id": "fraaie-schijnbok",
+    "name": "Fraaie schijnbok",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Oedemera nobilis"]
+  },
+  {
+    "id": "citroenpendelvlieg",
+    "name": "Citroenpendelvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Helophilus trivittatus"]
+  },
+  {
+    "id": "geelbandlangsprietmot",
+    "name": "Geelbandlangsprietmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Nemophora degeerella"]
+  },
+  {
+    "id": "veelvraat",
+    "name": "Veelvraat",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Macrothylacia rubi"]
+  },
+  {
+    "id": "meriansborstel",
+    "name": "Meriansborstel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Calliteara pudibunda"]
+  },
+  {
+    "id": "platte-wielwebspin",
+    "name": "Platte wielwebspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Nuctenea umbratica"]
+  },
+  {
+    "id": "weideschorpioenvlieg",
+    "name": "Weideschorpioenvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Panorpa vulgaris"]
+  },
+  {
+    "id": "bruin-blauwtje",
+    "name": "Bruin blauwtje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Aricia agestis"]
+  },
+  {
+    "id": "gewone-stofuil",
+    "name": "Gewone stofuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hoplodrina octogenaria"]
+  },
+  {
+    "id": "volgeling",
+    "name": "Volgeling",
+    "rarity": "Episch",
+    "scientificAliases": ["Noctua comes"]
+  },
+  {
+    "id": "groen-zuringhaantje",
+    "name": "Groen zuringhaantje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Gastrophysa viridula"]
+  },
+  {
+    "id": "bruine-huismot",
+    "name": "Bruine huismot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hofmannophila pseudospretella"]
+  },
+  {
+    "id": "sint-jansvlinder",
+    "name": "Sint-jansvlinder",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Zygaena filipendulae"]
+  },
+  {
+    "id": "smalle-randwants",
+    "name": "Smalle randwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Gonocerus acuteangulatus"]
+  },
+  {
+    "id": "puntbijvlieg",
+    "name": "Puntbijvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eristalis nemorum"]
+  },
+  {
+    "id": "wapendrager",
+    "name": "Wapendrager",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Phalera bucephala"]
+  },
+  {
+    "id": "hulstvlieg",
+    "name": "Hulstvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phytomyza ilicis"]
+  },
+  {
+    "id": "gewone-huisspin",
+    "name": "Gewone huisspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eratigena atrica"]
+  },
+  {
+    "id": "grote-beer",
+    "name": "Grote beer",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Arctia caja"]
+  },
+  {
+    "id": "gewone-tweevleugel",
+    "name": "Gewone tweevleugel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cloeon dipterum"]
+  },
+  {
+    "id": "zuringuil",
+    "name": "Zuringuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Acronicta rumicis"]
+  },
+  {
+    "id": "strekpoot",
+    "name": "Strekpoot",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Dicranopalpus ramosus"]
+  },
+  {
+    "id": "brandnetelprachtwants",
+    "name": "Brandnetelprachtwants",
+    "rarity": "Episch",
+    "scientificAliases": ["Liocoris tripustulatus"]
+  },
+  {
+    "id": "bruine-korenbout",
+    "name": "Bruine korenbout",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Libellula fulva"]
+  },
+  {
+    "id": "bosbijvlieg",
+    "name": "Bosbijvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eristalis horticola"]
+  },
+  {
+    "id": "stro-uiltje",
+    "name": "Stro-uiltje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Rivula sericealis"]
+  },
+  {
+    "id": "mediterrane-prachtblindwants",
+    "name": "Mediterrane prachtblindwants",
+    "rarity": "Episch",
+    "scientificAliases": ["Closterotomus trivialis"]
+  },
+  {
+    "id": "berkensmalsnuit",
+    "name": "Berkensmalsnuit",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Kleidocerys resedae"]
+  },
+  {
+    "id": "gewone-spikkelspanner",
+    "name": "Gewone spikkelspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ectropis crepuscularia"]
+  },
+  {
+    "id": "groene-eikenbladroller",
+    "name": "Groene eikenbladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tortrix viridana"]
+  },
+  {
+    "id": "gewone-prachtwapenvlieg",
+    "name": "Gewone prachtwapenvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chloromyia formosa"]
+  },
+  {
+    "id": "vroege-glazenmaker",
+    "name": "Vroege glazenmaker",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Isoaeschna isoceles"]
+  },
+  {
+    "id": "kroosvlindertje",
+    "name": "Kroosvlindertje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cataclysta lemnata"]
+  },
+  {
+    "id": "menuetzweefvlieg",
+    "name": "Menuetzweefvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Syritta pipiens"]
+  },
+  {
+    "id": "rode-smalbok",
+    "name": "Rode smalbok",
+    "rarity": "Episch",
+    "scientificAliases": ["Stictoleptura rubra"]
+  },
+  {
+    "id": "meeldauwlieveheersbeestje",
+    "name": "Meeldauwlieveheersbeestje",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Halyzia sedecimguttata"]
+  },
+  {
+    "id": "vlekstipspanner",
+    "name": "Vlekstipspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Idaea dimidiata"]
+  },
+  {
+    "id": "knikkergalwesp",
+    "name": "Knikkergalwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Andricus kollari"]
+  },
+  {
+    "id": "gewone-rookwants",
+    "name": "Gewone rookwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Rhyparochromus vulgaris"]
+  },
+  {
+    "id": "zwartkopvuurkever",
+    "name": "Zwartkopvuurkever",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Pyrochroa coccinea"]
+  },
+  {
+    "id": "rozemarijngoudhaantje",
+    "name": "Rozemarijngoudhaantje",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Chrysolina americana"]
+  },
+  {
+    "id": "maartse-vlieg",
+    "name": "Maartse vlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Bibio marci"]
+  },
+  {
+    "id": "zandhalmuiltje",
+    "name": "Zandhalmuiltje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Mesoligia furuncula"]
+  },
+  {
+    "id": "oranje-wortelboorder",
+    "name": "Oranje wortelboorder",
+    "rarity": "Episch",
+    "scientificAliases": ["Triodia sylvina"]
+  },
+  {
+    "id": "kardinaalsmutsstippelmot",
+    "name": "Kardinaalsmutsstippelmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Yponomeuta cagnagella"]
+  },
+  {
+    "id": "hommelbijvlieg",
+    "name": "Hommelbijvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eristalis intricaria"]
+  },
+  {
+    "id": "groene-rietcicade",
+    "name": "Groene rietcicade",
+    "rarity": "Episch",
+    "scientificAliases": ["Cicadella viridis"]
+  },
+  {
+    "id": "grote-narcisvlieg",
+    "name": "Grote narcisvlieg",
+    "rarity": "Episch",
+    "scientificAliases": ["Merodon equestris"]
+  },
+  {
+    "id": "haarbos",
+    "name": "Haarbos",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Ochropleura plecta"]
+  },
+  {
+    "id": "scheefbloemwitje",
+    "name": "Scheefbloemwitje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pieris mannii"]
+  },
+  {
+    "id": "lentelangpoot",
+    "name": "Lentelangpoot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tipula vernalis"]
+  },
+  {
+    "id": "hagedoornvlinder",
+    "name": "Hagedoornvlinder",
+    "rarity": "Episch",
+    "scientificAliases": ["Opisthograptis luteolata"]
+  },
+  {
+    "id": "bastaardsatijnvlinder",
+    "name": "Bastaardsatijnvlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Euproctis chrysorrhoea"]
+  },
+  {
+    "id": "gewone-doolhofspin",
+    "name": "Gewone doolhofspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agelena labyrinthica"]
+  },
+  {
+    "id": "witvlakvlinder",
+    "name": "Witvlakvlinder",
+    "rarity": "Episch",
+    "scientificAliases": ["Orgyia antiqua"]
+  },
+  {
+    "id": "kleine-parelmoervlinder",
+    "name": "Kleine parelmoervlinder",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Issoria lathonia"]
+  },
+  {
+    "id": "vierbandsmalbok",
+    "name": "Vierbandsmalbok",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Leptura quadrifasciata"]
+  },
+  {
+    "id": "voorjaarshooiwagen",
+    "name": "Voorjaarshooiwagen",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Rilaena triangularis"]
+  },
+  {
+    "id": "gewone-bandspanner",
+    "name": "Gewone bandspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Epirrhoe alternata"]
+  },
+  {
+    "id": "rode-halsbandwants",
+    "name": "Rode halsbandwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Deraeocoris ruber"]
+  },
+  {
+    "id": "hommelnestmot",
+    "name": "Hommelnestmot",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Aphomia sociella"]
+  },
+  {
+    "id": "tengere-pantserjuffer",
+    "name": "Tengere pantserjuffer",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lestes virens"]
+  },
+  {
+    "id": "koolmotje",
+    "name": "Koolmotje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Plutella xylostella"]
+  },
+  {
+    "id": "appeltak",
+    "name": "Appeltak",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Campaea margaritaria"]
+  },
+  {
+    "id": "rietvink",
+    "name": "Rietvink",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Euthrix potatoria"]
+  },
+  {
+    "id": "gegroefde-lapsnuitkever",
+    "name": "Gegroefde lapsnuitkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Otiorhynchus sulcatus"]
+  },
+  {
+    "id": "muisgrijze-kniptor",
+    "name": "Muisgrijze kniptor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agrypnus murinus"]
+  },
+  {
+    "id": "bijenwolf",
+    "name": "Bijenwolf",
+    "rarity": "Episch",
+    "scientificAliases": ["Philanthus triangulum"]
+  },
+  {
+    "id": "brandnetelmot",
+    "name": "Brandnetelmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anthophila fabriciana"]
+  },
+  {
+    "id": "gewone-zakdrager",
+    "name": "Gewone zakdrager",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Psyche casta"]
+  },
+  {
+    "id": "woeste-sluipvlieg",
+    "name": "Woeste sluipvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tachina fera"]
+  },
+  {
+    "id": "gewone-grasuil",
+    "name": "Gewone grasuil",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Luperina testacea"]
+  },
+  {
+    "id": "eupteryx-decemnotata",
+    "name": "Eupteryx decemnotata",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eupteryx decemnotata"]
+  },
+  {
+    "id": "gewone-schorpioenvlieg",
+    "name": "Gewone schorpioenvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Panorpa communis"]
+  },
+  {
+    "id": "gewone-wolzwever",
+    "name": "Gewone wolzwever",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Bombylius major"]
+  },
+  {
+    "id": "gewone-worteluil",
+    "name": "Gewone worteluil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agrotis exclamationis"]
+  },
+  {
+    "id": "schaduwstipspanner",
+    "name": "Schaduwstipspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Idaea rusticata"]
+  },
+  {
+    "id": "blauwvleugelsprinkhaan",
+    "name": "Blauwvleugelsprinkhaan",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Oedipoda caerulescens"]
+  },
+  {
+    "id": "voorjaarseikenblindwants",
+    "name": "Voorjaarseikenblindwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Harpocera thoracica"]
+  },
+  {
+    "id": "strooiselmot",
+    "name": "Strooiselmot",
+    "rarity": "Episch",
+    "scientificAliases": ["Endotricha flammealis"]
+  },
+  {
+    "id": "gerande-spanner",
+    "name": "Gerande spanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lomaspilis marginata"]
+  },
+  {
+    "id": "vierkantvlekuil",
+    "name": "Vierkantvlekuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Xestia xanthographa"]
+  },
+  {
+    "id": "grijze-bolsnuittor",
+    "name": "Grijze bolsnuittor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Philopedon plagiatum"]
+  },
+  {
+    "id": "zwartrugrenspin",
+    "name": "Zwartrugrenspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Philodromus dispar"]
+  },
+  {
+    "id": "puta-uil",
+    "name": "Puta-uil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agrotis puta"]
+  },
+  {
+    "id": "miersikkelwants",
+    "name": "Miersikkelwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Himacerus mirmicoides"]
+  },
+  {
+    "id": "oedemera-lurida",
+    "name": "Oedemera lurida",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Oedemera lurida"]
+  },
+  {
+    "id": "bruine-snuituil",
+    "name": "Bruine Snuituil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hypena proboscidalis"]
+  },
+  {
+    "id": "bonte-brandnetelmot",
+    "name": "Bonte brandnetelmot",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Anania hortulata"]
+  },
+  {
+    "id": "zwart-weeskind",
+    "name": "Zwart weeskind",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Mormo maura"]
+  },
+  {
+    "id": "zestienstippelig-lieveheersbeestje",
+    "name": "Zestienstippelig Lieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Tytthaspis sedecimpunctata"]
+  },
+  {
+    "id": "zwartbandspanner",
+    "name": "Zwartbandspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Xanthorhoe fluctuata"]
+  },
+  {
+    "id": "groente-uil",
+    "name": "Groente-uil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lacanobia oleracea"]
+  },
+  {
+    "id": "aziatische-hoornaar",
+    "name": "Aziatische hoornaar",
+    "rarity": "Episch",
+    "scientificAliases": ["Vespa velutina"]
+  },
+  {
+    "id": "knopsprietje",
+    "name": "Knopsprietje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Myrmeleotettix maculatus"]
+  },
+  {
+    "id": "graswortelvlinder",
+    "name": "Graswortelvlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Apamea monoglypha"]
+  },
+  {
+    "id": "roestbruine-bladsprietkever",
+    "name": "Roestbruine bladsprietkever",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Serica brunnea"]
+  },
+  {
+    "id": "gewone-snipvlieg",
+    "name": "Gewone snipvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Rhagio scolopaceus"]
+  },
+  {
+    "id": "kleine-aardhommel",
+    "name": "Kleine aardhommel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Bombus lucorum"]
+  },
+  {
+    "id": "kool-langpootmug",
+    "name": "Kool-langpootmug",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tipula oleracea"]
+  },
+  {
+    "id": "lissnuitkever",
+    "name": "Lissnuitkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Mononychus punctumalbum"]
+  },
+  {
+    "id": "wilgenhoutrups",
+    "name": "Wilgenhoutrups",
+    "rarity": "Episch",
+    "scientificAliases": ["Cossus cossus"]
+  },
+  {
+    "id": "gewone-distelboktor",
+    "name": "Gewone distelboktor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agapanthia villosoviridescens"]
+  },
+  {
+    "id": "gewone-roofvlieg",
+    "name": "Gewone roofvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tolmerus atricapillus"]
+  },
+  {
+    "id": "zuidelijke-stofuil",
+    "name": "Zuidelijke stofuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hoplodrina ambigua"]
+  },
+  {
+    "id": "smaragdlangsprietmot",
+    "name": "Smaragdlangsprietmot",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Adela reaumurella"]
+  },
+  {
+    "id": "gewone-bladjager",
+    "name": "Gewone bladjager",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Dioctria hyalipennis"]
+  },
+  {
+    "id": "tweestreepvoorjaarsuil",
+    "name": "Tweestreepvoorjaarsuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Orthosia cerasi"]
+  },
+  {
+    "id": "gewone-driehoekzweefvlieg",
+    "name": "Gewone driehoekzweefvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Melanostoma mellinum"]
+  },
+  {
+    "id": "heivlinder",
+    "name": "Heivlinder",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Hipparchia semele"]
+  },
+  {
+    "id": "piramidevlinder",
+    "name": "Piramidevlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Amphipyra pyramidea"]
+  },
+  {
+    "id": "roestbruine-kromlijf",
+    "name": "Roestbruine kromlijf",
+    "rarity": "Episch",
+    "scientificAliases": ["Sicus ferrugineus"]
+  },
+  {
+    "id": "gevlamde-bladroller",
+    "name": "Gevlamde bladroller",
+    "rarity": "Episch",
+    "scientificAliases": ["Archips xylosteana"]
+  },
+  {
+    "id": "slanke-driehoekzweefvlieg",
+    "name": "Slanke driehoekzweefvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Melanostoma scalare"]
+  },
+  {
+    "id": "gewone-rode-bladloper",
+    "name": "Gewone rode bladloper",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Xylota segnis"]
+  },
+  {
+    "id": "witgepunte-clogmia",
+    "name": "Witgepunte clogmia",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Clogmia albipunctata"]
+  },
+  {
+    "id": "grote-populierenhaan",
+    "name": "Grote populierenhaan",
+    "rarity": "Episch",
+    "scientificAliases": ["Chrysomela populi"]
+  },
+  {
+    "id": "lieveling",
+    "name": "Lieveling",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Timandra comae"]
+  },
+  {
+    "id": "bruine-grijsbandspanner",
+    "name": "Bruine grijsbandspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cabera exanthemata"]
+  },
+  {
+    "id": "schorsvlieg",
+    "name": "Schorsvlieg",
+    "rarity": "Episch",
+    "scientificAliases": ["Mesembrina meridiana"]
+  },
+  {
+    "id": "tuinbladroller",
+    "name": "Tuinbladroller",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Clepsis consimilana"]
+  },
+  {
+    "id": "roomvleklieveheersbeestje",
+    "name": "Roomvleklieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Calvia quatuordecimguttata"]
+  },
+  {
+    "id": "rietkruisspin",
+    "name": "Rietkruisspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Larinioides cornutus"]
+  },
+  {
+    "id": "koortsvlieg",
+    "name": "Koortsvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Dilophus febrilis"]
+  },
+  {
+    "id": "slakkenaaskever",
+    "name": "Slakkenaaskever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phosphuga atrata"]
+  },
+  {
+    "id": "bosrandroofvlieg",
+    "name": "Bosrandroofvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Neoitamus cyanurus"]
+  },
+  {
+    "id": "gele-snipvlieg",
+    "name": "Gele snipvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Rhagio tringarius"]
+  },
+  {
+    "id": "ruigkever",
+    "name": "Ruigkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lagria hirta"]
+  },
+  {
+    "id": "weideschaduwwants",
+    "name": "Weideschaduwwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Lygus pratensis"]
+  },
+  {
+    "id": "variabele-granietmot",
+    "name": "Variabele granietmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eudonia mercurella"]
+  },
+  {
+    "id": "voorjaarsmestkever",
+    "name": "Voorjaarsmestkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Trypocopris vernalis"]
+  },
+  {
+    "id": "gewone-bloemwants",
+    "name": "Gewone bloemwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anthocoris nemorum"]
+  },
+  {
+    "id": "gewone-bloesemboktor",
+    "name": "Gewone bloesemboktor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Grammoptera ruficornis"]
+  },
+  {
+    "id": "drieband-zwartpalp",
+    "name": "Drieband-zwartpalp",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Mystacides longicornis"]
+  },
+  {
+    "id": "geringelde-smalboktor",
+    "name": "Geringelde smalboktor",
+    "rarity": "Episch",
+    "scientificAliases": ["Rutpela maculata"]
+  },
+  {
+    "id": "hyena",
+    "name": "Hyena",
+    "rarity": "Episch",
+    "scientificAliases": ["Cosmia trapezina"]
+  },
+  {
+    "id": "variabele-grasmot",
+    "name": "Variabele grasmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agriphila tristella"]
+  },
+  {
+    "id": "zuidelijk-spitskopje",
+    "name": "Zuidelijk spitskopje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Conocephalus fuscus"]
+  },
+  {
+    "id": "gestreepte-eikenblindwants",
+    "name": "Gestreepte eikenblindwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Rhabdomiris striatellus"]
+  },
+  {
+    "id": "gewone-goudoogdaas",
+    "name": "Gewone goudoogdaas",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chrysops relictus"]
+  },
+  {
+    "id": "hageheld",
+    "name": "Hageheld",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Lasiocampa quercus"]
+  },
+  {
+    "id": "lindepijlstaart",
+    "name": "Lindepijlstaart",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Mimas tiliae"]
+  },
+  {
+    "id": "rozenmosgalwesp",
+    "name": "Rozenmosgalwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Diplolepis rosae"]
+  },
+  {
+    "id": "geblokte-glasvleugelwants",
+    "name": "Geblokte glasvleugelwants",
+    "rarity": "Episch",
+    "scientificAliases": ["Rhopalus subrufus"]
+  },
+  {
+    "id": "grauwzwarte-renmier",
+    "name": "Grauwzwarte renmier",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Formica fusca"]
+  },
+  {
+    "id": "blauw-muntgoudhaantje",
+    "name": "Blauw muntgoudhaantje",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Chrysolina coerulans"]
+  },
+  {
+    "id": "gestreepte-bladsnuitkever",
+    "name": "Gestreepte bladsnuitkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phyllobius pyri"]
+  },
+  {
+    "id": "pinokkiomot",
+    "name": "Pinokkiomot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Synaphe punctalis"]
+  },
+  {
+    "id": "gouden-wilgenaardvlo",
+    "name": "Gouden wilgenaardvlo",
+    "rarity": "Episch",
+    "scientificAliases": ["Crepidodera aurata"]
+  },
+  {
+    "id": "knollenbladwesp",
+    "name": "Knollenbladwesp",
+    "rarity": "Episch",
+    "scientificAliases": ["Athalia rosae"]
+  },
+  {
+    "id": "glad-beertje",
+    "name": "Glad beertje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eilema griseola"]
+  },
+  {
+    "id": "kortvleugelboorkever",
+    "name": "Kortvleugelboorkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Valgus hemipterus"]
+  },
+  {
+    "id": "rododendroncicade",
+    "name": "Rododendroncicade",
+    "rarity": "Episch",
+    "scientificAliases": ["Graphocephala fennahi"]
+  },
+  {
+    "id": "gewone-strekspin",
+    "name": "Gewone strekspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tetragnatha extensa"]
+  },
+  {
+    "id": "weegbreemot",
+    "name": "Weegbreemot",
+    "rarity": "Episch",
+    "scientificAliases": ["Pyrausta despicata"]
+  },
+  {
+    "id": "gestipte-struikspin",
+    "name": "Gestipte struikspin",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Anyphaena accentuata"]
+  },
+  {
+    "id": "tijgerlangpootmug",
+    "name": "Tijgerlangpootmug",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Nephrotoma appendiculata"]
+  },
+  {
+    "id": "gewone-kielwants",
+    "name": "Gewone kielwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Elasmucha grisea"]
+  },
+  {
+    "id": "getijgerde-lijmspuiter",
+    "name": "Getijgerde lijmspuiter",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Scytodes thoracica"]
+  },
+  {
+    "id": "nalassus-laevioctostriatus",
+    "name": "Nalassus laevioctostriatus",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Nalassus laevioctostriatus"]
+  },
+  {
+    "id": "tienstippelig-lieveheersbeestje",
+    "name": "tienstippelig lieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Adalia decempunctata"]
+  },
+  {
+    "id": "klimopbladroller",
+    "name": "Klimopbladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Clepsis dumicolana"]
+  },
+  {
+    "id": "rond-griendhaantje",
+    "name": "Rond griendhaantje",
+    "rarity": "Legendarisch",
+    "scientificAliases": ["Plagiodera versicolora"]
+  },
+  {
+    "id": "groen-kaardertje",
+    "name": "Groen Kaardertje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Nigma walckenaeri"]
+  },
+  {
+    "id": "ivoorzweefvlieg",
+    "name": "Ivoorzweefvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Volucella pellucens"]
+  },
+  {
+    "id": "penseelkever",
+    "name": "Penseelkever",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Trichius gallicus"]
+  },
+  {
+    "id": "veranderlijke-bijvlieg",
+    "name": "Veranderlijke Bijvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eristalis similis"]
+  },
+  {
+    "id": "roesje",
+    "name": "Roesje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Scoliopteryx libatrix"]
+  },
+  {
+    "id": "streepdijblindwants",
+    "name": "Streepdijblindwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Plagiognathus arbustorum"]
+  },
+  {
+    "id": "gewone-breedvleugeluil",
+    "name": "Gewone breedvleugeluil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Diarsia rubi"]
+  },
+  {
+    "id": "glassnijder",
+    "name": "Glassnijder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Brachytron pratense"]
+  },
+  {
+    "id": "grote-koekoekshommel",
+    "name": "Grote koekoekshommel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Bombus vestalis"]
+  },
+  {
+    "id": "aangebrande-spanner",
+    "name": "Aangebrande spanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ligdia adustata"]
+  },
+  {
+    "id": "aardappelgalwesp",
+    "name": "aardappelgalwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Biorhiza pallida"]
+  },
+  {
+    "id": "aardappelprachtblindwants",
+    "name": "Aardappelprachtblindwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Closterotomus norwegicus"]
+  },
+  {
+    "id": "akkerdisteldansvlieg",
+    "name": "Akkerdisteldansvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Empis livida"]
+  },
+  {
+    "id": "ananasgalwesp",
+    "name": "ananasgalwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Andricus foecundatrix"]
+  },
+  {
+    "id": "anjerbladroller",
+    "name": "Anjerbladroller",
+    "rarity": "Episch",
+    "scientificAliases": ["Cacoecimorpha pronubana"]
+  },
+  {
+    "id": "anthomyia-procellaris",
+    "name": "Anthomyia procellaris",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anthomyia procellaris"]
+  },
+  {
+    "id": "aphrophora-alni",
+    "name": "Aphrophora alni",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Aphrophora alni"]
+  },
+  {
+    "id": "aphrophora-salicina",
+    "name": "Aphrophora salicina",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Aphrophora salicina"]
+  },
+  {
+    "id": "beekoeverlibel",
+    "name": "Beekoeverlibel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Orthetrum coerulescens"]
+  },
+  {
+    "id": "berkenkielwants",
+    "name": "berkenkielwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Elasmostethus interstinctus"]
+  },
+  {
+    "id": "bessenbandzweefvlieg",
+    "name": "Bessenbandzweefvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Syrphus ribesii"]
+  },
+  {
+    "id": "beukengalmug",
+    "name": "Beukengalmug",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Mikiola fagi"]
+  },
+  {
+    "id": "bladplakker",
+    "name": "Bladplakker",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Glyphotaelius pellucidus"]
+  },
+  {
+    "id": "bleke-grasmot",
+    "name": "Bleke Grasmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Crambus perlella"]
+  },
+  {
+    "id": "bleke-grasuil",
+    "name": "Bleke grasuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Mythimna pallens"]
+  },
+  {
+    "id": "bleke-renspin",
+    "name": "Bleke renspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Philodromus albidus"]
+  },
+  {
+    "id": "bloedrode-roofmier",
+    "name": "Bloedrode roofmier",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Formica sanguinea"]
+  },
+  {
+    "id": "bonte-geelschild",
+    "name": "Bonte geelschild",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Campyloneura virgula"]
+  },
+  {
+    "id": "bonte-hooiwagen",
+    "name": "Bonte hooiwagen",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Paroligolophus agrestis"]
+  },
+  {
+    "id": "bonte-springspin",
+    "name": "Bonte springspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Evarcha falcata"]
+  },
+  {
+    "id": "boomknobbelspin",
+    "name": "Boomknobbelspin",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Gibbaranea gibbosa"]
+  },
+  {
+    "id": "boommier",
+    "name": "Boommier",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Lasius brunneus"]
+  },
+  {
+    "id": "boomsikkelwants",
+    "name": "Boomsikkelwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Himacerus apterus"]
+  },
+  {
+    "id": "bosbandzweefvlieg",
+    "name": "Bosbandzweefvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Syrphus torvus"]
+  },
+  {
+    "id": "bosbesuil",
+    "name": "bosbesuil",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Conistra vaccinii"]
+  },
+  {
+    "id": "boskrabspin",
+    "name": "Boskrabspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Xysticus lanio"]
+  },
+  {
+    "id": "bramensprinkhaan",
+    "name": "Bramensprinkhaan",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pholidoptera griseoaptera"]
+  },
+  {
+    "id": "brede-wielwebspin",
+    "name": "Brede wielwebspin",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Agalenatea redii"]
+  },
+  {
+    "id": "breedbandhuismoeder",
+    "name": "Breedbandhuismoeder",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Noctua fimbriata"]
+  },
+  {
+    "id": "broeikasspin",
+    "name": "Broeikasspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Parasteatoda tepidariorum"]
+  },
+  {
+    "id": "bronzen-glimmer",
+    "name": "Bronzen glimmer",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Amara aenea"]
+  },
+  {
+    "id": "bruine-daguil",
+    "name": "Bruine daguil",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Euclidia glyphica"]
+  },
+  {
+    "id": "cantharis-decipiens",
+    "name": "Cantharis decipiens",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Cantharis decipiens"]
+  },
+  {
+    "id": "coenosia-tigrina",
+    "name": "Coenosia tigrina",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Coenosia tigrina"]
+  },
+  {
+    "id": "denneboom-hooiwagen",
+    "name": "Denneboom-hooiwagen",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Leiobunum blackwalli"]
+  },
+  {
+    "id": "dennenpijlstaart",
+    "name": "Dennenpijlstaart",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Sphinx pinastri"]
+  },
+  {
+    "id": "donker-klaverblaadje",
+    "name": "Donker klaverblaadje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Macaria alternata"]
+  },
+  {
+    "id": "donkere-marmeruil",
+    "name": "Donkere marmeruil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Deltote pygarga"]
+  },
+  {
+    "id": "donsvlinder",
+    "name": "Donsvlinder",
+    "rarity": "Episch",
+    "scientificAliases": ["Sphrageidus similis"]
+  },
+  {
+    "id": "dovenetelwants",
+    "name": "Dovenetelwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tritomegas bicolor"]
+  },
+  {
+    "id": "draadhooiwagen",
+    "name": "Draadhooiwagen",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Leiobunum rotundum"]
+  },
+  {
+    "id": "driestreepspin",
+    "name": "Driestreepspin",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Mangora acalypha"]
+  },
+  {
+    "id": "dwarsbandkakkerlak",
+    "name": "Dwarsbandkakkerlak",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Planuncus tingitanus"]
+  },
+  {
+    "id": "dwergstipspanner",
+    "name": "Dwergstipspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Idaea fuscovenosa"]
+  },
+  {
+    "id": "eikelboorder",
+    "name": "Eikelboorder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Curculio glandium"]
+  },
+  {
+    "id": "eikenlichtmot",
+    "name": "Eikenlichtmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phycita roborella"]
+  },
+  {
+    "id": "eikenspringspin",
+    "name": "Eikenspringspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ballus chalybeius"]
+  },
+  {
+    "id": "eikenstuitergalwesp",
+    "name": "eikenstuitergalwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cynips longiventris"]
+  },
+  {
+    "id": "elfstippelig-lieveheersbeestje",
+    "name": "elfstippelig lieveheersbeestje",
+    "rarity": "Episch",
+    "scientificAliases": ["Coccinella undecimpunctata"]
+  },
+  {
+    "id": "elzennerfhoekmijt",
+    "name": "Elzennerfhoekmijt",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eriophyes inangulis"]
+  },
+  {
+    "id": "enkele-bandzweefvlieg",
+    "name": "Enkele-bandzweefvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Epistrophe eligans"]
+  },
+  {
+    "id": "eratigena-duellica",
+    "name": "Eratigena duellica",
+    "rarity": "Episch",
+    "scientificAliases": ["Eratigena duellica"]
+  },
+  {
+    "id": "eriothrix-rufomaculata",
+    "name": "Eriothrix rufomaculata",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eriothrix rufomaculata"]
+  },
+  {
+    "id": "esdoornknobbelmijt",
+    "name": "Esdoornknobbelmijt",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Aceria cephalonea"]
+  },
+  {
+    "id": "esperiamot",
+    "name": "Esperiamot",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Esperia sulphurella"]
+  },
+  {
+    "id": "eupteryx-tenella",
+    "name": "Eupteryx tenella",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Eupteryx tenella"]
+  },
+  {
+    "id": "galappelwesp",
+    "name": "Galappelwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cynips quercusfolii"]
+  },
+  {
+    "id": "gehaakte-blinker",
+    "name": "Gehaakte blinker",
+    "rarity": "Episch",
+    "scientificAliases": ["Heliophanus cupreus"]
+  },
+  {
+    "id": "gele-eenstaart",
+    "name": "Gele eenstaart",
+    "rarity": "Episch",
+    "scientificAliases": ["Watsonalla binaria"]
+  },
+  {
+    "id": "gele-tijger",
+    "name": "Gele tijger",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Spilosoma lutea"]
+  },
+  {
+    "id": "gele-viervlekwants",
+    "name": "Gele viervlekwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Dryophilocoris flavoquadrimaculatus"]
+  },
+  {
+    "id": "geoogde-worteluil",
+    "name": "Geoogde worteluil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agrotis clavis"]
+  },
+  {
+    "id": "geribde-prachtblindwants",
+    "name": "Geribde prachtblindwants",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Miris striatus"]
+  },
+  {
+    "id": "gestippelde-oogspanner",
+    "name": "Gestippelde oogspanner",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Cyclophora punctaria"]
+  },
+  {
+    "id": "gevlekt-rennertje",
+    "name": "Gevlekt rennertje",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Ecnomus tenellus"]
+  },
+  {
+    "id": "gevlekte-witsnuitlibel",
+    "name": "Gevlekte Witsnuitlibel",
+    "rarity": "Episch",
+    "scientificAliases": ["Leucorrhinia pectoralis"]
+  },
+  {
+    "id": "gewone-heispanner",
+    "name": "Gewone heispanner",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Ematurga atomaria"]
+  },
+  {
+    "id": "gewone-komkommerspin",
+    "name": "Gewone komkommerspin",
+    "rarity": "Episch",
+    "scientificAliases": ["Araniella cucurbitina"]
+  },
+  {
+    "id": "gewone-lensgalwesp",
+    "name": "Gewone lensgalwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Neuroterus quercusbaccarum"]
+  },
+  {
+    "id": "gewone-mijnspin",
+    "name": "Gewone mijnspin",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Atypus affinis"]
+  },
+  {
+    "id": "gewone-pantserwants",
+    "name": "Gewone pantserwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eurygaster testudinaria"]
+  },
+  {
+    "id": "gewone-pissebedvlieg",
+    "name": "Gewone pissebedvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Rhinophora lepida"]
+  },
+  {
+    "id": "gewone-regendaas",
+    "name": "Gewone regendaas",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Haematopota pluvialis"]
+  },
+  {
+    "id": "gewone-renspin",
+    "name": "Gewone renspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Philodromus cespitum"]
+  },
+  {
+    "id": "gewone-rietkever",
+    "name": "gewone rietkever",
+    "rarity": "Episch",
+    "scientificAliases": ["Donacia clavipes"]
+  },
+  {
+    "id": "gewone-schubsnipvlieg",
+    "name": "Gewone schubsnipvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chrysopilus cristatus"]
+  },
+  {
+    "id": "gewone-snuitvlieg",
+    "name": "Gewone snuitvlieg",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Rhingia campestris"]
+  },
+  {
+    "id": "gewone-spiegelmot",
+    "name": "Gewone spiegelmot",
+    "rarity": "Episch",
+    "scientificAliases": ["Cydia splendana"]
+  },
+  {
+    "id": "gewone-staartspin",
+    "name": "Gewone staartspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Textrix denticulata"]
+  },
+  {
+    "id": "gewone-tandkaak",
+    "name": "gewone tandkaak",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Enoplognatha ovata"]
+  },
+  {
+    "id": "gewone-velduil",
+    "name": "Gewone velduil",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Agrotis segetum"]
+  },
+  {
+    "id": "gewone-viltvlieg",
+    "name": "Gewone viltvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Thereva nobilitata"]
+  },
+  {
+    "id": "gewone-vliegendoder",
+    "name": "Gewone vliegendoder",
+    "rarity": "Episch",
+    "scientificAliases": ["Mellinus arvensis"]
+  },
+  {
+    "id": "gewone-witvlakbladroller",
+    "name": "Gewone witvlakbladroller",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Hedya nubiferana"]
+  },
+  {
+    "id": "gewone-zandwolfspin",
+    "name": "Gewone zandwolfspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Arctosa perita"]
+  },
+  {
+    "id": "goudoogje",
+    "name": "Goudoogje",
+    "rarity": "Episch",
+    "scientificAliases": ["Chrysoperla carnea"]
+  },
+  {
+    "id": "graphomya-maculata",
+    "name": "Graphomya maculata",
+    "rarity": "Zeldzaam",
+    "scientificAliases": ["Graphomya maculata"]
+  },
+  {
+    "id": "grijze-huisspin",
+    "name": "Grijze huisspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tegenaria domestica"]
+  },
+  {
+    "id": "grijze-runderdaas",
+    "name": "Grijze runderdaas",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tabanus autumnalis"]
+  },
+  {
+    "id": "groefbijendoder",
+    "name": "Groefbijendoder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cerceris rybyensis"]
+  },
+  {
+    "id": "groene-distelschildpadtor",
+    "name": "Groene distelschildpadtor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cassida rubiginosa"]
+  },
+  {
+    "id": "groene-dwergspanner",
+    "name": "Groene dwergspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pasiphila rectangulata"]
+  },
+  {
+    "id": "grote-appelbladroller",
+    "name": "Grote appelbladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Archips podana"]
+  },
+  {
+    "id": "grote-kommazweefvlieg",
+    "name": "Grote kommazweefvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eupeodes luniger"]
+  },
+  {
+    "id": "grote-rupsendoder",
+    "name": "Grote rupsendoder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ammophila sabulosa"]
+  },
+  {
+    "id": "grote-steekmug",
+    "name": "Grote steekmug",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Culiseta annulata"]
+  },
+  {
+    "id": "harige-springspin",
+    "name": "Harige springspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Attulus pubescens"]
+  },
+  {
+    "id": "hazelaaruil",
+    "name": "Hazelaaruil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Colocasia coryli"]
+  },
+  {
+    "id": "heidelieveheersbeestje",
+    "name": "Heidelieveheersbeestje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chilocorus bipustulatus"]
+  },
+  {
+    "id": "hennepnetelgoudhaantje",
+    "name": "Hennepnetelgoudhaantje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Fasta fastuosa"]
+  },
+  {
+    "id": "holenwielwebspin",
+    "name": "Holenwielwebspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Metellina merianae"]
+  },
+  {
+    "id": "houtspaander",
+    "name": "Houtspaander",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Axylia putris"]
+  },
+  {
+    "id": "huissteatoda",
+    "name": "Huissteatoda",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Steatoda triangulosa"]
+  },
+  {
+    "id": "iepenknobbelmijt",
+    "name": "Iepenknobbelmijt",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Aceria campestricola"]
+  },
+  {
+    "id": "indische-meelmot",
+    "name": "Indische meelmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Plodia interpunctella"]
+  },
+  {
+    "id": "ingekeepte-smalboktor",
+    "name": "Ingekeepte smalboktor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pseudovadonia livida"]
+  },
+  {
+    "id": "julikever",
+    "name": "Julikever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Polyphylla fullo"]
+  },
+  {
+    "id": "kaneelglasvleugelwants",
+    "name": "Kaneelglasvleugelwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Corizus hyoscyami"]
+  },
+  {
+    "id": "kaskaardespin",
+    "name": "Kaskaardespin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Uloborus plumipes"]
+  },
+  {
+    "id": "kasspringspin",
+    "name": "Kasspringspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hasarius adansoni"]
+  },
+  {
+    "id": "kegelbijvlieg",
+    "name": "Kegelbijvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eristalis pertinax"]
+  },
+  {
+    "id": "kegelspin",
+    "name": "Kegelspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cyclosa conica"]
+  },
+  {
+    "id": "kempense-heidelibel",
+    "name": "Kempense Heidelibel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Sympetrum depressiusculum"]
+  },
+  {
+    "id": "kerkzesoog",
+    "name": "Kerkzesoog",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Segestria florentina"]
+  },
+  {
+    "id": "kervelgitje",
+    "name": "Kervelgitje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cheilosia pagana"]
+  },
+  {
+    "id": "klaverspanner",
+    "name": "Klaverspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chiasmia clathrata"]
+  },
+  {
+    "id": "klein-vliegend-hert",
+    "name": "Klein vliegend hert",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Dorcus parallelipipedus"]
+  },
+  {
+    "id": "kleine-boskogelspin",
+    "name": "Kleine boskogelspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Paidiscura pallens"]
+  },
+  {
+    "id": "kleine-broeikasspin",
+    "name": "Kleine broeikasspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cryptachaea blattea"]
+  },
+  {
+    "id": "kleine-dikkaak",
+    "name": "Kleine dikkaak",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pachygnatha degeeri"]
+  },
+  {
+    "id": "kleine-heidehangmatspin",
+    "name": "Kleine heidehangmatspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Microlinyphia pusilla"]
+  },
+  {
+    "id": "kleine-rouwvlieg",
+    "name": "Kleine rouwvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Bibio lanigerus"]
+  },
+  {
+    "id": "kleine-voorjaarsuil",
+    "name": "Kleine voorjaarsuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Orthosia cruda"]
+  },
+  {
+    "id": "kleine-zomervlinder",
+    "name": "Kleine zomervlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hemithea aestivaria"]
+  },
+  {
+    "id": "koffieboonspin",
+    "name": "Koffieboonspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Steatoda bipunctata"]
+  },
+  {
+    "id": "koolbladroller",
+    "name": "Koolbladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Clepsis spectrana"]
+  },
+  {
+    "id": "koperuil",
+    "name": "Koperuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Diachrysia chrysitis"]
+  },
+  {
+    "id": "koraaljuffer",
+    "name": "Koraaljuffer",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ceriagrion tenellum"]
+  },
+  {
+    "id": "sint-jacobsvlinder",
+    "name": "Sint-jacobsvlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tyria jacobaeae"]
+  },
+  {
+    "id": "pendelzweefvlieg",
+    "name": "Pendelzweefvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Helophilus pendulus"]
+  },
+  {
+    "id": "zuringrandwants",
+    "name": "Zuringrandwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Coreus marginatus"]
+  },
+  {
+    "id": "zilverstreepgrasmot",
+    "name": "Zilverstreepgrasmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Crambus pascuella"]
+  },
+  {
+    "id": "populierenpijlstaart",
+    "name": "Populierenpijlstaart",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Laothoe populi"]
+  },
+  {
+    "id": "variabel-elfje",
+    "name": "Variabel elfje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Meliscaeva auricollis"]
+  },
+  {
+    "id": "roodvlekweekkever",
+    "name": "Roodvlekweekkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Malachius bipustulatus"]
+  },
+  {
+    "id": "rotsheidenetwants",
+    "name": "Rotsheidenetwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Stephanitis takeyai"]
+  },
+  {
+    "id": "muurrouwzwever",
+    "name": "Muurrouwzwever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anthrax anthrax"]
+  },
+  {
+    "id": "parelmoermot",
+    "name": "Parelmoermot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Patania ruralis"]
+  },
+  {
+    "id": "paardenkastanjemineermot",
+    "name": "Paardenkastanjemineermot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cameraria ohridella"]
+  },
+  {
+    "id": "viervlekglansmug",
+    "name": "Viervlekglansmug",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ptychoptera contaminata"]
+  },
+  {
+    "id": "moerassprinkhaan",
+    "name": "Moerassprinkhaan",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Stethophyma grossum"]
+  },
+  {
+    "id": "meidoornkielwants",
+    "name": "Meidoornkielwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Acanthosoma haemorrhoidale"]
+  },
+  {
+    "id": "leverkleurige-bladroller",
+    "name": "Leverkleurige bladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pandemis heparana"]
+  },
+  {
+    "id": "vloeivleklieveheersbeestje",
+    "name": "Vloeivleklieveheersbeestje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Oenopia conglobata"]
+  },
+  {
+    "id": "zwervende-pantserjuffer",
+    "name": "Zwervende Pantserjuffer",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lestes barbarus"]
+  },
+  {
+    "id": "zigzagtijger",
+    "name": "Zigzagtijger",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Nephrotoma quadrifaria"]
+  },
+  {
+    "id": "kustsprinkhaan",
+    "name": "Kustsprinkhaan",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chorthippus albomarginatus"]
+  },
+  {
+    "id": "oranje-kruidenmot",
+    "name": "Oranje kruidenmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Udea ferrugalis"]
+  },
+  {
+    "id": "vaal-kokerbeertje",
+    "name": "Vaal kokerbeertje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eilema caniola"]
+  },
+  {
+    "id": "witte-halvemaanzwever",
+    "name": "Witte halvemaanzwever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Scaeva pyrastri"]
+  },
+  {
+    "id": "zomersmaragd",
+    "name": "Zomersmaragd",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anomala dubia"]
+  },
+  {
+    "id": "meidoornstippelmot",
+    "name": "Meidoornstippelmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Yponomeuta padella"]
+  },
+  {
+    "id": "reebruine-bladsnuitkever",
+    "name": "Reebruine bladsnuitkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Polydrusus cervinus"]
+  },
+  {
+    "id": "ringelrups",
+    "name": "Ringelrups",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Malacosoma neustria"]
+  },
+  {
+    "id": "witte-grijsbandspanner",
+    "name": "Witte grijsbandspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cabera pusaria"]
+  },
+  {
+    "id": "zuringspanner",
+    "name": "Zuringspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lythria cruentaria"]
+  },
+  {
+    "id": "tuinwolfspin",
+    "name": "Tuinwolfspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pardosa amentata"]
+  },
+  {
+    "id": "zesvlekkige-groefbij",
+    "name": "Zesvlekkige groefbij",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Lasioglossum sexnotatum"]
+  },
+  {
+    "id": "wollig-gitje",
+    "name": "Wollig Gitje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cheilosia illustrata"]
+  },
+  {
+    "id": "rood-weeskind",
+    "name": "Rood weeskind",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Catocala nupta"]
+  },
+  {
+    "id": "waterleliemot",
+    "name": "Waterleliemot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Elophila nymphaeata"]
+  },
+  {
+    "id": "zwart-soldaatje",
+    "name": "Zwart soldaatje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Cantharis obscura"]
+  },
+  {
+    "id": "nunvlinder",
+    "name": "Nunvlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Orthosia gothica"]
+  },
+  {
+    "id": "roodbaardroofvlieg",
+    "name": "Roodbaardroofvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eutolmus rufibarbis"]
+  },
+  {
+    "id": "sneeuwwitte-vedermot",
+    "name": "Sneeuwwitte vedermot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pterophorus pentadactyla"]
+  },
+  {
+    "id": "schedeldrager",
+    "name": "Schedeldrager",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Craniophora ligustri"]
+  },
+  {
+    "id": "zandroofvlieg",
+    "name": "Zandroofvlieg",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Philonicus albiceps"]
+  },
+  {
+    "id": "mimela-junii",
+    "name": "Mimela junii",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Mimela junii"]
+  },
+  {
+    "id": "loofboombladroller",
+    "name": "Loofboombladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Gypsonoma dealbana"]
+  },
+  {
+    "id": "streepkokerbeertje",
+    "name": "Streepkokerbeertje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eilema complana"]
+  },
+  {
+    "id": "zilveren-groenuil",
+    "name": "Zilveren groenuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pseudoips prasinana"]
+  },
+  {
+    "id": "plaatjesgalwesp",
+    "name": "Plaatjesgalwesp",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Neuroterus albipes"]
+  },
+  {
+    "id": "variabele-vierbandspanner",
+    "name": "Variabele vierbandspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Xanthorhoe ferrugata"]
+  },
+  {
+    "id": "viervlekbrandnetelsnuitkever",
+    "name": "Viervlekbrandnetelsnuitkever",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Nedyus quadrimaculatus"]
+  },
+  {
+    "id": "paardenbloembladroller",
+    "name": "Paardenbloembladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Celypha striana"]
+  },
+  {
+    "id": "rode-knopbladroller",
+    "name": "Rode knopbladroller",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Spilonota ocellana"]
+  },
+  {
+    "id": "oranje-maanmug",
+    "name": "Oranje maanmug",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Tipula lunata"]
+  },
+  {
+    "id": "slakrups",
+    "name": "Slakrups",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Apoda limacodes"]
+  },
+  {
+    "id": "muurzesoog",
+    "name": "Muurzesoog",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Segestria bavarica"]
+  },
+  {
+    "id": "variabele-dwergschaduwwants",
+    "name": "Variabele dwergschaduwwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Orthops basalis"]
+  },
+  {
+    "id": "weidevlekoog",
+    "name": "Weidevlekoog",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Eristalinus sepulchralis"]
+  },
+  {
+    "id": "peper-en-zoutvlinder",
+    "name": "Peper-en-zoutvlinder",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Biston betularia"]
+  },
+  {
+    "id": "tweekleurige-smalboktor",
+    "name": "Tweekleurige smalboktor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Stenurella melanura"]
+  },
+  {
+    "id": "v-dwergspanner",
+    "name": "V-dwergspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Chloroclystis v-ata"]
+  },
+  {
+    "id": "micaplatvoetje",
+    "name": "Micaplatvoetje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Platycheirus albimanus"]
+  },
+  {
+    "id": "witkopmot",
+    "name": "Witkopmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Endrosis sarcitrella"]
+  },
+  {
+    "id": "ruittijger",
+    "name": "Ruitijger",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Nephrotoma flavipalpis"]
+  },
+  {
+    "id": "slanke-kogelspin",
+    "name": "Slanke kogelspin",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Anelosimus vittatus"]
+  },
+  {
+    "id": "langspriet-langsprietje",
+    "name": "Langspriet-langsprietje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Oecetis ochracea"]
+  },
+  {
+    "id": "phaonia-signata",
+    "name": "Phaonia signata",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phaonia signata"]
+  },
+  {
+    "id": "ringspikkelspanner",
+    "name": "Ringspikkelspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Hypomecis punctinalis"]
+  },
+  {
+    "id": "stompvleugelgrasuil",
+    "name": "Stompvleugelgrasuil",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Mythimna impura"]
+  },
+  {
+    "id": "vroege-granietmot",
+    "name": "Vroege granietmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Scoparia ambigualis"]
+  },
+  {
+    "id": "muisbeertje",
+    "name": "Muisbeertje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Pelosia muscerda"]
+  },
+  {
+    "id": "phasia-aurigera",
+    "name": "Phasia aurigera",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Phasia aurigera"]
+  },
+  {
+    "id": "zwarte-speerkniptor",
+    "name": "Zwarte speerkniptor",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Ectinus aterrimus"]
+  },
+  {
+    "id": "zwartvlekgrasmot",
+    "name": "Zwartvlekgrasmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Agriphila inquinatella"]
+  },
+  {
+    "id": "schijn-vierbandspanner",
+    "name": "Schijn-vierbandspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Xanthorhoe spadicearia"]
+  },
+  {
+    "id": "noordse-witsnuitlibel",
+    "name": "Noordse witsnuitlibel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Leucorrhinia rubicunda"]
+  },
+  {
+    "id": "maanschietmot",
+    "name": "Maanschietmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Limnephilus lunatus"]
+  },
+  {
+    "id": "schildstipspanner",
+    "name": "Schildstipspanner",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Idaea biselata"]
+  },
+  {
+    "id": "voorjaarskortvleugelmot",
+    "name": "Voorjaarskortvleugelmot",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Diurnea fagella"]
+  },
+  {
+    "id": "wormkruidhaantje",
+    "name": "Wormkruidhaantje",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Galeruca tanaceti"]
+  },
+  {
+    "id": "zuidelijke-groene-schildwants",
+    "name": "Zuidelijke groene schildwants",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Nezara viridula"]
+  },
+  {
+    "id": "zwarte-heidelibel",
+    "name": "Zwarte heidelibel",
+    "rarity": "Gewoon",
+    "scientificAliases": ["Sympetrum danae"]
   }
 ]

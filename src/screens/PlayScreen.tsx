@@ -15,6 +15,7 @@ import { BugBrainScreen } from "./BugBrainScreen";
 import { BugSmashDuelScreen } from "./BugSmashDuelScreen";
 import { LeaderboardScreen } from "./LeaderboardScreen";
 import { playTabs, type PlayTab } from "./PlayScreenModel";
+import { encodePlaySessionSnapshot, readRecentPlaySession } from "../services/playSessionRecovery";
 
 const playArt = {
   arcade: require("../../assets/generated/solo-duel-campaign-hd.jpg"),
@@ -24,14 +25,26 @@ const bugBrainKeeperArt = require("../../assets/characters/character-knowledge-k
 const bugBrainCatcherArt = require("../../assets/characters/character-lab-catcher.png");
 const playPalette = screenPalette("play");
 const playWorkspaceSessionKey = (uid: string) => `bugbaas:play-workspace:v3:${uid}`;
+const playTabSessionKey = (uid: string) => `bugbaas:play-tab:v1:${uid}`;
+const playRecoveryLocalKey = (uid: string) => `bugbaas:play-recovery:v1:${uid}`;
 
-function initialPlayWorkspaceOpen(uid: string, explicitlyOpen: boolean): boolean {
-  if (explicitlyOpen || typeof window === "undefined") return explicitlyOpen;
+function initialPlaySession(uid: string, explicitlyOpen: boolean, initialTab: PlayTab): { open: boolean; tab: PlayTab } {
+  if (explicitlyOpen || typeof window === "undefined") return { open: explicitlyOpen, tab: initialTab };
   try {
-    return window.sessionStorage.getItem(playWorkspaceSessionKey(uid)) === "open";
+    if (window.sessionStorage.getItem(playWorkspaceSessionKey(uid)) === "open") {
+      const storedTab = window.sessionStorage.getItem(playTabSessionKey(uid));
+      return { open: true, tab: storedTab === "ranking" ? "ranking" : "arcade" };
+    }
   } catch {
-    return false;
+    // Safari private mode can disable session storage.
   }
+  try {
+    const recovered = readRecentPlaySession(window.localStorage.getItem(playRecoveryLocalKey(uid)));
+    if (recovered?.open) return { open: true, tab: recovered.tab };
+  } catch {
+    // Safari private mode can also disable local storage.
+  }
+  return { open: false, tab: initialTab };
 }
 
 type Translate = (key: string, params?: Record<string, string | number>) => string;
@@ -92,7 +105,8 @@ export function PlayScreen({
   const { height: viewportHeight } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
   const usesSideLayout = layout.contentColumns > 1;
-  const [tab, setTab] = useState<PlayTab>(initialTab);
+  const [initialSession] = useState(() => initialPlaySession(user.uid, Boolean(initialDuelId || initialOpponent), initialTab));
+  const [tab, setTab] = useState<PlayTab>(initialSession.tab);
   const heroHeight = layout.isTablet
     ? Math.min(520, Math.max(400, viewportHeight * 0.46))
     : tab === "arcade"
@@ -100,7 +114,7 @@ export function PlayScreen({
       : Math.min(270, Math.max(220, viewportHeight * 0.32));
   const heroResizeMode = layout.isTablet ? "cover" as const : "contain" as const;
   const bottomPadding = layout.navigationMode === "rail" ? 24 : layout.bottomNavHeight + (layout.isTablet ? 34 : 20);
-  const [workspaceOpen, setWorkspaceOpen] = useState(() => initialPlayWorkspaceOpen(user.uid, Boolean(initialDuelId || initialOpponent)));
+  const [workspaceOpen, setWorkspaceOpen] = useState(initialSession.open);
   const [workspaceDuelId, setWorkspaceDuelId] = useState(initialDuelId);
   const [openDuels, setOpenDuels] = useState<BugSmashDuel[]>([]);
   const [recentDuels, setRecentDuels] = useState<BugSmashDuel[]>([]);
@@ -109,6 +123,7 @@ export function PlayScreen({
   const [duelActivityLoading, setDuelActivityLoading] = useState(false);
   const [duelActivityError, setDuelActivityError] = useState("");
   const [rankedGameActive, setRankedGameActive] = useState(false);
+  const [gameFullscreen, setGameFullscreen] = useState(false);
   const [bugBrainOpen, setBugBrainOpen] = useState(false);
   const [bugBrainActive, setBugBrainActive] = useState(false);
   const [bugBrainStatus, setBugBrainStatus] = useState<BugBrainDailyStatus | null>(null);
@@ -147,13 +162,19 @@ export function PlayScreen({
     if (typeof window === "undefined") return;
     try {
       window.sessionStorage.setItem(playWorkspaceSessionKey(user.uid), workspaceOpen ? "open" : "closed");
+      window.sessionStorage.setItem(playTabSessionKey(user.uid), tab);
     } catch {
       // Safari private mode can disable session storage.
     }
-  }, [user.uid, workspaceOpen]);
+    try {
+      window.localStorage.setItem(playRecoveryLocalKey(user.uid), encodePlaySessionSnapshot(workspaceOpen, tab));
+    } catch {
+      // Safari private mode can also disable local storage.
+    }
+  }, [tab, user.uid, workspaceOpen]);
 
   useEffect(() => {
-    setTab(initialTab);
+    if (initialDuelId || initialOpponent || initialTab === "ranking") setTab(initialTab);
     setWorkspaceDuelId(initialDuelId);
     if (initialDuelId || initialOpponent) setWorkspaceOpen(true);
   }, [initialDuelId, initialOpponent, initialTab]);
@@ -180,6 +201,10 @@ export function PlayScreen({
   const handleRankedActiveChange = useCallback((active: boolean) => {
     setRankedGameActive(active);
   }, []);
+  const handleFullscreenChange = useCallback((active: boolean) => {
+    setGameFullscreen(active);
+    onFullscreenChange?.(active);
+  }, [onFullscreenChange]);
   const workspaceCloseBlocked = rankedGameActive;
 
   const unlocks = useMemo(() => buildPlayUnlocks(discoveredSpecies), [discoveredSpecies]);
@@ -398,14 +423,16 @@ export function PlayScreen({
             <LeaderboardScreen currentUser={user} onBack={() => setWorkspaceOpen(false)} onSelectUser={onSelectUser} />
           ) : (
             <>
-              <View style={styles.workspaceHeader}>
-                <Text style={styles.workspaceTitle}>{heroTitle}</Text>
-                {!workspaceCloseBlocked ? (
-                  <Pressable accessibilityRole="button" onPress={() => setWorkspaceOpen(false)} style={styles.workspaceClose}>
-                    <GameUiIcon name="close" size={24} />
-                  </Pressable>
-                ) : null}
-              </View>
+              {!gameFullscreen ? (
+                <View style={styles.workspaceHeader}>
+                  <Text style={styles.workspaceTitle}>{heroTitle}</Text>
+                  {!workspaceCloseBlocked ? (
+                    <Pressable accessibilityRole="button" onPress={() => setWorkspaceOpen(false)} style={styles.workspaceClose}>
+                      <GameUiIcon name="close" size={24} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
               <View style={styles.workspaceBody}>
                 <BugSmashDuelScreen
                   embedded
@@ -420,7 +447,7 @@ export function PlayScreen({
                   onDuelAccepted={onDuelAccepted}
                   onDuelRequest={onDuelRequest}
                   onEditSquad={onOpenCollection}
-                  onFullscreenChange={onFullscreenChange}
+                  onFullscreenChange={handleFullscreenChange}
                   onRankedActiveChange={handleRankedActiveChange}
                   onRewardDrop={onRewardDrop}
                   onUserUpdated={onUserUpdated}

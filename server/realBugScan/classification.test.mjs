@@ -97,21 +97,21 @@ test("marks a confident named species outside the catalog as reward owed", () =>
     imageQuality: "good",
     catalogStatus: "not_in_catalog",
     matchedBugId: null,
-    commonName: "Aziatisch lieveheersbeestje",
-    commonNameEn: "Asian lady beetle",
-    commonNameFr: "Coccinelle asiatique",
-    scientificName: "Harmonia axyridis",
-    fact: "Deze soort heeft veel verschillende kleurpatronen.",
+    commonName: "Purperen langpootmug",
+    commonNameEn: "Purple cranefly",
+    commonNameFr: "Tipule pourpre",
+    scientificName: "Tipula purpurata",
+    fact: "Deze langpootmug heeft opvallend purper gekleurde vleugels.",
     factEn: "This species has many different color patterns.",
     factFr: "Cette espèce présente de nombreux motifs de couleur.",
     confidence: 0.92,
-    reason: "Kenmerkend halsschild en variabele dekschildtekening."
+    reason: "De vorm en kleur passen bij deze specifieke soort."
   }, catalog);
 
   assert.equal(result.status, "not_in_catalog");
   assert.equal(result.identification.bugId, null);
-  assert.equal(result.identification.scientificName, "Harmonia axyridis");
-  assert.match(result.identification.fact, /kleurpatronen/);
+  assert.equal(result.identification.scientificName, "Tipula purpurata");
+  assert.match(result.identification.fact, /purper/);
 });
 
 test("records a concrete missing species at seventy percent confidence", () => {
@@ -153,12 +153,12 @@ test("rejects a forced nearest BugDex match and stores it as a missing species",
     containsBug: true,
     imageQuality: "good",
     catalogStatus: "matched",
-    matchedBugId: "lieveheersbeestje",
-    commonName: "Aziatisch lieveheersbeestje",
-    commonNameEn: "Asian lady beetle",
-    commonNameFr: "Coccinelle asiatique",
-    scientificName: "Harmonia axyridis",
-    fact: "Deze soort heeft veel verschillende kleurpatronen.",
+    matchedBugId: "langpootmug",
+    commonName: "Purperen langpootmug",
+    commonNameEn: "Purple cranefly",
+    commonNameFr: "Tipule pourpre",
+    scientificName: "Tipula purpurata",
+    fact: "Deze langpootmug heeft opvallend purper gekleurde vleugels.",
     factEn: "This species has many different color patterns.",
     factFr: "Cette espèce présente de nombreux motifs de couleur.",
     confidence: 0.94,
@@ -167,7 +167,7 @@ test("rejects a forced nearest BugDex match and stores it as a missing species",
 
   assert.equal(result.status, "not_in_catalog");
   assert.equal(result.identification.bugId, null);
-  assert.equal(result.identification.commonName, "Aziatisch lieveheersbeestje");
+  assert.equal(result.identification.commonName, "Purperen langpootmug");
 });
 
 test("fills empty model text fields before returning the API contract", () => {
@@ -300,6 +300,7 @@ test("includes only compact catalog ids and names in the model prompt", () => {
 test("keeps the scan catalog synchronized with BugDex entries", () => {
   const source = readFileSync(new URL("../../src/services/pointsService.ts", import.meta.url), "utf8");
   const expansionSource = readFileSync(new URL("../../src/services/bugDexExpansion.ts", import.meta.url), "utf8");
+  const pilotSource = readFileSync(new URL("../../src/services/bugDexNederlandPilot.ts", import.meta.url), "utf8");
   const entriesSection = source.slice(source.indexOf("export const bugDexEntries"));
   const sourceIds = Array.from(entriesSection.matchAll(/\{ id: \"([^\"]+)\", name: \"([^\"]+)\", title:/g), (match) => match[1]);
   const idsFromTemplate = (name, limit) => {
@@ -316,6 +317,7 @@ test("keeps the scan catalog synchronized with BugDex entries", () => {
     ...idsFromTemplate("mythicIds"),
     ...Array.from(expansionSource.matchAll(/\[\"([^\"]+)\", \"(?:Gewoon|Zeldzaam|Episch|Legendarisch|Mythisch)\"\]/g), (match) => match[1])
   );
+  sourceIds.push(...Array.from(pilotSource.matchAll(/\bid: \"([^\"]+)\"/g), (match) => match[1]));
   assert.ok(sourceIds.length > 0);
   assert.deepEqual(new Set(catalog.map((entry) => entry.id)), new Set(sourceIds));
 });

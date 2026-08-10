@@ -37,3 +37,7 @@ export async function refreshTeamHunt(user: User) {
   await callTeamHunt(user, "claimTeamHuntContributions");
   return callTeamHunt(user, "teamHuntStatus");
 }
+
+export function getTeamHuntStatus(user: User) {
+  return callTeamHunt(user, "teamHuntStatus");
+}

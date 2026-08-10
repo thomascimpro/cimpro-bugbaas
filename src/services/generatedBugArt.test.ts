@@ -10,10 +10,10 @@ const addedIds = new Set(addedEntries.map((entry) => entry.id));
 const catalogIds = new Set(bugDexEntries.map((entry) => entry.id));
 
 test("Dutch BugDex expansion contains all approved drop-only entries", () => {
-  assert.equal(addedEntries.length, 66);
+  assert.equal(addedEntries.length, 549);
   assert.deepEqual(
     Object.fromEntries(["Gewoon", "Zeldzaam", "Episch", "Legendarisch", "Mythisch"].map((rarity) => [rarity, addedEntries.filter((entry) => entry.rarity === rarity).length])),
-    { Gewoon: 17, Zeldzaam: 22, Episch: 20, Legendarisch: 7, Mythisch: 0 }
+    { Gewoon: 323, Zeldzaam: 129, Episch: 78, Legendarisch: 19, Mythisch: 0 }
   );
   assert.ok(addedEntries.every((entry) => entry.minPoints === 0 && entry.minBugs === 0));
 });
@@ -46,7 +46,7 @@ test("all category references point at real BugDex entries", () => {
   }
 });
 
-test("new category filters cover every added entry without changing badge requirements", () => {
+test("category filters cover every added entry without changing badge requirements", () => {
   const dutchHome = bugDexSets.find((set) => set.id === "dutch_home");
   const dutchGarden = bugDexSets.find((set) => set.id === "dutch_garden");
   assert.ok(dutchHome);
@@ -54,7 +54,7 @@ test("new category filters cover every added entry without changing badge requir
   assert.equal(dutchHome.badgeId, undefined);
   assert.equal(dutchGarden.badgeId, undefined);
 
-  const filteredIds = new Set([...dutchHome.bugIds, ...dutchGarden.bugIds]);
+  const filteredIds = new Set(bugDexSets.flatMap((set) => set.bugIds));
   for (const id of addedIds) assert.ok(filteredIds.has(id), `new entry ${id} is missing from Dutch filters`);
 
   for (const set of bugDexSets.filter((item) => item.badgeId)) {

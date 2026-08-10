@@ -1,4 +1,5 @@
 import type { BugDexEntry, BugDexRarity, InsectVariant } from "./pointsService";
+import { bugDexNederlandPilotEntries, bugDexNederlandPilotFacts } from "./bugDexNederlandPilot";
 
 const unique = (ids: string[]) => [...new Set(ids)];
 
@@ -83,7 +84,7 @@ const baseBugs: Record<BugDexRarity, number> = {
   Mythisch: 200
 };
 
-export const bugDexExpansionEntries: BugDexEntry[] = rows.map(([id, rarity], index) => {
+const generatedExpansionEntries: BugDexEntry[] = rows.map(([id, rarity], index) => {
   const name = displayName(id);
   return {
     id,
@@ -98,6 +99,14 @@ export const bugDexExpansionEntries: BugDexEntry[] = rows.map(([id, rarity], ind
   };
 });
 
-export const bugDexExpansionFacts: Record<string, string> = Object.fromEntries(
-  bugDexExpansionEntries.map((entry) => [entry.id, entry.name + " is een echte soort in de uitgebreide BugDex."])
-);
+export const bugDexExpansionEntries: BugDexEntry[] = [
+  ...generatedExpansionEntries,
+  ...bugDexNederlandPilotEntries,
+];
+
+export const bugDexExpansionFacts: Record<string, string> = {
+  ...Object.fromEntries(
+    generatedExpansionEntries.map((entry) => [entry.id, entry.name + " is een echte soort in de uitgebreide BugDex."])
+  ),
+  ...bugDexNederlandPilotFacts,
+};

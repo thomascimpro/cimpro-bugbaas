@@ -1,10 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NativeModules, Platform } from "react-native";
 import { BugArtId } from "./bugArt";
+import { claimEveryMovementRadarReward, movementRadarPendingCount, movementRadarRewardToken, resolveMovementRadarRewardIds } from "./movementRadarClaimModel.mjs";
+
+export { movementRadarRewardToken };
+
+export type MovementRadarRewardId = BugArtId | typeof movementRadarRewardToken;
 
 export type MovementRadarResult = {
   awarded: number;
-  bugIds: BugArtId[];
+  bugIds: MovementRadarRewardId[];
   estimatedKm: number;
   estimatedWeekKm?: number;
   reason?: string;
@@ -41,9 +46,9 @@ export type MovementRadarProgress = {
 const nativeModule = NativeModules.BugBaasNative as {
   claimMovementRadarBonuses?: (movementBoost: number) => Promise<MovementRadarResult>;
   claimMovementRadarBonusesForApp?: (movementBoost: number) => Promise<MovementRadarResult>;
-  claimQueuedRadarBugs?: () => Promise<BugArtId[]>;
+  claimQueuedRadarBugs?: () => Promise<MovementRadarRewardId[]>;
   getMovementRadarProgress?: (movementBoost: number) => Promise<MovementRadarProgress>;
-  getQueuedRadarBugIds?: () => Promise<BugArtId[]>;
+  getQueuedRadarBugIds?: () => Promise<MovementRadarRewardId[]>;
   requestHealthPermissions?: () => Promise<boolean>;
   setRadarRequestCounts?: (tradeCount: number, duelCount: number) => Promise<boolean>;
 } | undefined;
@@ -73,14 +78,29 @@ export async function claimMovementRadarBonusesForApp(uid: string, movementBoost
   return nativeResult;
 }
 
-export async function getQueuedRadarBugIds(): Promise<BugArtId[]> {
+export async function getQueuedRadarBugIds(): Promise<MovementRadarRewardId[]> {
   if (Platform.OS !== "android" || !nativeModule?.getQueuedRadarBugIds) return [];
   return nativeModule.getQueuedRadarBugIds();
 }
 
-export async function claimQueuedRadarBugs(): Promise<BugArtId[]> {
+export async function claimQueuedRadarBugs(): Promise<MovementRadarRewardId[]> {
   if (Platform.OS !== "android" || !nativeModule?.claimQueuedRadarBugs) return [];
   return nativeModule.claimQueuedRadarBugs();
+}
+
+export async function claimAllMovementRadarRewards(uid: string, movementBoost = 0): Promise<MovementRadarResult> {
+  return claimEveryMovementRadarReward<MovementRadarRewardId>({
+    claimFresh: () => claimMovementRadarBonusesForApp(uid, movementBoost),
+    claimQueued: claimQueuedRadarBugs
+  });
+}
+
+export function resolveMovementRadarBugIds(rewardIds: MovementRadarRewardId[], pickBugId: () => BugArtId): BugArtId[] {
+  return resolveMovementRadarRewardIds(rewardIds, pickBugId);
+}
+
+export function movementRadarPendingRewardCount(claimableRewards: number, queuedRewards: number): number {
+  return movementRadarPendingCount(claimableRewards, queuedRewards);
 }
 
 export async function setRadarRequestCounts(tradeCount: number, duelCount: number): Promise<void> {
