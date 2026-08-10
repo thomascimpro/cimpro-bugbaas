@@ -6,7 +6,7 @@
 - Catalogus/art-integriteit: exact **1000/1000/1000** unieke catalogusentries, `bugArt`-mappings en WebP-runtimebestanden. De lokale Expo-webexport slaagde met 1.858 modules en 1.159 assets.
 - Vercel `dpl_3msAij2mJpy48RhAZxnyzdvMFSZA`: READY. Live root en `/butterfly-catch-3d/`: HTTP 200; kaartservice: HTTP 200/JSON; BugScan-CORS voor `bugbaas.vercel.app` en `bugbaasv3.vercel.app`: HTTP 204 met exact de aangevraagde origin.
 - Firebase-productie: Firestore rules succesvol uitgebracht; **31/31** Functions ACTIVE in `us-central1`.
-- APK: package `nl.cimpro.bugbaas`, versionCode 318/versionName 3.0.9, arm64-v8a, 108.650.161 bytes, SHA-256 `E47D9A51BE77605BEBDC22FE00E3FF573793CEE3DA32628E55E4601B4F1365CD`, v2-signed met signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- APK: package `nl.cimpro.bugbaas`, versionCode 318/versionName 3.0.9, arm64-v8a, 105.515.637 bytes, SHA-256 `2B268F9104ECE50297919141B99A958FDC8913C87650DBB645DA9BD1ACF47BC4`, v2-signed met signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
 - Android-permissies gecontroleerd: internet, grove/precieze locatie, activity recognition en camera aanwezig; geen microfoon-, externe opslag- of overlaypermissie. Er was geen ADB-device aangesloten, dus installatie en fysieke camerakwaliteit zijn niet geclaimd.
 
 ## 2026-08-10 - Fullscreen BugScan-camera (bron-only)

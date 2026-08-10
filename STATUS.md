@@ -5,7 +5,7 @@
 - De actieve BugDex-release bevat exact **1000** unieke catalogusentries, **1000** WebP-runtimebestanden en **1000** artmappings. De ruwe generatie-PNG's worden niet meer naar Vercel gestuurd.
 - Vercel-productie staat READY op `https://bugbaasv3.vercel.app`, deployment `dpl_3msAij2mJpy48RhAZxnyzdvMFSZA`. Hoofdapp, Vleugeljacht 3D, kaartservice en BugScan-CORS zijn live gecontroleerd.
 - Firestore rules zijn uitgebracht op `thomascimpro-6266f`; alle **31/31** Firebase Functions staan ACTIVE. De vereiste OpenAI-, scanreceipt-, Firebase- en Google-envnamen zijn aanwezig zonder secrets in bron of releasebestanden.
-- Android 3.0.9 (`versionCode 318`) staat in `dist/BugBaas-3.0.9.apk`: 108.650.161 bytes, SHA-256 `E47D9A51BE77605BEBDC22FE00E3FF573793CEE3DA32628E55E4601B4F1365CD`, met dezelfde legacy signer.
+- Android 3.0.9 (`versionCode 318`) staat in `dist/BugBaas-3.0.9.apk`: 105.515.637 bytes, SHA-256 `2B268F9104ECE50297919141B99A958FDC8913C87650DBB645DA9BD1ACF47BC4`, met dezelfde legacy signer.
 - Web behoudt de lichte iPhone-Safari-geluidsroute en vrije Vleugeljacht 3D. Android behoudt het slot en opent `https://bugbaas.vercel.app`.
 - Er was geen aangesloten ADB-apparaat; fysieke camera-, Health Connect- en installatiecontrole op een telefoon is daarom niet geclaimd.
 
