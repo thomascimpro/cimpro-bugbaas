@@ -36,6 +36,14 @@ test("lists only missing species and preserves exact acquisition routes", () => 
   assert.equal(completion.missing[0].acquisition, missing.acquisition);
 });
 
+test("keeps historically unlocked species in collection completion after a copy is spent", () => {
+  const unlockedId = bugProgressionCatalog[0].bugId;
+  const completion = buildCollectionCompletion([], [{ bugId: unlockedId }]);
+
+  assert.equal(completion.owned, 1);
+  assert.equal(completion.missing.some((entry) => entry.bugId === unlockedId), false);
+});
+
 test("gives a clear route label for every acquisition profile", () => {
   assert.equal(missingSpeciesRoute("field"), "collection.route.field");
   assert.equal(missingSpeciesRoute("research"), "collection.route.research");

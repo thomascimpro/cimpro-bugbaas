@@ -1,5 +1,14 @@
 # Test Results
 
+## 2026-08-10 - BugBaas 3.0.10 productie-release
+
+- `npm run typecheck`: passed. Gerichte collectie-, duel-overlay- en rewardflowtests: **37/37**; Firebase Functions: **79/79**; BugDex-artvalidatie: **3/3**; scanclient/servercontract: **75/75**.
+- Live Firebase: vier weekstemmingfuncties succesvol bijgewerkt. Geauthenticeerde statuscontrole: `voting`, **3** nominees, **3** unieke foto's en **0** zichtbare nominee-namen.
+- Live Vercel: beide productiehosts en `/butterfly-catch-3d/` HTTP 200; BugScan-CORS HTTP 204. De scan-API bereikte voor `test2` correct de serverquota (HTTP 429 omdat 3/3 scans al gebruikt waren).
+- Mobiele browsercheck op 390x844: testlogin, collectie `9/1000` + `1%`, drie stemkaarten en eventstartmelding zichtbaar. Na rotatie naar 844x390 bleef de Scan-route actief met drie stemknoppen; **0** consolefouten.
+- APK: package `nl.cimpro.bugbaas`, versionCode 319/versionName 3.0.10, arm64-v8a, 105.516.049 bytes, SHA-256 `1166709DD40FF5A073B156934836F622253FE639BF3CF57F24B6F723B57EF755`, signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- APK-config bevat geldige Google OAuth-clients, Firebase `thomascimpro-6266f`, scan-URL `https://bugbaas.vercel.app`, Android-3D-slot/link en vereiste camera/locatiepermissies; geen microfoon-, opslag- of overlaypermissie. Geen ADB-device aangesloten.
+
 ## 2026-08-10 - BugBaas 3.0.9 productie-release
 
 - Typecheck en alle gerichte catalogus-, BugScan-, camera-, classificatie-, receipt-, reward-, radar-, ranked-, event-, platform-, audio-, rotatie- en 3D-tests zijn groen. Firebase Functions: **78/78**; BugDex-validatie: **3/3**; Nederlandse pilottest: **4/4**.

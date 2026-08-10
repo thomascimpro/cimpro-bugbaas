@@ -3,7 +3,6 @@ import { auth } from "../firebase";
 import type { User } from "../types";
 
 export type WeeklyScanContestNominee = {
-  displayName: string;
   id: string;
   isOwn: boolean;
   photoContestReason: string;

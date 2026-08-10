@@ -4,14 +4,14 @@ import { CollectionProgressHeader } from "../components/collection/CollectionPro
 import { MasteryTeamChallengeCard } from "../components/collection/MasteryTeamChallengeCard";
 import { NavigationArt } from "../components/NavigationArt";
 import { GameUiIcon } from "../components/ui/GameUiIcon";
-import { listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
+import { listBugDexInventory, listBugDexUnlocks, type BugDexDropResult } from "../services/bugDexService";
 import { buildCollectionCompletion } from "../services/collectionCompletionModel";
 import { listBugMastery } from "../services/bugMasteryService";
 import { sanitizeActiveBugSquad } from "../services/bugSquadService";
 import { buildMasteryTeamChallenge } from "../services/masteryTeamChallengeModel";
 import { useI18n } from "../services/i18n";
 import { useResponsiveLayout } from "../theme/useResponsiveLayout";
-import type { BugDexInventoryItem, BugMastery, User } from "../types";
+import type { BugDexInventoryItem, BugDexUnlock, BugMastery, User } from "../types";
 import { BugDexScreen } from "./BugDexScreen";
 import { FieldJournalScreen } from "./FieldJournalScreen";
 import { MuseumScreen } from "./MuseumScreen";
@@ -32,22 +32,25 @@ export function CollectionScreen({ initialTab, onBack, onRewardDrop, onUserUpdat
   const layout = useResponsiveLayout();
   const [tab, setTab] = useState<CollectionTab>(() => normalizeCollectionTab(initialTab));
   const [inventory, setInventory] = useState<BugDexInventoryItem[]>([]);
+  const [unlockHistory, setUnlockHistory] = useState<BugDexUnlock[]>([]);
   const [masteries, setMasteries] = useState<BugMastery[]>([]);
 
   useEffect(() => {
     let active = true;
     Promise.all([
       listBugDexInventory(user).catch(() => []),
+      listBugDexUnlocks(user).catch(() => []),
       listBugMastery(user).catch(() => [])
-    ]).then(([items, masteryItems]) => {
+    ]).then(([items, unlocks, masteryItems]) => {
       if (!active) return;
       setInventory(items);
+      setUnlockHistory(unlocks);
       setMasteries(masteryItems);
     });
     return () => { active = false; };
   }, [user]);
 
-  const completion = useMemo(() => buildCollectionCompletion(inventory), [inventory]);
+  const completion = useMemo(() => buildCollectionCompletion(inventory, unlockHistory), [inventory, unlockHistory]);
   const masteryTeamChallenge = useMemo(() => buildMasteryTeamChallenge({
     activeSquadIds: sanitizeActiveBugSquad(user.activeBugSquad),
     masteryLevels: Object.fromEntries(masteries.map((item) => [item.bugId, item.level]))
@@ -66,8 +69,8 @@ export function CollectionScreen({ initialTab, onBack, onRewardDrop, onUserUpdat
         <Pressable accessibilityRole="button" onPress={onBack} style={styles.back}><GameUiIcon name="back" size={22} /></Pressable>
         <View style={styles.headerCopy}><Text style={styles.kicker}>{t("collection.kicker")}</Text><Text style={styles.title}>{t("collection.title")}</Text></View>
         <View style={styles.completionBadge}>
-          <Text style={styles.completionValue}>{completion.percent}%</Text>
-          <Text style={styles.completionLabel}>{completion.owned}/{completion.total}</Text>
+          <Text style={styles.completionValue}>{completion.owned}/{completion.total}</Text>
+          <Text style={styles.completionLabel}>{completion.percent}% {t("bugdex.unlockedShort")}</Text>
         </View>
       </ImageBackground>
       <View style={[styles.tabs, { maxWidth: layout.contentMaxWidth }]}>

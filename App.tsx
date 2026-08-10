@@ -431,7 +431,7 @@ function AppContent() {
     && activeEventCheckComplete
   );
   const foregroundRewardPending = pendingForegroundRewards.length > 0;
-  const foregroundBugEnabled = foregroundUiClear;
+  const foregroundBugEnabled = foregroundUiClear && !duelFullscreen;
   const forcedForegroundRewardEnabled = foregroundUiClear && foregroundRewardPending;
 
   useEffect(() => {

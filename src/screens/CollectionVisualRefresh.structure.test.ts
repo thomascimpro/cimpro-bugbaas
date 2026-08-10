@@ -11,6 +11,8 @@ test("Collection shell does not fade the entire screen through a white backgroun
   const text = await source("CollectionScreen.tsx");
   assert.doesNotMatch(text, /opacity: reveal/);
   assert.doesNotMatch(text, /Animated\.timing\(reveal/);
+  assert.match(text, /completion\.owned\}\/\{completion\.total/);
+  assert.match(text, /completion\.percent\}% \{t\("bugdex\.unlockedShort"\)\}/);
 });
 
 test("Embedded BugDex renders fully opaque without a whole-panel white fade", async () => {

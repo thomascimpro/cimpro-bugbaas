@@ -29,6 +29,22 @@ test("weekly nominees are the three best photos from three different users", () 
   assert.equal(new Set(selected.map((item) => item.uid)).size, 3);
 });
 
+test("weekly nominees can be selected randomly but repeatably from quality photos", () => {
+  const candidates = Array.from({ length: 15 }, (_, index) => ({
+    uid: `user-${index}`,
+    scanId: `scan-${index}`,
+    photoUrl: `https://photo-${index}`,
+    photoContestScore: 100 - index,
+    confidence: 0.9
+  }));
+  const first = selectWeeklyScanNominees(candidates, 3, "2026-08-10");
+  const second = selectWeeklyScanNominees(candidates, 3, "2026-08-10");
+  assert.deepEqual(first.map((item) => item.scanId), second.map((item) => item.scanId));
+  assert.equal(first.length, 3);
+  assert.equal(new Set(first.map((item) => item.uid)).size, 3);
+  assert.ok(first.every((item) => Number(item.uid.split("-")[1]) < 12));
+});
+
 test("winner needs a vote and ties use the photo score", () => {
   assert.equal(weeklyScanContestWinner([{ uid: "one", scanId: "one", photoUrl: "https://one", voteCount: 0 }]), undefined);
   const winner = weeklyScanContestWinner([

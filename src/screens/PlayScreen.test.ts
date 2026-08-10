@@ -103,7 +103,14 @@ test("ranking gate is inspectable at fewer than ten species", () => {
 test("active arcade game removes the Choose a game workspace header", () => {
   assert.match(playScreenSource, /const \[gameFullscreen, setGameFullscreen\] = useState\(false\)/);
   assert.match(playScreenSource, /const handleFullscreenChange = useCallback/);
-  assert.match(playScreenSource, /onFullscreenChange\?\.\(active\)/);
+  assert.match(playScreenSource, /onFullscreenChange\?\.\(workspaceOpen \|\| gameFullscreen\)/);
   assert.match(playScreenSource, /\{!gameFullscreen \? \([\s\S]*styles\.workspaceHeader/);
   assert.match(playScreenSource, /onFullscreenChange=\{handleFullscreenChange\}/);
+});
+
+test("the parent knows the whole duel workspace covers reward foregrounds", () => {
+  assert.match(playScreenSource, /onFullscreenChange\?\.\(workspaceOpen \|\| gameFullscreen\)/);
+  assert.match(playScreenSource, /onFullscreenChange\?\.\(false\)/);
+  assert.match(playScreenSource, /styles\.workspaceOverlay/);
+  assert.match(playScreenSource, /BackHandler\.addEventListener\("hardwareBackPress"/);
 });

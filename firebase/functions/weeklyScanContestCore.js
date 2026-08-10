@@ -59,7 +59,13 @@ function cleanCandidate(value) {
   };
 }
 
-function selectWeeklyScanNominees(candidates, limit = 3) {
+function seededNomineeOrder(seed, candidate) {
+  return createHash("sha256")
+    .update(`${seed}:${candidate.uid}:${candidate.scanId}`)
+    .digest("hex");
+}
+
+function selectWeeklyScanNominees(candidates, limit = 3, seed = "") {
   const sorted = (Array.isArray(candidates) ? candidates : [])
     .map(cleanCandidate)
     .filter(Boolean)
@@ -69,15 +75,18 @@ function selectWeeklyScanNominees(candidates, limit = 3) {
       || left.submittedAt.localeCompare(right.submittedAt)
       || left.scanId.localeCompare(right.scanId)
     ));
-  const selected = [];
+  const uniqueCandidates = [];
   const selectedUsers = new Set();
   for (const candidate of sorted) {
     if (selectedUsers.has(candidate.uid)) continue;
-    selected.push(candidate);
+    uniqueCandidates.push(candidate);
     selectedUsers.add(candidate.uid);
-    if (selected.length >= limit) break;
   }
-  return selected;
+  if (!seed) return uniqueCandidates.slice(0, limit);
+  const qualityPool = uniqueCandidates.slice(0, Math.max(limit, 12));
+  return qualityPool
+    .sort((left, right) => seededNomineeOrder(seed, left).localeCompare(seededNomineeOrder(seed, right)))
+    .slice(0, limit);
 }
 
 function weeklyScanContestWinner(nominees) {

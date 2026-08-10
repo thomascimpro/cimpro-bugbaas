@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-10 - BugBaas 3.0.10
+
+- Duel- en daily-BugDex-beloningen stapelen nu betrouwbaar en verschijnen direct boven het afgeronde duel, elk met hun eigen reden en daarna het juiste `ontdekt`- of `+1`-scherm.
+- Scan van de week laat altijd drie verschillende spelers zien zodra drie echte historische foto's bestaan, gebruikt zo nodig oudere scans en verbergt spelersnamen tijdens het stemmen.
+- Collectie toont nu `ontdekt/1000` plus het voltooiingspercentage en blijft ook gebruikte, eerder ontdekte soorten meetellen.
+- Web behoudt lichte iPhone-geluiden en vrije Vleugeljacht 3D; Android behoudt het slot met link naar `https://bugbaas.vercel.app`.
+
 ## 2026-08-10 - BugBaas 3.0.9
 
 - De BugDex bevat nu exact 1.000 gekoppelde soorten met gecontroleerde transparante WebP-art, facts, sets en rarityverdeling.

@@ -1,4 +1,4 @@
-import type { BugDexInventoryItem } from "../types.ts";
+import type { BugDexInventoryItem, BugDexUnlock } from "../types.ts";
 import {
   bugProgressionCatalog,
   type BugAcquisitionProfile,
@@ -21,8 +21,14 @@ export type CollectionCompletion = {
 
 const acquisitionProfiles: BugAcquisitionProfile[] = ["starter", "field", "research", "campaign", "event", "mythic", "legacy"];
 
-export function buildCollectionCompletion(inventory: BugDexInventoryItem[]): CollectionCompletion {
-  const ownedIds = new Set(inventory.filter((item) => item.count > 0).map((item) => item.bugId));
+export function buildCollectionCompletion(
+  inventory: BugDexInventoryItem[],
+  unlockHistory: Pick<BugDexUnlock, "bugId">[] = []
+): CollectionCompletion {
+  const ownedIds = new Set([
+    ...inventory.filter((item) => item.count > 0).map((item) => item.bugId),
+    ...unlockHistory.map((item) => item.bugId)
+  ]);
   const owned = bugProgressionCatalog.filter((entry) => ownedIds.has(entry.bugId)).length;
   const total = bugProgressionCatalog.length;
   const byAcquisition = Object.fromEntries(acquisitionProfiles.map((profile) => {

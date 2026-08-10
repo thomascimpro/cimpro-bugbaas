@@ -2112,27 +2112,74 @@ async function registerWeeklyScanContestCandidate({ claims, reviewThumbnailDataU
 
 async function ensureWeeklyScanContest(week = weeklyScanContestWeek()) {
   const contestRef = db.collection("weeklyScanContests").doc(week.weekId);
-  if ((await contestRef.get()).exists) return;
-  const candidatesSnapshot = await db.collection("weeklyScanContestSubmissions").doc(week.sourceWeekId)
-    .collection("candidates").orderBy("photoContestScore", "desc").limit(3).get();
-  const nominees = selectWeeklyScanNominees(candidatesSnapshot.docs.map((item) => item.data()));
+  const currentContest = await contestRef.get();
+  if (currentContest.exists && currentContest.data()?.status !== "insufficient_candidates") return;
+  if (Number(currentContest.data()?.sourceLookbackVersion) >= 2) return;
+
+  const candidates = [];
+  const sourceWeekIds = [];
+  const sourceMonday = new Date(`${week.sourceWeekId}T12:00:00.000Z`);
+  for (let offset = 0; offset < 52; offset += 1) {
+    const sourceDate = new Date(sourceMonday);
+    sourceDate.setUTCDate(sourceDate.getUTCDate() - (offset * 7));
+    const sourceWeekId = sourceDate.toISOString().slice(0, 10);
+    const snapshot = await db.collection("weeklyScanContestSubmissions").doc(sourceWeekId)
+      .collection("candidates").orderBy("photoContestScore", "desc").limit(20).get();
+    if (!snapshot.empty) {
+      sourceWeekIds.push(sourceWeekId);
+      candidates.push(...snapshot.docs.map((item) => item.data()));
+    }
+    if (selectWeeklyScanNominees(candidates).length >= 3) break;
+  }
+  if (selectWeeklyScanNominees(candidates).length < 3) {
+    const legacySnapshot = await db.collection("pendingBugDexDiscoveries")
+      .orderBy("createdAt", "desc")
+      .limit(200)
+      .get();
+    const legacyCandidates = legacySnapshot.docs
+      .map((item) => item.data())
+      .filter((item) => item.status !== "rejected")
+      .map((item) => ({
+        confidence: item.confidence,
+        displayName: item.userDisplayName,
+        photoContestReason: item.reason || "Een scherpe, opvallende echte bugfoto.",
+        photoContestScore: Math.round((Number(item.confidence) || 0) * 100),
+        photoUrl: item.reviewThumbnailDataUrl,
+        scanId: item.scanId,
+        scientificName: item.scientificName,
+        speciesName: item.commonName,
+        submittedAt: item.createdAt,
+        uid: item.userId,
+        weekId: "legacy"
+      }));
+    if (legacyCandidates.length > 0) {
+      sourceWeekIds.push("legacy");
+      candidates.push(...legacyCandidates);
+    }
+  }
+  const nominees = selectWeeklyScanNominees(candidates, 3, week.weekId);
   await db.runTransaction(async (transaction) => {
     const existing = await transaction.get(contestRef);
-    if (existing.exists) return;
+    if (existing.exists && existing.data()?.status !== "insufficient_candidates") return;
     const ready = nominees.length === 3;
-    transaction.create(contestRef, {
+    const contestData = {
       createdAt: FieldValue.serverTimestamp(),
       endsAt: week.endsAt,
       nomineeCount: ready ? 3 : 0,
       rewardXp: contestRewardXp,
+      sourceLookbackComplete: true,
+      sourceLookbackVersion: 2,
       sourceWeekId: week.sourceWeekId,
+      sourceWeekIds,
       startsAt: week.startsAt,
       status: ready ? "voting" : "insufficient_candidates",
       weekId: week.weekId
-    });
+    };
+    if (existing.exists) transaction.set(contestRef, contestData, { merge: true });
+    else transaction.create(contestRef, contestData);
     if (!ready) return;
     for (const nominee of nominees) {
-      transaction.create(contestRef.collection("nominees").doc(nominee.scanId), {
+      transaction.set(contestRef.collection("nominees").doc(nominee.scanId), {
         ...nominee,
         reportCount: 0,
         reviewStatus: "clear",
@@ -2229,7 +2276,6 @@ async function weeklyScanContestPayload(uid) {
       nominees: nomineeSnapshot.docs.map((item) => {
         const data = item.data();
         return {
-          displayName: data.displayName,
           id: item.id,
           isOwn: data.uid === uid,
           photoContestReason: data.photoContestReason,

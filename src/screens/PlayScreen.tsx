@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Animated, Easing, Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { Animated, BackHandler, Easing, Image, ImageBackground, Modal, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { listBugDexUnlocks, type BugDexDropResult } from "../services/bugDexService";
 import { loadBugBrainDailyStatus, type BugBrainDailyCompletion, type BugBrainDailyStatus } from "../services/bugBrainRewardService";
 import { featuredArcadeMode } from "../services/featuredArcadeMode";
@@ -203,9 +203,22 @@ export function PlayScreen({
   }, []);
   const handleFullscreenChange = useCallback((active: boolean) => {
     setGameFullscreen(active);
-    onFullscreenChange?.(active);
+  }, []);
+  useEffect(() => {
+    onFullscreenChange?.(workspaceOpen || gameFullscreen);
+  }, [gameFullscreen, onFullscreenChange, workspaceOpen]);
+  useEffect(() => () => {
+    onFullscreenChange?.(false);
   }, [onFullscreenChange]);
   const workspaceCloseBlocked = rankedGameActive;
+  useEffect(() => {
+    if (!workspaceOpen) return undefined;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (!workspaceCloseBlocked) setWorkspaceOpen(false);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [workspaceCloseBlocked, workspaceOpen]);
 
   const unlocks = useMemo(() => buildPlayUnlocks(discoveredSpecies), [discoveredSpecies]);
   const featuredMode = useMemo(() => featuredArcadeMode(unlocks.unlockedModes, localDayId()), [unlocks.unlockedModes]);
@@ -416,9 +429,8 @@ export function PlayScreen({
         </>
       ) : null}
 
-      <Modal animationType="slide" visible={workspaceOpen} onRequestClose={() => { if (!workspaceCloseBlocked) setWorkspaceOpen(false); }}>
-        {workspaceOpen ? (
-        <View style={styles.workspace}>
+      {workspaceOpen ? (
+        <View style={[styles.workspace, styles.workspaceOverlay]}>
           {tab === "ranking" ? (
             <LeaderboardScreen currentUser={user} onBack={() => setWorkspaceOpen(false)} onSelectUser={onSelectUser} />
           ) : (
@@ -458,8 +470,7 @@ export function PlayScreen({
             </>
           )}
         </View>
-        ) : null}
-      </Modal>
+      ) : null}
 
       <Modal animationType="slide" visible={bugBrainOpen} onRequestClose={() => { if (!bugBrainActive) closeBugBrain(); }}>
         <View style={styles.bugBrainModal}>
@@ -569,6 +580,7 @@ const styles = StyleSheet.create({
   bugBrainModalClose: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.10)", borderRadius: 14, height: 42, justifyContent: "center", width: 42 },
   bugBrainModalBody: { flex: 1, minHeight: 0 },
   workspace: { backgroundColor: playPalette.background, flex: 1, minHeight: 0 },
+  workspaceOverlay: { ...StyleSheet.absoluteFillObject, elevation: 30, zIndex: 1200 },
   workspaceHeader: { alignItems: "center", backgroundColor: playPalette.backgroundSoft, borderBottomColor: "rgba(255,189,74,0.28)", borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 14, paddingVertical: 10 },
   workspaceTitle: { color: "#ffffff", fontSize: 20, fontWeight: "900" },
   workspaceClose: { alignItems: "center", backgroundColor: "rgba(255,255,255,0.10)", borderRadius: 14, height: 42, justifyContent: "center", width: 42 },

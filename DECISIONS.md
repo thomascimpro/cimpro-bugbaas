@@ -1,5 +1,12 @@
 # Decisions
 
+## 2026-08-10 - 3.0.10 duidelijke gestapelde rewards en anonieme fotostemming
+
+- Een actieve Play-workspace is een gewone fullscreen overlay in dezelfde app-laag, zodat alleen verdiende foregroundbugs boven het duel kunnen verschijnen. Vrij rondlopende bugs blijven tijdens het duel uit; meerdere verdiende rewards blijven FIFO.
+- Weeknominees komen eerst uit vorige week en daarna uit maximaal 52 oudere weken. Alleen als daar nog geen drie verschillende spelers zijn, worden bestaande echte thumbnails uit `pendingBugDexDiscoveries` gebruikt; afgekeurde foto's tellen niet mee.
+- Iedere speler levert per bronweek alleen zijn beste foto. De keuze is per week stabiel willekeurig uit maximaal twaalf kwaliteitskandidaten; tijdens stemmen wordt geen naam naar de client gestuurd, alleen bij de winnaar.
+- Collectievoltooiing is een ontdekkingsmeter en combineert huidige voorraad met blijvende unlockhistorie; een gebruikt exemplaar mag het ontdekte percentage niet verlagen.
+
 ## 2026-08-10 - 3.0.9 platformrelease met exact 1000 soorten
 
 - De releasegrens is exact 1000 actieve BugDex-soorten. Extra goedgekeurde generatiebestanden blijven buiten catalogus, artregistry en runtime tot een latere expliciete uitbreiding.

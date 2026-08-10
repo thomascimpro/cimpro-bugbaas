@@ -1,5 +1,13 @@
 # Status
 
+## 2026-08-10 - BugBaas 3.0.10 gereed voor publicatie
+
+- Verdiende BugDex-beloningen uit duel en daily blijven als afzonderlijke FIFO-items bestaan en verschijnen boven het afgeronde duelscherm: eerst vangen, daarna het bron-gelabelde `ontdekt`/`+1`-scherm.
+- Scan van de week staat live op `voting` met exact drie echte foto's van drie verschillende spelers. Bij te weinig inzendingen wordt tot 52 weken en daarna in bestaande echte developer-reviewfoto's teruggekeken; namen blijven verborgen tot de winnaar bekend is.
+- Collectie toont rechtsboven ontdekt/totaal en het percentage; historisch ontdekte soorten blijven meetellen nadat een exemplaar is gebruikt.
+- Vercel-productie `dpl_2BKbmQbqnSprdvrLCAV9c5ooVpXh` staat READY op zowel `https://bugbaas.vercel.app` als `https://bugbaasv3.vercel.app`; OpenAI, scanreceipt en Firebase zijn als productie-env gekoppeld.
+- Android 3.0.10 (`versionCode 319`) staat in `dist/BugBaas-3.0.10.apk`: 105.516.049 bytes, SHA-256 `1166709DD40FF5A073B156934836F622253FE639BF3CF57F24B6F723B57EF755`, met de bestaande signer. Er was geen ADB-device voor een fysieke installatie.
+
 ## 2026-08-10 - BugBaas 3.0.9 uitgebracht
 
 - De actieve BugDex-release bevat exact **1000** unieke catalogusentries, **1000** WebP-runtimebestanden en **1000** artmappings. De ruwe generatie-PNG's worden niet meer naar Vercel gestuurd.

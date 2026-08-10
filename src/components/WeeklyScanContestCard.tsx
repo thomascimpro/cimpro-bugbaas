@@ -145,7 +145,6 @@ export function WeeklyScanContestCard({ onRewardDrop, user }: Props) {
                 <Image resizeMode="cover" source={{ uri: nominee.photoUrl }} style={[styles.photo, compact && styles.photoCompact]} />
                 <View style={styles.nomineeCopy}>
                   <Text numberOfLines={1} style={styles.species}>{nominee.speciesName}</Text>
-                  <Text numberOfLines={1} style={styles.player}>{nominee.displayName}</Text>
                   <Text style={styles.reason}>{nominee.photoContestReason}</Text>
                   <View style={styles.voteMeta}>
                     <Text style={styles.votes}>{t("bugScan.weekly.votes", { count: nominee.voteCount })}</Text>
@@ -204,7 +203,6 @@ const styles = StyleSheet.create({
   ownLabel: { color: "#f2c65d", fontSize: 9, fontWeight: "900" },
   photo: { aspectRatio: 1.15, backgroundColor: "#04121b", width: "100%" },
   photoCompact: { aspectRatio: undefined, minHeight: 190, width: "46%" },
-  player: { color: "#91c3d1", fontSize: 11, fontWeight: "800", marginTop: 3 },
   pressed: { opacity: 0.82 },
   reason: { color: "#c8dce2", fontSize: 11, lineHeight: 16, marginTop: 8, minHeight: 48 },
   reportButton: { alignItems: "center", marginTop: 7, paddingVertical: 7 },
