@@ -3,6 +3,8 @@
 ## 2026-08-11 - BugBaas 3.0.12 Android BugScan-netwerkhotfix
 
 - App-configtests: **3/3**; `npm run typecheck`: passed; BugDex-artvalidatie tijdens releasebuild: **3/3**.
+- Na de nauwkeurigheidshotfix: BugScan server/handlertests **23/23** en typecheck passed. Tests bewijzen dat 31%, een onterecht als slecht gemarkeerde foto en een rups-tegen-bij-hypothese altijd worden verdiept.
+- Echte productieproef met een externe, research-grade foto van *Apis mellifera*: HTTP 200 in 10,2 seconden, resultaat `Westelijke honingbij`, wetenschappelijke naam `Apis mellifera`, confidence 82%.
 - APK-inhoud gecontroleerd: package `nl.cimpro.bugbaas`, versionCode 321/versionName 3.0.12, scan-URL exact `https://bugbaas.vercel.app`, Firebase-project correct, Google-clients aanwezig en geen `[SENSITIVE]`-placeholder.
 - APK: 105.517.109 bytes, SHA-256 `B5F9B41B6DF3CA71B7E364709524B4ED29D4D33EA0EB3D7AAD2F92A1D226D9DA`, dezelfde v2-signer als eerdere releases.
 - Live Vercel: beide productiehosts HTTP 200; de scanroute is bereikbaar en geeft zonder login correct HTTP 401 in plaats van een netwerkfout.

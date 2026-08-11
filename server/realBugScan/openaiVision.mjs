@@ -138,7 +138,7 @@ export function createOpenAIImageIdentifier({
       "For a rejected reference image, still fill commonName and scientificName for the visible subject when possible, but keep containsBug false so it cannot grant a reward or create a catalog suggestion."
     ];
 
-    async function requestIdentification(maxOutputTokens, retryMode = "none", effort = reasoningEffort) {
+    async function requestIdentification(maxOutputTokens, retryMode = "none", effort = reasoningEffort, priorIdentification = null) {
       const remainingMs = deadline - Date.now();
       if (remainingMs < 2_000) throw new Error("OpenAI request timed out before a complete identification was available.");
       const controller = new AbortController();
@@ -163,7 +163,18 @@ export function createOpenAIImageIdentifier({
                   type: "input_text",
                   text: [
                     ...(retryMode === "incomplete" ? ["Retry after an incomplete response. Return one compact, complete JSON object and no extra text."] : []),
-                    ...(retryMode === "refine" ? ["Re-check this ambiguous identification carefully. Prefer an exact species only when the visible traits support it; otherwise keep the best honest broader taxon."] : []),
+                    ...(retryMode === "refine" ? [
+                      "Re-check this ambiguous identification from the pixels. Treat the first pass only as a hypothesis and actively try to disprove it.",
+                      `First-pass hypothesis: ${JSON.stringify({
+                        commonName: priorIdentification?.commonName ?? "",
+                        scientificName: priorIdentification?.scientificName ?? "",
+                        confidence: priorIdentification?.confidence ?? 0,
+                        reason: priorIdentification?.reason ?? ""
+                      })}`,
+                      "Before choosing a name, classify the visible body plan and life stage: adult winged insect, beetle, fly, bee/wasp, moth/butterfly, true bug, grasshopper, spider, or larva/caterpillar.",
+                      "Explicitly compare wings, number and placement of legs, antennae, body segmentation, waist, hair, and mouthparts. Never call a visibly winged adult insect a caterpillar or other larva.",
+                      "Prefer an exact species only when visible traits support it; otherwise return the correct broader family or order instead of a confident but morphologically incompatible guess."
+                    ] : []),
                     ...promptLines
                   ].join("\n")
                 },
@@ -210,16 +221,14 @@ export function createOpenAIImageIdentifier({
 
     const confidence = Number(initial?.confidence);
     const shouldRefine = initial?.containsBug === true
-      && initial?.imageQuality === "good"
       && initial?.captureAuthenticity !== "reproduction"
       && Number.isFinite(confidence)
-      && confidence >= 0.5
-      && confidence < 0.7
+      && confidence < 0.8
       && deadline - Date.now() >= 15_000;
     if (!shouldRefine) return initial;
 
     try {
-      return await requestIdentification(RETRY_MAX_OUTPUT_TOKENS, "refine", "high");
+      return await requestIdentification(RETRY_MAX_OUTPUT_TOKENS, "refine", "high", initial);
     } catch {
       return initial;
     }

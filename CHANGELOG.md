@@ -4,6 +4,8 @@
 
 - Android BugScan gebruikt weer de echte productiehost. Een afgeschermde of ongeldige buildwaarde zoals `[SENSITIVE]` wordt voortaan automatisch vervangen door de veilige vaste BugBaas-URL.
 - Dezelfde controle beschermt de overige API-basisadressen, zodat een redacted env-export nooit meer als letterlijk netwerkadres in een APK of webbundel kan belanden.
+- BugScan toont een lage eerste gok niet meer direct. Iedere levende bug onder 80% krijgt eerst een nauwkeurige tweede beoordeling die de eerste naam actief controleert op lichaamsbouw en levensstadium.
+- De verdieping controleert expliciet volwassen gevleugelde insecten tegenover rupsen en andere larven, zodat een zichtbare bij niet door een anatomisch onmogelijke eerste gok wordt vervangen.
 
 ## 2026-08-11 - BugBaas 3.0.11
 

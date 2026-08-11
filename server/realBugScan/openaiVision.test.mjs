@@ -142,6 +142,65 @@ test("refines a usable identification below seventy percent with high reasoning"
   assert.match(requestBodies[1].input[0].content[0].text, /re-check this ambiguous identification/i);
 });
 
+test("refines a low-confidence caterpillar guess and challenges the visible body plan", async () => {
+  const requestBodies = [];
+  const lowConfidenceGuess = {
+    ...identification,
+    commonName: "Rups",
+    commonNameEn: "Caterpillar",
+    commonNameFr: "Chenille",
+    scientificName: "Lepidoptera larva",
+    confidence: 0.31,
+    reason: "Langwerpige vorm."
+  };
+  const correctedBee = {
+    ...identification,
+    commonName: "Honingbij",
+    commonNameEn: "Western honey bee",
+    commonNameFr: "Abeille domestique",
+    scientificName: "Apis mellifera",
+    confidence: 0.86,
+    reason: "Behaard borststuk, twee paar vleugels en bijenlichaam."
+  };
+  const identifyImage = createOpenAIImageIdentifier({
+    apiKey: "test-key",
+    fetchImpl: async (_url, options) => {
+      requestBodies.push(JSON.parse(options.body));
+      return successfulResponse(requestBodies.length === 1 ? lowConfidenceGuess : correctedBee);
+    }
+  });
+
+  const result = await identifyImage({ imageDataUrl: "data:image/jpeg;base64,YWJjZA==", catalog });
+  const refinementPrompt = requestBodies[1].input[0].content[0].text;
+
+  assert.equal(result.commonName, "Honingbij");
+  assert.equal(result.confidence, 0.86);
+  assert.equal(requestBodies.length, 2);
+  assert.equal(requestBodies[1].reasoning.effort, "high");
+  assert.match(refinementPrompt, /first-pass hypothesis/i);
+  assert.match(refinementPrompt, /"commonName":"Rups"/);
+  assert.match(refinementPrompt, /adult winged insect/i);
+  assert.match(refinementPrompt, /never call a visibly winged adult insect a caterpillar/i);
+});
+
+test("refines a doubtful identification even when the first pass calls the photo poor", async () => {
+  let callCount = 0;
+  const identifyImage = createOpenAIImageIdentifier({
+    apiKey: "test-key",
+    fetchImpl: async () => {
+      callCount += 1;
+      return successfulResponse(callCount === 1
+        ? { ...identification, imageQuality: "poor", confidence: 0.31 }
+        : identification);
+    }
+  });
+
+  const result = await identifyImage({ imageDataUrl: "data:image/jpeg;base64,YWJjZA==", catalog });
+
+  assert.equal(result.confidence, 0.91);
+  assert.equal(callCount, 2);
+});
+
 test("aborts a scan before the Vercel function deadline", async () => {
   const identifyImage = createOpenAIImageIdentifier({
     apiKey: "test-key",

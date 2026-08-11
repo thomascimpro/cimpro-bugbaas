@@ -5,6 +5,11 @@
 - Accepteer voor client-API-basisadressen uitsluitend een geldige HTTPS-URL. Lege, malformed, gequote of door tooling geredacte waarden vallen terug op de vaste productiehost.
 - Controleer bij iedere Android-release de uiteindelijke `assets/app.config` in de APK; broncode- of env-controle alleen is onvoldoende om de werkelijk ingebakken URL te bewijzen.
 
+## 2026-08-11 - Lage BugScan-confidence altijd anatomisch herbeoordelen
+
+- Gebruik medium als snelle eerste pass, maar behandel iedere levende-bugidentificatie onder 80% uitsluitend als hypothese. Voer vóór presentatie één high-reasoning verdieping uit zolang de serverdeadline dat veilig toelaat.
+- Geef de verdieping de eerste naam en uitleg mee om actief te weerleggen. Laat eerst lichaamsbouw en levensstadium bepalen, zodat volwassen gevleugelde insecten niet als rups of larve eindigen.
+
 ## 2026-08-11 - Adaptieve BugScan en betrouwbare periodieke rewards
 
 - Start iedere fotoanalyse met `medium` reasoning. Alleen een bruikbare maar onzekere levende-buguitkomst tussen 50% en 70% krijgt, als er nog voldoende tijd is, een eenmalige `high`-verdieping. Bij timeout blijft het eerste resultaat geldig.
