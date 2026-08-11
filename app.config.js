@@ -13,6 +13,18 @@ const requiredExtraEnv = {
   googleAndroidClientId: "GOOGLE_ANDROID_CLIENT_ID"
 };
 
+function safeHttpsUrl(envName, fallback) {
+  const rawValue = String(process.env[envName] ?? "").trim();
+  const value = rawValue.replace(/^(["'])(.*)\1$/, "$2").trim();
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol === "https:" && parsed.hostname) return value.replace(/\/+$/, "");
+  } catch {
+    // A redacted or malformed build-time value must never reach the app bundle.
+  }
+  return fallback;
+}
+
 function readExtra() {
   const extra = Object.fromEntries(
     Object.entries(requiredExtraEnv).map(([key, envName]) => [key, process.env[envName] ?? ""])
@@ -35,9 +47,9 @@ module.exports = () => ({
     ...(appConfig.expo.extra ?? {}),
     ...readExtra(),
     ...canonicalFirebaseExtra,
-    bugBrainApiBaseUrl: process.env.BUG_BRAIN_API_BASE_URL ?? "https://us-central1-thomascimpro-6266f.cloudfunctions.net",
-    fitnessSyncerApiBaseUrl: process.env.FITNESSSYNCER_API_BASE_URL ?? "https://us-central1-thomascimpro-6266f.cloudfunctions.net",
-    swarmSiegeApiBaseUrl: process.env.SWARM_SIEGE_API_BASE_URL ?? "https://us-central1-thomascimpro-6266f.cloudfunctions.net",
-    realBugScanApiBaseUrl: process.env.REAL_BUG_SCAN_API_BASE_URL ?? "https://bugbaas.vercel.app"
+    bugBrainApiBaseUrl: safeHttpsUrl("BUG_BRAIN_API_BASE_URL", "https://us-central1-thomascimpro-6266f.cloudfunctions.net"),
+    fitnessSyncerApiBaseUrl: safeHttpsUrl("FITNESSSYNCER_API_BASE_URL", "https://us-central1-thomascimpro-6266f.cloudfunctions.net"),
+    swarmSiegeApiBaseUrl: safeHttpsUrl("SWARM_SIEGE_API_BASE_URL", "https://us-central1-thomascimpro-6266f.cloudfunctions.net"),
+    realBugScanApiBaseUrl: safeHttpsUrl("REAL_BUG_SCAN_API_BASE_URL", "https://bugbaas.vercel.app")
   }
 });

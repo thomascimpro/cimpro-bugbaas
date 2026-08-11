@@ -1,5 +1,10 @@
 # Decisions
 
+## 2026-08-11 - Geen redacted buildwaarden als runtime-URL
+
+- Accepteer voor client-API-basisadressen uitsluitend een geldige HTTPS-URL. Lege, malformed, gequote of door tooling geredacte waarden vallen terug op de vaste productiehost.
+- Controleer bij iedere Android-release de uiteindelijke `assets/app.config` in de APK; broncode- of env-controle alleen is onvoldoende om de werkelijk ingebakken URL te bewijzen.
+
 ## 2026-08-11 - Adaptieve BugScan en betrouwbare periodieke rewards
 
 - Start iedere fotoanalyse met `medium` reasoning. Alleen een bruikbare maar onzekere levende-buguitkomst tussen 50% en 70% krijgt, als er nog voldoende tijd is, een eenmalige `high`-verdieping. Bij timeout blijft het eerste resultaat geldig.

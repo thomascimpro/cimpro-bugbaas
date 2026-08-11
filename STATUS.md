@@ -1,5 +1,12 @@
 # Status
 
+## 2026-08-11 - BugBaas 3.0.12 netwerkhotfix uitgebracht
+
+- Oorzaak van Android `Network request failed`: 3.0.11 bevatte door een redacted lokaal env-bestand letterlijk `[SENSITIVE]` als `realBugScanApiBaseUrl`.
+- Productie staat op Vercel-deployment `dpl_KET9Q6Es1EQC5aqgVEmh2JsiKzCs` via `https://bugbaas.vercel.app` en `https://bugbaasv3.vercel.app`.
+- Android 3.0.12 (`versionCode 321`) bevat aantoonbaar `https://bugbaas.vercel.app`, Firebase `thomascimpro-6266f` en de vereiste Google-clients. APK: 105.517.109 bytes, SHA-256 `B5F9B41B6DF3CA71B7E364709524B4ED29D4D33EA0EB3D7AAD2F92A1D226D9DA`.
+- GitHub-release: `https://github.com/thomascimpro/BugBaas/releases/tag/v3.0.12`.
+
 ## 2026-08-11 - BugBaas 3.0.11 uitgebracht
 
 - BugScan-productie staat op Vercel-deployment `dpl_EKhEjX6xY848vDbijy7hEikFkCi1` via zowel `https://bugbaas.vercel.app` als `https://bugbaasv3.vercel.app`; de bestaande OpenAI-, receipt- en Firebase-envkoppelingen zijn behouden.

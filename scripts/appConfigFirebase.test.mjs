@@ -37,3 +37,41 @@ test("BugBaas client Firebase config stays on the BugBaas project even when envi
     }
   }
 });
+
+test("redacted or malformed API URLs never reach the Android bundle", () => {
+  const previous = {
+    REAL_BUG_SCAN_API_BASE_URL: process.env.REAL_BUG_SCAN_API_BASE_URL,
+    BUG_BRAIN_API_BASE_URL: process.env.BUG_BRAIN_API_BASE_URL
+  };
+
+  Object.assign(process.env, {
+    REAL_BUG_SCAN_API_BASE_URL: '"[SENSITIVE]"',
+    BUG_BRAIN_API_BASE_URL: "not-a-url"
+  });
+
+  try {
+    delete require.cache[require.resolve("../app.config.js")];
+    const config = require("../app.config.js")();
+    assert.equal(config.extra.realBugScanApiBaseUrl, "https://bugbaas.vercel.app");
+    assert.equal(config.extra.bugBrainApiBaseUrl, "https://us-central1-thomascimpro-6266f.cloudfunctions.net");
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test("valid HTTPS API URLs are normalized and preserved", () => {
+  const previous = process.env.REAL_BUG_SCAN_API_BASE_URL;
+  process.env.REAL_BUG_SCAN_API_BASE_URL = "https://scan.example.com/";
+
+  try {
+    delete require.cache[require.resolve("../app.config.js")];
+    const config = require("../app.config.js")();
+    assert.equal(config.extra.realBugScanApiBaseUrl, "https://scan.example.com");
+  } finally {
+    if (previous === undefined) delete process.env.REAL_BUG_SCAN_API_BASE_URL;
+    else process.env.REAL_BUG_SCAN_API_BASE_URL = previous;
+  }
+});

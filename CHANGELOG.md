@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-08-11 - BugBaas 3.0.12
+
+- Android BugScan gebruikt weer de echte productiehost. Een afgeschermde of ongeldige buildwaarde zoals `[SENSITIVE]` wordt voortaan automatisch vervangen door de veilige vaste BugBaas-URL.
+- Dezelfde controle beschermt de overige API-basisadressen, zodat een redacted env-export nooit meer als letterlijk netwerkadres in een APK of webbundel kan belanden.
+
 ## 2026-08-11 - BugBaas 3.0.11
 
 - BugScan gebruikt nu een snelle eerste analyse en alleen bij een onzekere uitkomst een betere tweede analyse; een bruikbaar eerste resultaat blijft behouden als de verdieping te lang duurt.
