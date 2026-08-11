@@ -167,6 +167,7 @@ function cleanDisplayName(displayName?: string | null): string {
 function makeUser(uid: string, email: string, displayName?: string | null, nameSet = false): User {
   const fallbackName = email.split("@")[0] || "Bugmelder";
   const name = cleanDisplayName(displayName);
+  const createdAt = new Date().toISOString();
   return withStarterBoostIfEligible({
     uid,
     displayName: name || fallbackName,
@@ -176,7 +177,7 @@ function makeUser(uid: string, email: string, displayName?: string | null, nameS
     bugLampCount: 0,
     nameSet,
     active: true,
-    lastActiveAt: new Date().toISOString(),
+    lastActiveAt: createdAt,
     organizationId: defaultOrganizationId,
     organizationName: defaultOrganizationName,
     organizationIds: [],
@@ -190,6 +191,7 @@ function makeUser(uid: string, email: string, displayName?: string | null, nameS
     duelDraws: 0,
     duelLosses: 0,
     duelRating: 1000,
+    duelRatingUpdatedAt: createdAt,
     duelWins: 0,
     upvoteGivenPointCount: 0,
     legendaryBugDexCount: 0,

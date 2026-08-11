@@ -66,7 +66,7 @@ test("sends the image and returns structured identification", async () => {
   assert.equal(requestBodies.length, 1);
   assert.equal(requestBody.model, "gpt-test");
   assert.equal(requestBody.max_output_tokens, 6000);
-  assert.equal(requestBody.reasoning.effort, "max");
+  assert.equal(requestBody.reasoning.effort, "medium");
   assert.equal(requestBody.input[0].content[1].image_url, "data:image/jpeg;base64,YWJjZA==");
   assert.equal(requestBody.input[0].content[1].detail, "original");
   assert.match(requestBody.input[0].content[0].text, /screenshots, photos of screens or prints, toys, and clearly AI-generated or manipulated images/i);
@@ -119,7 +119,42 @@ test("retries once with a larger budget after an incomplete response", async () 
   assert.equal(requestBodies.length, 2);
   assert.equal(requestBodies[0].max_output_tokens, 6000);
   assert.equal(requestBodies[1].max_output_tokens, 9000);
+  assert.equal(requestBodies[1].reasoning.effort, "medium");
   assert.match(requestBodies[1].input[0].content[0].text, /retry after an incomplete response/i);
+});
+
+test("refines a usable identification below seventy percent with high reasoning", async () => {
+  const requestBodies = [];
+  const identifyImage = createOpenAIImageIdentifier({
+    apiKey: "test-key",
+    fetchImpl: async (_url, options) => {
+      requestBodies.push(JSON.parse(options.body));
+      return successfulResponse(requestBodies.length === 1 ? { ...identification, confidence: 0.62 } : identification);
+    }
+  });
+
+  const result = await identifyImage({ imageDataUrl: "data:image/jpeg;base64,YWJjZA==", catalog });
+
+  assert.equal(result.confidence, 0.91);
+  assert.equal(requestBodies.length, 2);
+  assert.equal(requestBodies[0].reasoning.effort, "medium");
+  assert.equal(requestBodies[1].reasoning.effort, "high");
+  assert.match(requestBodies[1].input[0].content[0].text, /re-check this ambiguous identification/i);
+});
+
+test("aborts a scan before the Vercel function deadline", async () => {
+  const identifyImage = createOpenAIImageIdentifier({
+    apiKey: "test-key",
+    requestTimeoutMs: 100,
+    fetchImpl: async (_url, options) => new Promise((_resolve, reject) => {
+      options.signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+    })
+  });
+
+  await assert.rejects(
+    () => identifyImage({ imageDataUrl: "data:image/jpeg;base64,YWJjZA==", catalog }),
+    /timed out/i
+  );
 });
 
 test("retries once when structured JSON is truncated", async () => {

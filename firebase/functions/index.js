@@ -71,6 +71,15 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:8085",
   "http://127.0.0.1:19006"
 ]);
+const fieldJournalTags = new Set(["Heel klein", "In beweging", "Op een bloem", "Onder een steen", "Met meerdere", "Bij licht"]);
+
+function normalizeFieldJournalTags(value) {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw httpError(400, "Invalid field note tags.");
+  const tags = Array.from(new Set(value.map((item) => String(item || "").trim()).filter(Boolean)));
+  if (tags.length > 3 || tags.some((tag) => !fieldJournalTags.has(tag))) throw httpError(400, "Invalid field note tags.");
+  return tags;
+}
 
 exports.fitnessSyncerStatus = onRequest({ cors: false, invoker: "public", region: "us-central1", secrets: [fitnessSyncerTokenKey] }, async (req, res) => {
   if (!setCors(req, res) || req.method === "OPTIONS") return;
@@ -191,6 +200,7 @@ exports.recordVerifiedObservation = onRequest({ cors: false, invoker: "public", 
     const behavior = String(req.body?.behavior || "");
     if (!["Tuin", "Park", "Water", "Nacht", "Kantoor", "Binnen"].includes(habitat)) throw httpError(400, "Invalid habitat.");
     if (!["Rustte", "Kroop", "Vloog", "At", "Onbekend"].includes(behavior)) throw httpError(400, "Invalid behavior.");
+    const tags = normalizeFieldJournalTags(req.body?.tags);
     const claims = verifyScanReceipt(req.body?.receipt, { secret: process.env.BUG_SCAN_RECEIPT_SECRET, uid });
     if (!claims) throw httpError(400, "This scan proof is invalid or expired. Scan again to create a field note.");
     const normalizedLocation = req.body?.location === undefined ? undefined : normalizePrivateSightingLocation(req.body.location);
@@ -210,6 +220,7 @@ exports.recordVerifiedObservation = onRequest({ cors: false, invoker: "public", 
         scientificName: claims.scientificName,
         speciesName: claims.speciesName,
         status: claims.status,
+        tags,
         ...(normalizedLocation || {})
       };
       transaction.create(ref, next);

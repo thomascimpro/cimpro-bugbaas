@@ -1,5 +1,12 @@
 # Decisions
 
+## 2026-08-11 - Adaptieve BugScan en betrouwbare periodieke rewards
+
+- Start iedere fotoanalyse met `medium` reasoning. Alleen een bruikbare maar onzekere levende-buguitkomst tussen 50% en 70% krijgt, als er nog voldoende tijd is, een eenmalige `high`-verdieping. Bij timeout blijft het eerste resultaat geldig.
+- Bewaar de totale serverdeadline onder de Vercel-limiet en verhoog de functiegrens naar 90 seconden; zo blijft de normale scan snel en veroorzaakt een mislukte verdieping geen 504.
+- Veldnotitietags zijn een kleine vaste lijst van maximaal drie keuzes. Ze veranderen de identificatie of beloning niet en worden samen met de server-gecontroleerde observatie opgeslagen.
+- Geplande ranked- en duelacties op de standaardbranch checken expliciet de actuele 3.0-releasebranch uit, zodat productieautomatisering dezelfde beloningslogica gebruikt als de uitgebrachte app.
+
 ## 2026-08-10 - 3.0.10 duidelijke gestapelde rewards en anonieme fotostemming
 
 - Een actieve Play-workspace is een gewone fullscreen overlay in dezelfde app-laag, zodat alleen verdiende foregroundbugs boven het duel kunnen verschijnen. Vrij rondlopende bugs blijven tijdens het duel uit; meerdere verdiende rewards blijven FIFO.

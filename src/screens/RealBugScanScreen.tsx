@@ -29,7 +29,7 @@ import { calculateRealBugPinchZoom, chooseBestRealBugPictureSize, nextRealBugFla
 import { getRemainingRealBugScans, RealBugScanLimitError, submitRealBugScan } from "../services/realBugScanService";
 import { entryByBugId, listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
 import { applyUserPoints } from "../services/userService";
-import { fieldJournalBehaviors, fieldJournalHabitats, listFieldJournalEntries, saveFieldJournalEntry, type FieldJournalBehavior, type FieldJournalHabitat, type FieldMilestoneReward, type WeeklyFieldSpotlightReward } from "../services/fieldJournalService";
+import { fieldJournalBehaviors, fieldJournalHabitats, fieldJournalTags, listFieldJournalEntries, saveFieldJournalEntry, type FieldJournalBehavior, type FieldJournalHabitat, type FieldJournalTag, type FieldMilestoneReward, type WeeklyFieldSpotlightReward } from "../services/fieldJournalService";
 import { requestPrivateSightingLocation, type PrivateSightingLocation } from "../services/privateSightingLocation";
 import { type User } from "../types";
 
@@ -156,6 +156,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   const [error, setError] = useState("");
   const [habitat, setHabitat] = useState<FieldJournalHabitat | null>(null);
   const [behavior, setBehavior] = useState<FieldJournalBehavior | null>(null);
+  const [journalTags, setJournalTags] = useState<FieldJournalTag[]>([]);
   const [journalSaved, setJournalSaved] = useState(false);
   const [journalSaving, setJournalSaving] = useState(false);
   const [journalLocationBusy, setJournalLocationBusy] = useState(false);
@@ -435,6 +436,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       journalSavingRef.current = false;
       setHabitat(null);
       setBehavior(null);
+      setJournalTags([]);
       setJournalLocation(null);
       setJournalLocationError("");
       setPendingScanDrop(submission.drop ?? null);
@@ -470,6 +472,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     journalSavingRef.current = false;
     setHabitat(null);
     setBehavior(null);
+    setJournalTags([]);
     setJournalLocation(null);
     setJournalLocationError("");
     setPendingScanDrop(null);
@@ -496,8 +499,8 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
 
   useEffect(() => {
     if (!result || !canJournal || journalSaved || journalSaving || journalSavingRef.current || journalLocationError || !journalLocation || !habitat || !behavior) return;
-    void saveAutomaticJournal(result, pendingScanDrop, habitat, behavior, journalLocation, contestReviewThumbnail);
-  }, [behavior, canJournal, contestReviewThumbnail, habitat, journalLocation, journalLocationError, journalSaved, journalSaving, pendingScanDrop, result]);
+    void saveAutomaticJournal(result, pendingScanDrop, habitat, behavior, journalLocation, contestReviewThumbnail, journalTags);
+  }, [behavior, canJournal, contestReviewThumbnail, habitat, journalLocation, journalLocationError, journalSaved, journalSaving, journalTags, pendingScanDrop, result]);
   const scanStage = deriveRealBugScanStage({
     busy,
     cameraOpen,
@@ -626,12 +629,19 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     setJournalLocationBusy(false);
   }
 
-  async function saveAutomaticJournal(nextResult: RealBugScanResponse, drop: BugDexDropResult | null, selectedHabitat: FieldJournalHabitat, selectedBehavior: FieldJournalBehavior, location: PrivateSightingLocation, reviewThumbnailDataUrl: string) {
+  function toggleJournalTag(tag: FieldJournalTag) {
+    if (journalSaving || journalSaved) return;
+    setJournalTags((current) => current.includes(tag)
+      ? current.filter((item) => item !== tag)
+      : current.length < 3 ? [...current, tag] : current);
+  }
+
+  async function saveAutomaticJournal(nextResult: RealBugScanResponse, drop: BugDexDropResult | null, selectedHabitat: FieldJournalHabitat, selectedBehavior: FieldJournalBehavior, location: PrivateSightingLocation, reviewThumbnailDataUrl: string, selectedTags: FieldJournalTag[]) {
     if (journalSavingRef.current || journalSaved) return;
     journalSavingRef.current = true;
     setJournalSaving(true);
     try {
-      const saved = await saveFieldJournalEntry(user, nextResult, selectedHabitat, selectedBehavior, location, reviewThumbnailDataUrl);
+      const saved = await saveFieldJournalEntry(user, nextResult, selectedHabitat, selectedBehavior, location, reviewThumbnailDataUrl, selectedTags);
       await applySavedJournal(saved);
       setPendingScanDrop(null);
       if (drop) onRewardDrop(drop);
@@ -968,6 +978,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
             <Text style={styles.journalBody}>{journalSaved ? "Je bugfoto, tijd en privélocatie staan nu op je kaart en tellen meteen mee voor je weekmissie." : "Kies 1 habitat en 1 gedrag. Zodra je telefoonlocatie klaar is, slaat BugBaas de notitie vanzelf op. Je hoeft niet op opslaan te tikken."}</Text>
             <Text style={styles.journalLabel}>Habitat</Text><View style={styles.journalChoices}>{fieldJournalHabitats.map((item) => <Pressable disabled={journalSaving || journalSaved} key={item} onPress={() => { setJournalLocationError(""); setHabitat(item); }} style={[styles.journalChoice, habitat === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, habitat === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
             <Text style={styles.journalLabel}>Gedrag</Text><View style={styles.journalChoices}>{fieldJournalBehaviors.map((item) => <Pressable disabled={journalSaving || journalSaved} key={item} onPress={() => { setJournalLocationError(""); setBehavior(item); }} style={[styles.journalChoice, behavior === item && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, behavior === item && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
+            <Text style={styles.journalLabel}>Extra tags (optioneel, maximaal 3)</Text><View style={styles.journalChoices}>{fieldJournalTags.map((item) => <Pressable disabled={journalSaving || journalSaved} key={item} onPress={() => toggleJournalTag(item)} style={[styles.journalChoice, journalTags.includes(item) && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, journalTags.includes(item) && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
             <View style={[styles.privateMapChoice, (journalSaved || journalLocation) && styles.privateMapChoiceActive]}>
               <View style={[styles.privateMapCheck, (journalSaved || journalLocation) && styles.privateMapCheckActive]}><Text style={styles.privateMapCheckText}>{journalSaved || journalLocation ? "✓" : journalLocationBusy ? "…" : "!"}</Text></View>
               <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>{journalSaved ? "Privé-kaartmarkering bewaard" : journalLocation ? "Telefoonlocatie klaar" : journalLocationBusy ? "Telefoonlocatie bepalen..." : "Telefoonlocatie nog niet beschikbaar"}</Text><Text style={styles.privateMapBody}>Je precieze locatie blijft privé en alleen jij ziet de afgeronde markering op je kaart.</Text></View>

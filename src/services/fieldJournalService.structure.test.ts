@@ -24,3 +24,10 @@ test("field-note endpoints accept the two trusted BugBaas Firebase audiences", (
   assert.match(functionsSource, /authProjectIdFromToken/);
   assert.match(functionsSource, /getAuth\(authAppForProject\(projectId\)\)\.verifyIdToken\(token\)/);
 });
+
+test("verified field notes store only the supported optional tags", () => {
+  assert.match(serviceSource, /tags: FieldJournalTag\[\] = \[\]/);
+  assert.match(serviceSource, /tags\n/);
+  assert.match(functionsSource, /normalizeFieldJournalTags/);
+  assert.match(functionsSource, /tags\.length > 3/);
+});

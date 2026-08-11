@@ -6,14 +6,16 @@ import type { PrivateSightingLocation } from "./privateSightingLocation";
 
 export const fieldJournalHabitats = ["Tuin", "Park", "Water", "Nacht", "Kantoor", "Binnen"] as const;
 export const fieldJournalBehaviors = ["Rustte", "Kroop", "Vloog", "At", "Onbekend"] as const;
+export const fieldJournalTags = ["Heel klein", "In beweging", "Op een bloem", "Onder een steen", "Met meerdere", "Bij licht"] as const;
 export type FieldJournalHabitat = typeof fieldJournalHabitats[number];
 export type FieldJournalBehavior = typeof fieldJournalBehaviors[number];
+export type FieldJournalTag = typeof fieldJournalTags[number];
 export type PrivateSightingMapCell = { latitudeE3: number; longitudeE3: number };
 export type PrivateSightingMapLocation = { latitudeE5: number; longitudeE5: number; accuracyMeters: number; capturedAt: string };
 
 export type FieldJournalEntry = {
   id: string; scanId: string; observedAt: string; speciesName: string; scientificName: string;
-  bugId: string; status: "matched" | "not_in_catalog"; habitat: FieldJournalHabitat; behavior: FieldJournalBehavior; confidence: number; locationCell?: PrivateSightingMapCell; privateLocation?: PrivateSightingMapLocation; mapCellId?: string;
+  bugId: string; status: "matched" | "not_in_catalog"; habitat: FieldJournalHabitat; behavior: FieldJournalBehavior; tags?: FieldJournalTag[]; confidence: number; locationCell?: PrivateSightingMapCell; privateLocation?: PrivateSightingMapLocation; mapCellId?: string;
 };
 
 export type FieldMilestoneReward = { id: string; minimumObservations: number; rewardXp: number };
@@ -38,7 +40,7 @@ function canJournal(result: RealBugScanResponse): result is RealBugScanResponse 
   return Boolean(result.receipt) && (result.status === "matched" || result.status === "not_in_catalog");
 }
 
-export async function saveFieldJournalEntry(user: User, result: RealBugScanResponse, habitat: FieldJournalHabitat, behavior: FieldJournalBehavior, location?: PrivateSightingLocation, reviewThumbnailDataUrl?: string): Promise<FieldJournalSaveResult> {
+export async function saveFieldJournalEntry(user: User, result: RealBugScanResponse, habitat: FieldJournalHabitat, behavior: FieldJournalBehavior, location?: PrivateSightingLocation, reviewThumbnailDataUrl?: string, tags: FieldJournalTag[] = []): Promise<FieldJournalSaveResult> {
   if (!canJournal(result)) throw new Error("Deze scan kan nog niet veilig als veldnotitie worden opgeslagen.");
   const currentUser = auth.currentUser;
   if (!currentUser || currentUser.uid !== user.uid) throw new Error("Log opnieuw in om een veldnotitie op te slaan.");
@@ -50,7 +52,8 @@ export async function saveFieldJournalEntry(user: User, result: RealBugScanRespo
       habitat,
       ...(location ? { location } : {}),
       receipt: result.receipt,
-      ...(reviewThumbnailDataUrl ? { reviewThumbnailDataUrl } : {})
+      ...(reviewThumbnailDataUrl ? { reviewThumbnailDataUrl } : {}),
+      tags
     })
   });
   const payload = await response.json().catch(() => ({}));

@@ -1,5 +1,14 @@
 # Test Results
 
+## 2026-08-11 - BugBaas 3.0.11 productie-release
+
+- `npm run typecheck`: passed. Gerichte BugScan-servertests: **21/21**; scan-/Journal- en duel-seizoentests: **13/13**; ranked-decay en Weekvondst-core: **6/6**; rewardflow: **8/8**.
+- Geauthenticeerde productieproef met een echte insectfoto: scan HTTP 200 in 12,4 seconden, bruikbare onafhankelijke identificatie met 74% en geldig scanbewijs. De veldnotitie is daarna HTTP 200 opgeslagen, inclusief tag, en teruggevonden in het Journal.
+- Vercel-log bevestigt POST `/api/real-bug-identify` HTTP 200 op deployment `dpl_EKhEjX6xY848vDbijy7hEikFkCi1`; beide productiehosts geven HTTP 200.
+- Live ranked-decayworkflow van 2026-08-11 was succesvol. De aangepaste lokale dry-run scant 13 accounts en vindt ook drie oudere actieve accounts zonder decaydatum; de maandafsluiting-dry-run kent nummer 1 een Mythische soort toe.
+- APK: package `nl.cimpro.bugbaas`, versionCode 320/versionName 3.0.11, 105.517.113 bytes, SHA-256 `10204CE2DD48FE97FF91042AAB503D6ED09BD5B6F413EA902EA92B2CBA7B2DA8`, v2-signed met signer SHA-256 `fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c`.
+- Niet geclaimd: fysieke installatie/camera op een aangesloten telefoon. De gebruikte live testfoto was geen van de drie actuele Weekvondstsoorten; de passende en idempotente rewardroute is daarom met de gerichte coretest gecontroleerd.
+
 ## 2026-08-10 - BugBaas 3.0.10 productie-release
 
 - `npm run typecheck`: passed. Gerichte collectie-, duel-overlay- en rewardflowtests: **37/37**; Firebase Functions: **79/79**; BugDex-artvalidatie: **3/3**; scanclient/servercontract: **75/75**.

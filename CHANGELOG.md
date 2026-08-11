@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-08-11 - BugBaas 3.0.11
+
+- BugScan gebruikt nu een snelle eerste analyse en alleen bij een onzekere uitkomst een betere tweede analyse; een bruikbaar eerste resultaat blijft behouden als de verdieping te lang duurt.
+- Iedere geslaagde scan moet nog steeds als veldnotitie worden opgeslagen. Na de foto kan de speler maximaal drie duidelijke tags toevoegen, die ook in het Journal zichtbaar blijven.
+- Nieuwe spelers krijgen meteen een geldige ranked-datum; oudere actieve spelers zonder datum vallen terug op hun bestaande accountactiviteit, zodat de dagelijkse -5 rating hen niet overslaat.
+- De maandelijkse duelactie gebruikt de actuele beloningen, waaronder een Mythische BugDex-beloning voor nummer 1. Weekvondst blijft bij de eerste passende scan server-side en eenmalig uitkeren.
+
 ## 2026-08-10 - BugBaas 3.0.10
 
 - Duel- en daily-BugDex-beloningen stapelen nu betrouwbaar en verschijnen direct boven het afgeronde duel, elk met hun eigen reden en daarna het juiste `ontdekt`- of `+1`-scherm.

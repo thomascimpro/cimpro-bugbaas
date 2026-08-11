@@ -9,14 +9,20 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: close-duel-season
+  cancel-in-progress: false
+
 jobs:
   close-duel-season:
     name: Close previous duel season
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: codex/bugbaas-3.0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -34,7 +40,8 @@ jobs:
       - name: Dry-run close previous duel season
         env:
           FIREBASE_PROJECT_ID: thomascimpro-6266f
-        run: node scripts/close_duel_season.mjs
+        run: |
+          FIRESTORE_ACCESS_TOKEN="$(gcloud auth print-access-token)" node scripts/close_duel_season.mjs
 
       - name: Close previous duel season
         env:

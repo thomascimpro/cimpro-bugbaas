@@ -76,9 +76,10 @@ test("every successful scan requires an automatic private fieldnote before its r
   assert.match(source, /void prepareJournalLocation\(\)/);
   assert.match(source, /const locationResult = await requestPrivateSightingLocation\(\)/);
   assert.match(source, /!journalLocation \|\| !habitat \|\| !behavior/);
-  assert.match(source, /saveAutomaticJournal\(result, pendingScanDrop, habitat, behavior, journalLocation, contestReviewThumbnail\)/);
-  assert.match(source, /saveFieldJournalEntry\(user, nextResult, selectedHabitat, selectedBehavior, location, reviewThumbnailDataUrl\)/);
+  assert.match(source, /saveAutomaticJournal\(result, pendingScanDrop, habitat, behavior, journalLocation, contestReviewThumbnail, journalTags\)/);
+  assert.match(source, /saveFieldJournalEntry\(user, nextResult, selectedHabitat, selectedBehavior, location, reviewThumbnailDataUrl, selectedTags\)/);
   assert.match(source, /Kies 1 habitat en 1 gedrag/);
+  assert.match(source, /Extra tags \(optioneel, maximaal 3\)/);
   assert.match(source, /disabled=\{journalRequired\} onPress=\{onBack\}/);
   assert.doesNotMatch(source, /accessibilityRole="checkbox"/);
 });

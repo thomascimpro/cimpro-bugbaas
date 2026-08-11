@@ -74,6 +74,11 @@ export function calculateRankedDecay({ checkpointDay, rating, ratingUpdatedAt },
   };
 }
 
+export function rankedDecayAnchor({ duelRatingUpdatedAt, duelSeasonResetAt, starterBoostGrantedAt, lastActiveAt }) {
+  return [duelRatingUpdatedAt, duelSeasonResetAt, starterBoostGrantedAt, lastActiveAt]
+    .find((value) => dayIdInTimeZone(value) !== null) ?? "";
+}
+
 function fieldString(document, field) {
   const value = document.fields?.[field];
   return value?.stringValue ?? value?.timestampValue ?? "";
@@ -175,7 +180,12 @@ function decayForDocument(document, todayDayId) {
   return calculateRankedDecay({
     checkpointDay: fieldString(document, "duelRatingDecayThroughDay"),
     rating: fieldNumber(document, "duelRating", defaultRating),
-    ratingUpdatedAt: fieldString(document, "duelRatingUpdatedAt")
+    ratingUpdatedAt: rankedDecayAnchor({
+      duelRatingUpdatedAt: fieldString(document, "duelRatingUpdatedAt"),
+      duelSeasonResetAt: fieldString(document, "duelSeasonResetAt"),
+      starterBoostGrantedAt: fieldString(document, "starterBoostGrantedAt"),
+      lastActiveAt: fieldString(document, "lastActiveAt")
+    })
   }, todayDayId);
 }
 

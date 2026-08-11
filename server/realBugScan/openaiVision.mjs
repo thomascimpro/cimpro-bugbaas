@@ -1,5 +1,6 @@
 const INITIAL_MAX_OUTPUT_TOKENS = 6000;
 const RETRY_MAX_OUTPUT_TOKENS = 9000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 75_000;
 
 const responseSchema = {
   type: "object",
@@ -103,10 +104,13 @@ function parseStructuredOutput(payload) {
 export function createOpenAIImageIdentifier({
   apiKey,
   model = "gpt-5.6-luna",
+  reasoningEffort = "medium",
+  requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
   fetchImpl = fetch
 } = {}) {
   return async function identifyImage({ imageDataUrl }) {
     if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
+    const deadline = Date.now() + Math.max(100, Number(requestTimeoutMs) || DEFAULT_REQUEST_TIMEOUT_MS);
     const promptLines = [
       "Identify the visible insect, arachnid, or other small arthropod independently. You are not given the BugDex catalog and must not guess toward an app species.",
       "Always name what is actually visible in commonName and scientificName at the most specific defensible taxonomic level, even when imageQuality is poor or containsBug is false. Use a broader honest taxon such as beetle, moth, spider, or family when the exact species is uncertain; do not replace a recognizable subject with a generic unknown label.",
@@ -134,45 +138,59 @@ export function createOpenAIImageIdentifier({
       "For a rejected reference image, still fill commonName and scientificName for the visible subject when possible, but keep containsBug false so it cannot grant a reward or create a catalog suggestion."
     ];
 
-    async function requestIdentification(maxOutputTokens, retry = false) {
-      const response = await fetchImpl("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model,
-          max_output_tokens: maxOutputTokens,
-          reasoning: { effort: "max" },
-          input: [{
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: [
-                  ...(retry ? ["Retry after an incomplete response. Return one compact, complete JSON object and no extra text."] : []),
-                  ...promptLines
-                ].join("\n")
-              },
-              {
-                type: "input_image",
-                image_url: imageDataUrl,
-                detail: "original"
+    async function requestIdentification(maxOutputTokens, retryMode = "none", effort = reasoningEffort) {
+      const remainingMs = deadline - Date.now();
+      if (remainingMs < 2_000) throw new Error("OpenAI request timed out before a complete identification was available.");
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), remainingMs);
+      let response;
+      try {
+        response = await fetchImpl("https://api.openai.com/v1/responses", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model,
+            max_output_tokens: maxOutputTokens,
+            reasoning: { effort },
+            input: [{
+              role: "user",
+              content: [
+                {
+                  type: "input_text",
+                  text: [
+                    ...(retryMode === "incomplete" ? ["Retry after an incomplete response. Return one compact, complete JSON object and no extra text."] : []),
+                    ...(retryMode === "refine" ? ["Re-check this ambiguous identification carefully. Prefer an exact species only when the visible traits support it; otherwise keep the best honest broader taxon."] : []),
+                    ...promptLines
+                  ].join("\n")
+                },
+                {
+                  type: "input_image",
+                  image_url: imageDataUrl,
+                  detail: "original"
+                }
+              ]
+            }],
+            text: {
+              format: {
+                type: "json_schema",
+                name: "real_bug_identification",
+                description: "An independent, cautious real-world arthropod identification.",
+                strict: true,
+                schema: responseSchema
               }
-            ]
-          }],
-          text: {
-            format: {
-              type: "json_schema",
-              name: "real_bug_identification",
-              description: "An independent, cautious real-world arthropod identification.",
-              strict: true,
-              schema: responseSchema
             }
-          }
-        })
-      });
+          })
+        });
+      } catch (error) {
+        if (controller.signal.aborted) throw new Error("OpenAI request timed out before a complete identification was available.");
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
 
       if (!response.ok) {
         if (typeof response.text === "function") await response.text().catch(() => "");
@@ -182,11 +200,28 @@ export function createOpenAIImageIdentifier({
       return parseStructuredOutput(await response.json());
     }
 
+    let initial;
     try {
-      return await requestIdentification(INITIAL_MAX_OUTPUT_TOKENS);
+      initial = await requestIdentification(INITIAL_MAX_OUTPUT_TOKENS);
     } catch (error) {
       if (!(error instanceof IncompleteOpenAIResponseError)) throw error;
-      return requestIdentification(RETRY_MAX_OUTPUT_TOKENS, true);
+      return requestIdentification(RETRY_MAX_OUTPUT_TOKENS, "incomplete", "medium");
+    }
+
+    const confidence = Number(initial?.confidence);
+    const shouldRefine = initial?.containsBug === true
+      && initial?.imageQuality === "good"
+      && initial?.captureAuthenticity !== "reproduction"
+      && Number.isFinite(confidence)
+      && confidence >= 0.5
+      && confidence < 0.7
+      && deadline - Date.now() >= 15_000;
+    if (!shouldRefine) return initial;
+
+    try {
+      return await requestIdentification(RETRY_MAX_OUTPUT_TOKENS, "refine", "high");
+    } catch {
+      return initial;
     }
   };
 }

@@ -173,6 +173,7 @@ export function FieldJournalScreen({ user, onBack, embedded = false }: { user: U
               <View style={styles.researchLabels}>
                 <ResearchLabel>{t(`journal.habitat.${entry.habitat}`)}</ResearchLabel>
                 <ResearchLabel>{tr(entry.behavior)}</ResearchLabel>
+                {(entry.tags ?? []).map((tag) => <ResearchLabel key={tag}>{tag}</ResearchLabel>)}
               </View>
               {stamps.length > 0 ? (
                 <View style={styles.entryStamps}>

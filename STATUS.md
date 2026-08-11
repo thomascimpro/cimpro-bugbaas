@@ -1,5 +1,13 @@
 # Status
 
+## 2026-08-11 - BugBaas 3.0.11 uitgebracht
+
+- BugScan-productie staat op Vercel-deployment `dpl_EKhEjX6xY848vDbijy7hEikFkCi1` via zowel `https://bugbaas.vercel.app` als `https://bugbaasv3.vercel.app`; de bestaande OpenAI-, receipt- en Firebase-envkoppelingen zijn behouden.
+- Firebase Function `recordVerifiedObservation` is bijgewerkt op project `thomascimpro-6266f`, zodat gecontroleerde veldnotitietags server-side worden gevalideerd en opgeslagen.
+- De dagelijkse ranked-decay en maandelijkse duelafsluiting draaien vanuit de actuele releasebranch. Nieuwe accounts en bestaande actieve accounts zonder eerdere decaydatum worden meegenomen.
+- Android 3.0.11 (`versionCode 320`) staat in `dist/BugBaas-3.0.11.apk`: 105.517.113 bytes, SHA-256 `10204CE2DD48FE97FF91042AAB503D6ED09BD5B6F413EA902EA92B2CBA7B2DA8`, met dezelfde signer. Er was geen ADB-device voor een fysieke installatie.
+- GitHub-release: `https://github.com/thomascimpro/BugBaas/releases/tag/v3.0.11`.
+
 ## 2026-08-10 - BugBaas 3.0.10 uitgebracht
 
 - Verdiende BugDex-beloningen uit duel en daily blijven als afzonderlijke FIFO-items bestaan en verschijnen boven het afgeronde duelscherm: eerst vangen, daarna het bron-gelabelde `ontdekt`/`+1`-scherm.

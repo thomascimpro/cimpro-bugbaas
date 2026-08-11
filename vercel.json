@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "functions": {
     "api/real-bug-identify.js": {
-      "maxDuration": 60,
+      "maxDuration": 90,
       "includeFiles": "{server/realBugScan/**,shared/**}"
     },
     "api/nearby-search-zones.js": {
