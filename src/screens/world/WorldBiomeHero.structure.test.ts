@@ -57,6 +57,9 @@ test("world hero removes the decorative radar, map shortcut and next-action card
 
 test("world screen renders the simplified biome hero without obsolete callbacks", () => {
   assert.match(screenSource, /<WorldBiomeHero/);
+  assert.match(screenSource, /walkingGoalCountToday=\{movementProgress\?\.walkingGoalCountToday \?\? 0\}/);
+  assert.match(heroSource, /world\.today\.walking/);
+  assert.match(heroSource, /walkingGoalCountToday\}\/\{walkingGoalCountMax/);
   assert.doesNotMatch(screenSource, /onNextAction=\{openNextAction\}/);
   assert.doesNotMatch(screenSource, /onOpenMap=\{/);
   assert.doesNotMatch(screenSource, /nextAction=\{nextAction\}/);

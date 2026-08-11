@@ -26,6 +26,8 @@ type Props = {
   regions: ExpeditionRegionProgress[];
   todayKm: number;
   walkGoalKm: number;
+  walkingGoalCountToday: number;
+  walkingGoalCountMax: number;
   weekKm: number;
 };
 
@@ -37,6 +39,8 @@ export function WorldBiomeHero({
   regions,
   todayKm,
   walkGoalKm,
+  walkingGoalCountToday,
+  walkingGoalCountMax,
   weekKm
 }: Props) {
   const { t } = useI18n();
@@ -90,7 +94,7 @@ export function WorldBiomeHero({
             </View>
             <View style={styles.movementChip}>
               <Text style={styles.movementValue}>{movementModel.currentLabel}/{movementModel.goalLabel}</Text>
-              <Text style={styles.movementLabel}>{t("world.today.walking")}</Text>
+              <Text style={styles.movementLabel}>{t("world.today.walking")} · {walkingGoalCountToday}/{walkingGoalCountMax}</Text>
             </View>
           </View>
 

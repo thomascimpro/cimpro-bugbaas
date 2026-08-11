@@ -1,5 +1,13 @@
 # Test Results
 
+## 2026-08-11 - BugBaas 3.0.14 veldnotitie-GPS en Vandaag gelopen
+
+- Gerichte veldnotitie-, GPS- en wereldtests: **31/31**; Firebase Functions: **79/79**; BugScan client/server: **84/84**; Android/web-3D-platformtest: **7/7**; `npm run typecheck`: passed.
+- De servertests bevestigen dat alleen locaties van maximaal 250 meter nauwkeurig en maximaal 15 minuten oud worden opgeslagen. De clientfallback gebruikt daarom hoogstens 10 minuten oude locaties en versoepelt de privacy/servervalidatie niet.
+- Vercel-deployment `dpl_J2G2tZ6VWAPfdJxL9TXYjfFcFDfm` is READY. Beide productiehosts geven HTTP 200, de scanroute geeft zonder login correct HTTP 401 en de live bundle bevat versie 3.0.14, de GPS-uitleg en `walkingGoalCountToday`.
+- APK: package `nl.cimpro.bugbaas`, versionCode 323/versionName 3.0.14, 105.519.873 bytes, SHA-256 `402828DCF39395C1A590F568A99725B41AB29445F9EB8B6B5974ECC40BF6A60C`. Productie-URL, Firebase-project, GPS-fix en x/10-teller zijn in de APK-bundle aanwezig; v2-signature is geldig en de BugDex-artvalidatie tijdens de build slaagde.
+- Niet geclaimd: installatie en een echte GPS-fix op een fysiek Android-toestel, omdat geen ADB-device aangesloten was. Firebase Functions en rules zijn niet opnieuw gedeployed, omdat deze hotfix ze niet wijzigt.
+
 ## 2026-08-11 - BugBaas 3.0.13 BugScan crop/context-fix
 
 - Gerichte clienttests: **17/17**; server- en OpenAI-requesttests: **26/26**; `npm run typecheck`: passed; BugDex-artvalidatie tijdens de APK-build: **3/3**.

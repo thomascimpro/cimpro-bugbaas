@@ -1,5 +1,11 @@
 # Decisions
 
+## 2026-08-11 - Veldnotitie wacht robuust op bruikbare privé-locatie
+
+- Behoud de servergrens van maximaal 250 meter nauwkeurigheid en 15 minuten ouderdom; los providervertraging client-side op met een recente locatie, balanced/high-accuracy retries en een fallback van maximaal 10 minuten oud.
+- Maak het verschil zichtbaar tussen geweigerde toestemming, uitgeschakelde locatieservices en Androids ongeveer-locatie. Alleen de laatste route opent de app-instellingen voor `Precieze locatie`.
+- De dagelijkse `x/10`-loopteller gebruikt uitsluitend vandaag gemeten loopmeters en telt ieder volledig blok van 1,5 km; carry-over en tijdelijke boosts veranderen deze uitleg niet.
+
 ## 2026-08-11 - Een BugScan-crop verliest nooit de volledige fotocontext
 
 - Stuur bij een gekozen zoom/crop twee beelden: de detailcrop op hoge kwaliteit en een compacte overzichtsfoto van de ongewijzigde originele opname.

@@ -2,7 +2,7 @@ import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, type GestureResponderEvent, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Animated, type GestureResponderEvent, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { BugArtImage } from "../components/BugArtImage";
 import { BugBaasStateArt } from "../components/BugBaasStateArt";
 import { WeeklyScanContestCard } from "../components/WeeklyScanContestCard";
@@ -32,7 +32,7 @@ import { getRemainingRealBugScans, RealBugScanLimitError, submitRealBugScan } fr
 import { entryByBugId, listBugDexInventory, type BugDexDropResult } from "../services/bugDexService";
 import { applyUserPoints } from "../services/userService";
 import { fieldJournalBehaviors, fieldJournalHabitats, fieldJournalTags, listFieldJournalEntries, saveFieldJournalEntry, type FieldJournalBehavior, type FieldJournalHabitat, type FieldJournalTag, type FieldMilestoneReward, type WeeklyFieldSpotlightReward } from "../services/fieldJournalService";
-import { requestPrivateSightingLocation, type PrivateSightingLocation } from "../services/privateSightingLocation";
+import { requestPrivateSightingLocation, type PrivateSightingLocation, type PrivateSightingLocationFailureReason } from "../services/privateSightingLocation";
 import { type User } from "../types";
 
 const scanMedallion = require("../../assets/generated/bugbaas-scan-medallion-v1.png");
@@ -165,6 +165,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   const [journalLocationBusy, setJournalLocationBusy] = useState(false);
   const [journalLocation, setJournalLocation] = useState<PrivateSightingLocation | null>(null);
   const [journalLocationError, setJournalLocationError] = useState("");
+  const [journalLocationIssue, setJournalLocationIssue] = useState<PrivateSightingLocationFailureReason | null>(null);
   const [pendingScanDrop, setPendingScanDrop] = useState<BugDexDropResult | null>(null);
   const [contestReviewThumbnail, setContestReviewThumbnail] = useState("");
   const [journalMilestones, setJournalMilestones] = useState<FieldMilestoneReward[]>([]);
@@ -452,6 +453,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       setJournalTags([]);
       setJournalLocation(null);
       setJournalLocationError("");
+      setJournalLocationIssue(null);
       setPendingScanDrop(submission.drop ?? null);
       setContestReviewThumbnail(prepared.reviewThumbnailDataUrl);
       setWeeklySpotlightReward(undefined);
@@ -488,6 +490,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     setJournalTags([]);
     setJournalLocation(null);
     setJournalLocationError("");
+    setJournalLocationIssue(null);
     setPendingScanDrop(null);
     setContestReviewThumbnail("");
     setJournalMilestones([]);
@@ -629,17 +632,29 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     if (journalLocationBusy || journalLocation) return;
     setJournalLocationBusy(true);
     setJournalLocationError("");
+    setJournalLocationIssue(null);
     const locationResult = await requestPrivateSightingLocation();
     if (!locationResult.available) {
       const message = locationResult.reason === "denied"
         ? "Sta locatie toe om deze veldnotitie automatisch op je kaart te zetten."
-        : "Je locatie kon niet worden bepaald. Tik hieronder om het opnieuw te proberen.";
+        : locationResult.reason === "services_disabled"
+          ? "Zet Locatie/GPS op je telefoon aan en probeer het daarna opnieuw."
+          : locationResult.reason === "precise_required"
+            ? "Zet Precieze locatie aan bij de app-instellingen van BugBaas en probeer het opnieuw."
+          : "De telefoon heeft nog geen nauwkeurige locatie. Ga even bij een raam of naar buiten en probeer opnieuw.";
+      setJournalLocationIssue(locationResult.reason);
       setJournalLocationError(message);
       setJournalLocationBusy(false);
       return;
     }
+    setJournalLocationIssue(null);
     setJournalLocation(locationResult.location);
     setJournalLocationBusy(false);
+  }
+
+  function openPreciseLocationSettings() {
+    setJournalLocationIssue("unavailable");
+    void Linking.openSettings();
   }
 
   function toggleJournalTag(tag: FieldJournalTag) {
@@ -997,7 +1012,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
               <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>{journalSaved ? "Privé-kaartmarkering bewaard" : journalLocation ? "Telefoonlocatie klaar" : journalLocationBusy ? "Telefoonlocatie bepalen..." : "Telefoonlocatie nog niet beschikbaar"}</Text><Text style={styles.privateMapBody}>Je precieze locatie blijft privé en alleen jij ziet de afgeronde markering op je kaart.</Text></View>
             </View>
             {journalLocationError ? <Text style={styles.journalLocationError}>{journalLocationError}</Text> : null}
-            {!journalSaved && !journalLocation && !journalLocationBusy ? <Pressable onPress={() => void prepareJournalLocation()} style={styles.journalSave}><Text style={styles.primaryButtonText}>Probeer locatie opnieuw</Text></Pressable> : null}
+            {!journalSaved && !journalLocation && !journalLocationBusy ? <Pressable onPress={journalLocationIssue === "precise_required" ? openPreciseLocationSettings : () => void prepareJournalLocation()} style={styles.journalSave}><Text style={styles.primaryButtonText}>{journalLocationIssue === "precise_required" ? "Open app-instellingen" : "Probeer locatie opnieuw"}</Text></Pressable> : null}
             {!journalSaved && journalLocation && journalLocationError ? <Pressable onPress={() => setJournalLocationError("")} style={styles.journalSave}><Text style={styles.primaryButtonText}>Probeer opslaan opnieuw</Text></Pressable> : null}
             {fieldPhotoStamps.length > 0 && <Animated.View style={[styles.stampReveal, { opacity: stampReveal, transform: [{ scale: stampReveal.interpolate({ inputRange: [0, 1], outputRange: [0.72, 1] }) }] }]}>
               <Text style={styles.stampRevealKicker}>VELDFOTOSTEMPELS</Text>

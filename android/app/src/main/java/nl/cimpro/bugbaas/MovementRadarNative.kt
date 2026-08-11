@@ -44,6 +44,7 @@ data class MovementProgressSnapshot(
   val dataTypes: List<MovementDataTypeSnapshot>,
   val estimatedWeekKm: Double,
   val goals: List<MovementGoalSnapshot>,
+  val walkingGoalCountToday: Int,
   val maxRewards: Int,
   val reason: String? = null
 )
@@ -143,6 +144,7 @@ object MovementRadarNative {
         makeGoal("running", "Hardlopen", snapshot.runningMeters, targets.running),
         makeGoal("cycling", "Fietsen", snapshot.cyclingMeters, targets.cycling)
       ),
+      walkingGoalCountToday = dailyWalkingGoalCount(rawSnapshot.walkingMeters),
       maxRewards = maxMovementRadarBugsPerDay
     )
   }
@@ -390,6 +392,10 @@ object MovementRadarNative {
     )
   }
 
+  private fun dailyWalkingGoalCount(meters: Double): Int {
+    return (maxOf(0.0, meters) / walkingMetersPerRadarBug).toInt().coerceIn(0, maxMovementRadarBugsPerDay)
+  }
+
   private fun emptyProgress(reason: String, dataTypes: List<MovementDataTypeSnapshot> = unavailableDataTypes(reason)): MovementProgressSnapshot {
     return MovementProgressSnapshot(
       available = false,
@@ -402,6 +408,7 @@ object MovementRadarNative {
         makeGoal("running", "Hardlopen", 0.0, runningMetersPerRadarBug),
         makeGoal("cycling", "Fietsen", 0.0, cyclingMetersPerRadarBug)
       ),
+      walkingGoalCountToday = 0,
       maxRewards = maxMovementRadarBugsPerDay,
       reason = reason
     )

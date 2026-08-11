@@ -361,6 +361,8 @@ export function WorldScreen({ user, onStartScan, onOpenCollection, onOpenBuddy, 
                       regions={expeditionRegions}
                       todayKm={todayKm}
                       walkGoalKm={walkGoalKm}
+                      walkingGoalCountToday={movementProgress?.walkingGoalCountToday ?? 0}
+                      walkingGoalCountMax={movementProgress?.maxRewards ?? 10}
                       weekKm={weekKm}
                     />
                   ) : null}

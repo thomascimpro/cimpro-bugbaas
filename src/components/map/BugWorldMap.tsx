@@ -42,7 +42,7 @@ export function BugWorldMap({ entries, onSelectEntry, onStartScan }: Props) {
   const dragStartCenter = useRef<MapCoordinate>(initialCenter);
   const zonesRef = useRef<SearchZone[]>([]);
   const [location, setLocation] = useState<PrivateSightingLocation>();
-  const [locationState, setLocationState] = useState<"idle" | "loading" | "unsupported" | "denied" | "unavailable" | "ready">("loading");
+  const [locationState, setLocationState] = useState<"idle" | "loading" | "unsupported" | "denied" | "services_disabled" | "precise_required" | "unavailable" | "ready">("loading");
   const [zones, setZones] = useState<SearchZone[]>([]);
   const [zonesLoading, setZonesLoading] = useState(false);
   const [zonesUnavailable, setZonesUnavailable] = useState(false);

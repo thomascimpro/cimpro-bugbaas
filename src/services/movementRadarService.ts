@@ -39,6 +39,7 @@ export type MovementRadarProgress = {
   dataTypes?: MovementDataTypeStatus[];
   estimatedWeekKm?: number;
   goals: MovementRadarGoal[];
+  walkingGoalCountToday: number;
   maxRewards: number;
   reason?: string;
 };
@@ -143,6 +144,7 @@ function emptyProgress(reason: string): MovementRadarProgress {
       { available: false, id: "exercise", label: "Trainingen", reason }
     ],
     goals: [makeGoal("walking", "Lopen", 0, walkingMetersPerRadarBug, 0)],
+    walkingGoalCountToday: 0,
     maxRewards: maxMovementRadarBugsPerDay,
     reason
   };

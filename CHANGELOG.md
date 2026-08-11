@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-11 - BugBaas 3.0.14
+
+- Een geslaagde BugScan kan de verplichte veldnotitie weer betrouwbaar afronden: Android gebruikt eerst een recente geldige locatie, probeert daarna balanced en high accuracy en geeft een duidelijke melding bij uitgeschakelde GPS of alleen ongeveer-locatie.
+- De browser probeert na een tijdelijke GPS/providerfout opnieuw en kan een recente, nog geldige locatie gebruiken zonder de privacy- en nauwkeurigheidsgrenzen van het veldjournaal te versoepelen.
+- In het bestaande vak `VANDAAG GELOPEN` staat nu `x/10`: één stap per volledig gelopen blok van 1,5 km die dag, gebaseerd op de echte Health Connect-loopafstand.
+
 ## 2026-08-11 - BugBaas 3.0.13
 
 - BugScan stuurt bij inzoomen voortaan zowel de scherpe gekozen uitsnede als een compacte versie van de volledige originele foto naar de analyse. Daardoor kan een verkeerd verschoven crop niet meer een blad of bloem laten doorgaan voor de gefotografeerde bug.

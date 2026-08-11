@@ -317,6 +317,7 @@ class BugBaasNativeModule(private val reactContext: ReactApplicationContext) : R
       result.putBoolean("available", progress.available)
       result.putInt("awardedToday", progress.awardedToday)
       result.putInt("claimableRewards", progress.claimableRewards)
+      result.putInt("walkingGoalCountToday", progress.walkingGoalCountToday)
       result.putInt("maxRewards", progress.maxRewards)
       result.putDouble("estimatedWeekKm", progress.estimatedWeekKm)
       progress.reason?.let { result.putString("reason", it) }

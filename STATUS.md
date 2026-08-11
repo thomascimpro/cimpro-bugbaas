@@ -1,5 +1,12 @@
 # Status
 
+## 2026-08-11 - BugBaas 3.0.14 GPS- en looptellerhotfix uitgebracht
+
+- Veldnotities gebruiken nu een snelle recente locatie plus gecontroleerde balanced/high-accuracy retries; Android herkent uitgeschakelde locatieservices en een ontbrekende precieze locatierechten afzonderlijk.
+- Het vak `VANDAAG GELOPEN` toont het aantal volledige 1,5 km-doelen als `x/10`, zonder carry-over of bonusafstand mee te tellen.
+- Productie staat op Vercel-deployment `dpl_J2G2tZ6VWAPfdJxL9TXYjfFcFDfm` via `https://bugbaas.vercel.app` en `https://bugbaasv3.vercel.app`; de bestaande OpenAI-, receipt- en Firebase-envkoppelingen zijn behouden.
+- Android 3.0.14 (`versionCode 323`) staat in `dist/BugBaas-3.0.14.apk`: 105.519.873 bytes, SHA-256 `402828DCF39395C1A590F568A99725B41AB29445F9EB8B6B5974ECC40BF6A60C`, met de bestaande v2-signer.
+
 ## 2026-08-11 - BugBaas 3.0.13 BugScan-correctie uitgebracht
 
 - De zoom/crop-analyse bewaart nu de originele fotoafmetingen en stuurt de volledige foto als afzonderlijke context mee. Oude clients zonder overzichtsfoto blijven ondersteund.
