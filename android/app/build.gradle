@@ -104,8 +104,8 @@ android {
         applicationId 'nl.cimpro.bugbaas'
         minSdkVersion 26
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 323
-        versionName "3.0.14"
+        versionCode 324
+        versionName "3.0.15"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }

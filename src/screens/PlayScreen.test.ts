@@ -7,6 +7,13 @@ import { playTabs } from "./PlayScreenModel.ts";
 
 const playScreenSource = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "PlayScreen.tsx"), "utf8");
 
+test("locks the parent play page while a game workspace is open", () => {
+  assert.match(playScreenSource, /scrollEnabled=\{!workspaceOpen\}/);
+  assert.match(playScreenSource, /screenScrollRef\.current\?\.scrollTo\(\{ animated: false, y: 0 \}\)/);
+  assert.match(playScreenSource, /bounces=\{!workspaceOpen\}/);
+  assert.match(playScreenSource, /overScrollMode="never"/);
+});
+
 test("play owns only arcade and ranking", () => {
   assert.deepEqual(playTabs, ["arcade", "ranking"]);
   assert.equal(new Set(playTabs).size, 2);

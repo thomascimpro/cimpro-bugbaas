@@ -129,6 +129,7 @@ export function PlayScreen({
   const [bugBrainStatus, setBugBrainStatus] = useState<BugBrainDailyStatus | null>(null);
   const [discoveredSpecies, setDiscoveredSpecies] = useState(0);
   const glow = useRef(new Animated.Value(0)).current;
+  const screenScrollRef = useRef<ScrollView | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -207,6 +208,9 @@ export function PlayScreen({
   useEffect(() => {
     onFullscreenChange?.(workspaceOpen || gameFullscreen);
   }, [gameFullscreen, onFullscreenChange, workspaceOpen]);
+  useEffect(() => {
+    if (workspaceOpen) screenScrollRef.current?.scrollTo({ animated: false, y: 0 });
+  }, [workspaceOpen]);
   useEffect(() => () => {
     onFullscreenChange?.(false);
   }, [onFullscreenChange]);
@@ -282,9 +286,13 @@ export function PlayScreen({
 
   return (
     <ScrollView
+      bounces={!workspaceOpen}
       contentContainerStyle={[styles.screen, { maxWidth: layout.contentMaxWidth, paddingBottom: bottomPadding, paddingHorizontal: layout.gutter }]}
+      overScrollMode="never"
+      ref={screenScrollRef}
+      scrollEnabled={!workspaceOpen}
       showsVerticalScrollIndicator={false}
-      style={styles.screenScroll}
+      style={[styles.screenScroll, workspaceOpen && styles.screenScrollLocked]}
     >
       <View style={[styles.header, { paddingTop: layout.isTablet ? 8 : 4 }]}>
         <View>
@@ -507,6 +515,7 @@ function localDayId(date = new Date()): string {
 
 const styles = StyleSheet.create({
   screenScroll: { flex: 1, width: "100%" },
+  screenScrollLocked: { overflow: "hidden" },
   screen: { alignSelf: "center", flexGrow: 1, minHeight: "100%", paddingHorizontal: 12, paddingBottom: 92, width: "100%" },
   header: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 4, paddingTop: 4 },
   kicker: { color: playPalette.accent, fontSize: 9, fontWeight: "900", letterSpacing: 1.2 },

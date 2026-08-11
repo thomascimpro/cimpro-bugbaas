@@ -1,6 +1,7 @@
 const legacyPrecision = 1000;
 const privatePrecision = 100000;
 const cellDegrees = 0.0015;
+const maximumAcceptedAccuracyMeters = 5000;
 
 function validCoordinate(latitude, longitude) {
   return Number.isFinite(latitude) && Number.isFinite(longitude)
@@ -21,7 +22,7 @@ function normalizePrivateSightingLocation(location, now = Date.now()) {
   if (!location || typeof location !== "object" || Array.isArray(location)) return undefined;
   const { latitude, longitude, accuracyMeters, capturedAt } = location;
   if (!validCoordinate(latitude, longitude)) return undefined;
-  if (!Number.isFinite(accuracyMeters) || accuracyMeters < 0 || accuracyMeters > 250) return undefined;
+  if (!Number.isFinite(accuracyMeters) || accuracyMeters < 0 || accuracyMeters > maximumAcceptedAccuracyMeters) return undefined;
   const capturedTime = new Date(capturedAt).getTime();
   if (!Number.isFinite(capturedTime) || Math.abs(now - capturedTime) > 15 * 60 * 1000) return undefined;
   return {

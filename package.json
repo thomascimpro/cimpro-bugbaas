@@ -1,6 +1,6 @@
 {
   "name": "bugbaas",
-  "version": "3.0.14",
+  "version": "3.0.15",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "apk:release": "npm run validate:bug-art && cd android && gradlew.bat :app:assembleRelease --console=plain",
     "apk:fast": "npm run validate:bug-art && cd android && gradlew.bat :app:assembleRelease --console=plain -Pandroid.enableMinifyInReleaseBuilds=false -Pandroid.enableShrinkResourcesInReleaseBuilds=false -Pandroid.enablePngCrunchInReleaseBuilds=false",
     "typecheck": "tsc --noEmit",
-    "test:real-bug-scan": "node --experimental-strip-types --test src/services/pendingBugDexDiscovery.test.ts src/services/realBugCameraAsset.test.ts src/services/realBugScanContract.test.ts src/services/realBugScanFingerprint.test.ts src/services/realBugScanImagePolicy.test.ts src/services/realBugScanProgress.test.ts src/services/realBugScanReward.test.ts src/services/realBugScanUsage.test.ts && node --test server/realBugScan/*.test.mjs",
+    "test:real-bug-scan": "npx tsx --test src/services/pendingBugDexDiscovery.test.ts src/services/realBugCameraAsset.test.ts src/services/realBugScanContract.test.ts src/services/realBugScanFingerprint.test.ts src/services/realBugScanImagePolicy.test.ts src/services/realBugScanProgress.test.ts src/services/realBugScanReward.test.ts src/services/realBugScanUsage.test.ts && node --test server/realBugScan/*.test.mjs",
     "bug-scan:api": "node scripts/realBugScanLocalServer.mjs",
     "zones:api": "node scripts/nearbySearchZonesLocalServer.mjs",
     "seed:cimpro-org": "node scripts/seed_cimpro_organization.mjs",

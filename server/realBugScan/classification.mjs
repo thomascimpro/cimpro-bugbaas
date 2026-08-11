@@ -56,10 +56,14 @@ export function dayKeyInTimeZone(date = new Date(), timeZone = defaultTimeZone) 
 
 function specificMissingSpeciesName(commonName, scientificName) {
   const normalizedCommonName = commonName.toLowerCase();
-  return Boolean(scientificName)
-    || (commonName.length >= 4
-      && !normalizedCommonName.startsWith("onbekend")
-      && !["bug", "insect", "spin", "kever", "vlinder", "wesp", "mier"].includes(normalizedCommonName));
+  const normalizedScientificName = cleanString(scientificName).replace(/\s+/g, " ");
+  const scientificParts = normalizedScientificName.split(" ");
+  const speciesEpithet = scientificParts[1]?.replace(/[^A-Za-z-]/g, "").toLowerCase() ?? "";
+  const hasConcreteBinomial = /^[A-Z][a-z-]+\s+[a-z][a-z-]+(?:\s+[a-z][a-z-]+)?$/.test(normalizedScientificName)
+    && !["sp", "spp", "cf", "aff", "species"].includes(speciesEpithet);
+  const genericCommonName = normalizedCommonName.startsWith("onbekend")
+    || /^(?:[a-zà-ÿ-]+\s+)*(?:bug|insect|spin|kever|vlinder|mot|wesp|bij|mier|vlieg|wants|larve|rups)$/i.test(normalizedCommonName);
+  return hasConcreteBinomial && commonName.length >= 4 && !genericCommonName;
 }
 
 export function normalizeIdentification(

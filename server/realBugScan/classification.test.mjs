@@ -130,6 +130,42 @@ test("records a concrete missing species at seventy percent confidence", () => {
   assert.equal(result.status, "not_in_catalog");
 });
 
+test("does not register a broad order with an adjective as a new species", () => {
+  const result = normalizeIdentification({
+    containsBug: true,
+    imageQuality: "good",
+    captureAuthenticity: "live",
+    commonName: "glanzende kever",
+    scientificName: "Coleoptera",
+    fact: "Kevers hebben verharde voorvleugels die de achtervleugels beschermen.",
+    confidence: 0.82,
+    reason: "De precieze soort is niet zichtbaar."
+  }, catalog);
+
+  assert.equal(result.status, "pending_review");
+  assert.equal(result.identification.bugId, null);
+});
+
+test("does not register a family or genus placeholder as a new species", () => {
+  for (const [commonName, scientificName] of [
+    ["donkere mier", "Formicidae"],
+    ["houtmier", "Camponotus sp."],
+    ["mestkever", "Scarabaeidae"]
+  ]) {
+    const result = normalizeIdentification({
+      containsBug: true,
+      imageQuality: "good",
+      captureAuthenticity: "live",
+      commonName,
+      scientificName,
+      fact: "Dit is een brede herkenning zonder voldoende soortkenmerken.",
+      confidence: 0.9,
+      reason: "De familie is zichtbaar, maar de soort niet."
+    }, catalog);
+    assert.notEqual(result.status, "not_in_catalog", `${scientificName} mag geen nieuwe soort worden`);
+  }
+});
+
 test("recommends a confident specific missing species even when the model marks it uncertain", () => {
   const result = normalizeIdentification({
     containsBug: true,

@@ -1,5 +1,7 @@
 import type { PrivateSightingLocationOptions, PrivateSightingLocationResult } from "./privateSightingLocation";
 
+const fieldJournalMaxAccuracyMeters = 5_000;
+
 type NativeLocationModule = {
   Accuracy: { Balanced: number; High: number };
   requestForegroundPermissionsAsync: () => Promise<{
@@ -60,15 +62,11 @@ async function currentLocation(accuracy: number, timeoutMs: number, maxAccuracyM
 
 /** Gets a foreground-only native location after the player grants permission. */
 export async function requestPrivateSightingLocation(options: PrivateSightingLocationOptions = {}): Promise<PrivateSightingLocationResult> {
-  const maxAccuracyMeters = options.maxAccuracyMeters ?? 250;
+  const maxAccuracyMeters = options.maxAccuracyMeters ?? fieldJournalMaxAccuracyMeters;
   try {
     const permission = await Location.requestForegroundPermissionsAsync();
     if (!permission.granted) {
       return { available: false, reason: "denied" };
-    }
-
-    if (Number.isFinite(maxAccuracyMeters) && permission.android && permission.android.accuracy !== "fine") {
-      return { available: false, reason: "precise_required" };
     }
 
     if (!await Location.hasServicesEnabledAsync()) {
@@ -89,7 +87,7 @@ export async function requestPrivateSightingLocation(options: PrivateSightingLoc
     const precise = await currentLocation(Location.Accuracy.High, 12_000, maxAccuracyMeters);
     if (precise) return precise;
 
-    return await lastKnownLocation(10 * 60 * 1000, maxAccuracyMeters)
+    return await lastKnownLocation(14 * 60 * 1000, maxAccuracyMeters)
       ?? { available: false, reason: "unavailable" };
   } catch {
     return { available: false, reason: "unavailable" };

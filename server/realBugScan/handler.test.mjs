@@ -189,15 +189,15 @@ test("consumes a daily scan for a valid species outside the catalog", async () =
       imageQuality: "good",
       catalogStatus: "not_in_catalog",
       matchedBugId: null,
-      commonName: "Nieuwe wants",
-      commonNameEn: "New shield bug",
-      commonNameFr: "Nouvelle punaise",
-      scientificName: "Pentatomidae nova",
-      fact: "Wantsen gebruiken een zuigsnuit om voedsel op te nemen.",
-      factEn: "Shield bugs use a piercing mouthpart to feed.",
-      factFr: "Les punaises utilisent un rostre pour se nourrir.",
+      commonName: "Purperen langpootmug",
+      commonNameEn: "Purple cranefly",
+      commonNameFr: "Tipule pourpre",
+      scientificName: "Tipula purpurata",
+      fact: "Deze langpootmug heeft opvallend purper gekleurde vleugels.",
+      factEn: "This cranefly has striking purple wings.",
+      factFr: "Cette tipule a des ailes pourpres remarquables.",
       confidence: 0.91,
-      reason: "Een duidelijke wants die niet in de catalogus staat."
+      reason: "Twee zichtbare soortkenmerken passen bij deze soort."
     })
   });
   const response = createResponse();

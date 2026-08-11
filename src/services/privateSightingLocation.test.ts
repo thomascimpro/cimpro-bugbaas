@@ -7,7 +7,7 @@ test("private location gracefully opts out where browser geolocation is unavaila
   assert.equal(result.available, false);
 });
 
-test("map mode accepts a coarse browser location while private storage stays strict", async () => {
+test("field notes accept a coarse but useful browser location", async () => {
   const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
   Object.defineProperty(globalThis, "navigator", {
     configurable: true,
@@ -25,7 +25,7 @@ test("map mode accepts a coarse browser location while private storage stays str
 
   try {
     const strictResult = await requestPrivateSightingLocation();
-    assert.equal(strictResult.available, false);
+    assert.equal(strictResult.available, true);
 
     const mapResult = await requestPrivateSightingLocation({ maxAccuracyMeters: Number.POSITIVE_INFINITY });
     assert.equal(mapResult.available, true);

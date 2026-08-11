@@ -25,11 +25,18 @@ test("normalizes precise owner-only location and derives a stable gameplay cell"
   });
 });
 
-test("rejects malformed, stale, inaccurate or out-of-range locations", () => {
+test("accepts a coarse phone fix so a field note is not blocked indoors", () => {
+  const now = Date.parse("2026-07-23T12:00:00.000Z");
+  const result = normalizePrivateSightingLocation({ latitude: 52, longitude: 5, accuracyMeters: 1500, capturedAt: "2026-07-23T12:00:00.000Z" }, now);
+  assert.equal(result.privateLocation.accuracyMeters, 1500);
+  assert.deepEqual(result.locationCell, { latitudeE3: 52000, longitudeE3: 5000 });
+});
+
+test("rejects malformed, stale, unusably inaccurate or out-of-range locations", () => {
   const now = Date.parse("2026-07-23T12:00:00.000Z");
   assert.equal(privateSightingMapCell({ latitude: 91, longitude: 5 }), undefined);
   assert.equal(privateSightingMapCell({ latitude: "52", longitude: 5 }), undefined);
   assert.equal(privateSightingMapCell(undefined), undefined);
-  assert.equal(normalizePrivateSightingLocation({ latitude: 52, longitude: 5, accuracyMeters: 251, capturedAt: "2026-07-23T12:00:00.000Z" }, now), undefined);
+  assert.equal(normalizePrivateSightingLocation({ latitude: 52, longitude: 5, accuracyMeters: 5001, capturedAt: "2026-07-23T12:00:00.000Z" }, now), undefined);
   assert.equal(normalizePrivateSightingLocation({ latitude: 52, longitude: 5, accuracyMeters: 10, capturedAt: "2026-07-23T11:40:00.000Z" }, now), undefined);
 });

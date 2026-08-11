@@ -641,7 +641,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
           ? "Zet Locatie/GPS op je telefoon aan en probeer het daarna opnieuw."
           : locationResult.reason === "precise_required"
             ? "Zet Precieze locatie aan bij de app-instellingen van BugBaas en probeer het opnieuw."
-          : "De telefoon heeft nog geen nauwkeurige locatie. Ga even bij een raam of naar buiten en probeer opnieuw.";
+          : "De telefoon gaf nog geen locatie door. Controleer of Locatie aanstaat en probeer opnieuw.";
       setJournalLocationIssue(locationResult.reason);
       setJournalLocationError(message);
       setJournalLocationBusy(false);
@@ -1009,7 +1009,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
             <Text style={styles.journalLabel}>Extra tags (optioneel, maximaal 3)</Text><View style={styles.journalChoices}>{fieldJournalTags.map((item) => <Pressable disabled={journalSaving || journalSaved} key={item} onPress={() => toggleJournalTag(item)} style={[styles.journalChoice, journalTags.includes(item) && styles.journalChoiceActive]}><Text style={[styles.journalChoiceText, journalTags.includes(item) && styles.journalChoiceTextActive]}>{item}</Text></Pressable>)}</View>
             <View style={[styles.privateMapChoice, (journalSaved || journalLocation) && styles.privateMapChoiceActive]}>
               <View style={[styles.privateMapCheck, (journalSaved || journalLocation) && styles.privateMapCheckActive]}><Text style={styles.privateMapCheckText}>{journalSaved || journalLocation ? "✓" : journalLocationBusy ? "…" : "!"}</Text></View>
-              <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>{journalSaved ? "Privé-kaartmarkering bewaard" : journalLocation ? "Telefoonlocatie klaar" : journalLocationBusy ? "Telefoonlocatie bepalen..." : "Telefoonlocatie nog niet beschikbaar"}</Text><Text style={styles.privateMapBody}>Je precieze locatie blijft privé en alleen jij ziet de afgeronde markering op je kaart.</Text></View>
+              <View style={styles.privateMapCopy}><Text style={styles.privateMapTitle}>{journalSaved ? "Privé-kaartmarkering bewaard" : journalLocation ? journalLocation.accuracyMeters > 250 ? "Telefoonlocatie ongeveer klaar" : "Telefoonlocatie klaar" : journalLocationBusy ? "Telefoonlocatie bepalen..." : "Telefoonlocatie nog niet beschikbaar"}</Text><Text style={styles.privateMapBody}>Je locatie blijft privé en alleen jij ziet de afgeronde markering op je kaart.</Text></View>
             </View>
             {journalLocationError ? <Text style={styles.journalLocationError}>{journalLocationError}</Text> : null}
             {!journalSaved && !journalLocation && !journalLocationBusy ? <Pressable onPress={journalLocationIssue === "precise_required" ? openPreciseLocationSettings : () => void prepareJournalLocation()} style={styles.journalSave}><Text style={styles.primaryButtonText}>{journalLocationIssue === "precise_required" ? "Open app-instellingen" : "Probeer locatie opnieuw"}</Text></Pressable> : null}

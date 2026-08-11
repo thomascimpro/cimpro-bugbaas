@@ -17,7 +17,7 @@ test("native field notes reuse a recent valid phone location before waiting for 
 test("native field notes retry from balanced to precise positioning", () => {
   assert.match(source, /currentLocation\(Location\.Accuracy\.Balanced, 8_000, maxAccuracyMeters\)/);
   assert.match(source, /currentLocation\(Location\.Accuracy\.High, 12_000, maxAccuracyMeters\)/);
-  assert.match(source, /lastKnownLocation\(10 \* 60 \* 1000, maxAccuracyMeters\)/);
+  assert.match(source, /lastKnownLocation\(14 \* 60 \* 1000, maxAccuracyMeters\)/);
 });
 
 test("native field notes distinguish disabled phone location from denied app permission", () => {
@@ -26,9 +26,9 @@ test("native field notes distinguish disabled phone location from denied app per
   assert.match(source, /reason: "services_disabled"/);
 });
 
-test("native field notes explain when Android only grants approximate location", () => {
-  assert.match(source, /permission\.android\.accuracy !== "fine"/);
-  assert.match(source, /reason: "precise_required"/);
+test("native field notes accept Android approximate permission instead of blocking the journal", () => {
+  assert.doesNotMatch(source, /permission\.android\.accuracy !== "fine"/);
+  assert.match(source, /fieldJournalMaxAccuracyMeters/);
 });
 
 test("home shows exact completed 1.5 km walking goals for today", () => {

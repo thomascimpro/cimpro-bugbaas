@@ -15,6 +15,8 @@ export type PrivateSightingLocationOptions = {
   maxAccuracyMeters?: number;
 };
 
+export const fieldJournalMaxAccuracyMeters = 5_000;
+
 type BrowserLocationAttempt =
   | { position: GeolocationPosition }
   | { reason: "denied" | "unavailable" };
@@ -45,14 +47,14 @@ function usableBrowserLocation(position: GeolocationPosition, maxAccuracyMeters:
 
 /** Gets the foreground phone location; the server stores only the owner's rounded private map position. */
 export async function requestPrivateSightingLocation(options: PrivateSightingLocationOptions = {}): Promise<PrivateSightingLocationResult> {
-  const maxAccuracyMeters = options.maxAccuracyMeters ?? 250;
+  const maxAccuracyMeters = options.maxAccuracyMeters ?? fieldJournalMaxAccuracyMeters;
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     return { available: false, reason: "unsupported" };
   }
   for (const attemptOptions of [
     { enableHighAccuracy: false, maximumAge: 2 * 60 * 1000, timeout: 4_000 },
     { enableHighAccuracy: true, maximumAge: 0, timeout: 12_000 },
-    { enableHighAccuracy: false, maximumAge: 10 * 60 * 1000, timeout: 8_000 }
+    { enableHighAccuracy: false, maximumAge: 14 * 60 * 1000, timeout: 8_000 }
   ]) {
     const attempt = await browserPosition(attemptOptions.enableHighAccuracy, attemptOptions.maximumAge, attemptOptions.timeout);
     if ("reason" in attempt) {
