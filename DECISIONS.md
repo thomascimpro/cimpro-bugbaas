@@ -1,5 +1,11 @@
 # Decisions
 
+## 2026-08-11 - Een BugScan-crop verliest nooit de volledige fotocontext
+
+- Stuur bij een gekozen zoom/crop twee beelden: de detailcrop op hoge kwaliteit en een compacte overzichtsfoto van de ongewijzigde originele opname.
+- Laat het model de crop alleen volgen als daar herkenbare dierlijke anatomie in staat. Als de crop verkeerd ligt of uitsluitend planten toont, is de zichtbare bug in de overzichtsfoto leidend.
+- Begrens de crop en overzichtsfoto afzonderlijk, zodat de gecombineerde JSON-aanvraag binnen de Vercel-functielimiet blijft.
+
 ## 2026-08-11 - Geen redacted buildwaarden als runtime-URL
 
 - Accepteer voor client-API-basisadressen uitsluitend een geldige HTTPS-URL. Lege, malformed, gequote of door tooling geredacte waarden vallen terug op de vaste productiehost.

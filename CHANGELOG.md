@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-08-11 - BugBaas 3.0.13
+
+- BugScan stuurt bij inzoomen voortaan zowel de scherpe gekozen uitsnede als een compacte versie van de volledige originele foto naar de analyse. Daardoor kan een verkeerd verschoven crop niet meer een blad of bloem laten doorgaan voor de gefotografeerde bug.
+- De AI-instructie vereist zichtbare dierlijke anatomie en gebruikt de volledige foto als vangnet wanneer de uitsnede alleen planten bevat.
+- De upload blijft onder de Vercel-payloadgrens door alleen de overzichtsfoto compact te maken; de gekozen detailcrop behoudt de hoge resolutie.
+
 ## 2026-08-11 - BugBaas 3.0.12
 
 - Android BugScan gebruikt weer de echte productiehost. Een afgeschermde of ongeldige buildwaarde zoals `[SENSITIVE]` wordt voortaan automatisch vervangen door de veilige vaste BugBaas-URL.

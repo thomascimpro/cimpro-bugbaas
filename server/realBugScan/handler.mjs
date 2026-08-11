@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 
 const maxImageDataUrlLength = 6_000_000;
 const allowedImagePattern = /^data:image\/(?:jpeg|jpg|png|webp);base64,[a-z0-9+/=]+$/i;
+const maxOverviewImageDataUrlLength = 1_600_000;
 const maxReviewThumbnailLength = 220_000;
 const allowedReviewThumbnailPattern = /^data:image\/jpeg;base64,[a-z0-9+/=]+$/i;
 
@@ -70,6 +71,12 @@ function validReviewThumbnailDataUrl(value) {
     && allowedReviewThumbnailPattern.test(value);
 }
 
+function validOverviewImageDataUrl(value) {
+  return typeof value === "string"
+    && value.length <= maxOverviewImageDataUrlLength
+    && allowedImagePattern.test(value);
+}
+
 export function createRealBugIdentifyHandler({
   catalog,
   verifyIdToken,
@@ -113,6 +120,9 @@ export function createRealBugIdentifyHandler({
     if (body.reviewThumbnailDataUrl !== undefined && !validReviewThumbnailDataUrl(body.reviewThumbnailDataUrl)) {
       return sendJson(response, 400, { ok: false, error: "De beveiligde wedstrijdminiatuur is ongeldig of te groot." });
     }
+    if (body.overviewImageDataUrl !== undefined && !validOverviewImageDataUrl(body.overviewImageDataUrl)) {
+      return sendJson(response, 400, { ok: false, error: "De overzichtsfoto is ongeldig of te groot." });
+    }
 
     const usageRequest = {
       dayKey: dayKeyInTimeZone(),
@@ -139,6 +149,7 @@ export function createRealBugIdentifyHandler({
     try {
       const rawIdentification = await identifyImage({
         imageDataUrl: body.imageDataUrl,
+        overviewImageDataUrl: validOverviewImageDataUrl(body.overviewImageDataUrl) ? body.overviewImageDataUrl : undefined,
         catalog
       });
       const normalized = normalizeIdentification(rawIdentification, catalog);

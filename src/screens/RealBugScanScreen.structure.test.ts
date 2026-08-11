@@ -37,9 +37,12 @@ test("scan opens the phone camera first and keeps a fullscreen fallback", () => 
 
 test("scan preserves the original photo until the final crop and compression", () => {
   assert.match(source, /sourceUri: normalized\.uri/);
-  assert.match(source, /prepareSubmissionPhoto\(sourceUri, sourceWidth, sourceHeight, crop\)/);
-  assert.match(source, /fallbackRealBugPhotoPlan\(width, height\)/);
-  assert.match(source, /emergencyRealBugPhotoPlan\(width, height\)/);
+  assert.match(source, /prepareSubmissionPhoto\(sourceUri, photo\.width, photo\.height, crop\)/);
+  assert.match(source, /overviewRealBugPhotoPlan\(width, height\)/);
+  assert.match(source, /overviewDataUrl: `data:image\/jpeg;base64,\$\{overview\.base64\}`/);
+  assert.match(source, /submitRealBugScan\(user, prepared\.dataUrl, prepared\.reviewThumbnailDataUrl, prepared\.overviewDataUrl\)/);
+  assert.match(source, /fallbackRealBugPhotoPlan\(targetWidth, targetHeight\)/);
+  assert.match(source, /emergencyRealBugPhotoPlan\(targetWidth, targetHeight\)/);
   assert.doesNotMatch(source, /fallbackRealBugPhotoPlan\(primary\.width/);
   assert.doesNotMatch(source, /emergencyRealBugPhotoPlan\(prepared\.width/);
 });

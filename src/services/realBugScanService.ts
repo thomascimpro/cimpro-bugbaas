@@ -72,7 +72,8 @@ async function apiError(response: Response): Promise<Error> {
 export async function submitRealBugScan(
   user: User,
   imageDataUrl: string,
-  reviewThumbnailDataUrl: string
+  reviewThumbnailDataUrl: string,
+  overviewImageDataUrl?: string
 ): Promise<RealBugScanSubmission> {
   const scanId = createScanId();
   const dayKey = realBugScanDayKey();
@@ -91,7 +92,12 @@ export async function submitRealBugScan(
         Authorization: `Bearer ${idToken}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ scanId, imageDataUrl, reviewThumbnailDataUrl })
+      body: JSON.stringify({
+        scanId,
+        imageDataUrl,
+        reviewThumbnailDataUrl,
+        ...(overviewImageDataUrl ? { overviewImageDataUrl } : {})
+      })
     });
     if (!response.ok) {
       if (response.status === 429) throw new RealBugScanLimitError();

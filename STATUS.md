@@ -1,5 +1,11 @@
 # Status
 
+## 2026-08-11 - BugBaas 3.0.13 BugScan-correctie uitgebracht
+
+- De zoom/crop-analyse bewaart nu de originele fotoafmetingen en stuurt de volledige foto als afzonderlijke context mee. Oude clients zonder overzichtsfoto blijven ondersteund.
+- Productie staat op Vercel-deployment `dpl_8TtZMv4PWtUfh2CZ9ESTJbFpkwBg` via `https://bugbaas.vercel.app` en `https://bugbaasv3.vercel.app`.
+- Android 3.0.13 (`versionCode 322`) staat in `dist/BugBaas-3.0.13.apk`: 105.517.753 bytes, SHA-256 `90087B86E518323E5B8E48A1E9E13A520FCF535367E0A3724F337E76B5432F03`, met dezelfde v2-signer als eerdere releases.
+
 ## 2026-08-11 - BugBaas 3.0.12 netwerkhotfix uitgebracht
 
 - Oorzaak van Android `Network request failed`: 3.0.11 bevatte door een redacted lokaal env-bestand letterlijk `[SENSITIVE]` als `realBugScanApiBaseUrl`.

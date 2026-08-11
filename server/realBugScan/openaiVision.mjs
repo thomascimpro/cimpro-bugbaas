@@ -108,7 +108,7 @@ export function createOpenAIImageIdentifier({
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
   fetchImpl = fetch
 } = {}) {
-  return async function identifyImage({ imageDataUrl }) {
+  return async function identifyImage({ imageDataUrl, overviewImageDataUrl }) {
     if (!apiKey) throw new Error("OPENAI_API_KEY is not configured.");
     const deadline = Date.now() + Math.max(100, Number(requestTimeoutMs) || DEFAULT_REQUEST_TIMEOUT_MS);
     const promptLines = [
@@ -119,6 +119,7 @@ export function createOpenAIImageIdentifier({
       "Use a species name only when at least two species-diagnostic traits are actually visible. Otherwise return the most specific honest genus, family, or broader taxon supported by the pixels.",
       "If one taxon is clearly most likely, return that best defensible identification and express residual doubt through confidence instead of inventing missing visual evidence.",
       "Use a two-pass assessment: first inspect body shape, wing structure, antennae, legs, markings, scale, and habitat; then challenge the first identification against the strongest visual alternative.",
+      "Never identify a leaf edge, bud, petal, hole, shadow, or plant silhouette as an arthropod. A bug identification requires visible animal anatomy such as a body plus legs, wings, or antennae.",
       "Calibrate confidence only from visible diagnostic evidence. Never inflate confidence to cross an acceptance threshold, and do not lower it merely because a species is rare.",
       "Set imageQuality to poor only when no useful diagnostic feature can be assessed because of severe blur, darkness, distance, or obstruction. A normal phone photo, crop, cluttered or plain background, mild motion blur, or imperfect composition is not poor by itself.",
       "Do not invent IDs. Treat confidence as identification confidence, not image quality.",
@@ -137,6 +138,15 @@ export function createOpenAIImageIdentifier({
       "For reproduction set containsBug to false and explain the strongest authenticity cue in authenticityReason. For uncertain authenticity, keep the biological identification honest but never imply it is reward-safe.",
       "For a rejected reference image, still fill commonName and scientificName for the visible subject when possible, but keep containsBug false so it cannot grant a reward or create a catalog suggestion."
     ];
+
+    const imageContent = overviewImageDataUrl
+      ? [
+        { type: "input_text", text: "Image 1 is the complete original photo. Use it to locate the actual arthropod and understand the scene." },
+        { type: "input_image", image_url: overviewImageDataUrl, detail: "high" },
+        { type: "input_text", text: "Image 2 is the player's selected detail crop. Prefer its subject when it contains clear arthropod anatomy. If the crop is misaligned or only shows plants, identify the obvious arthropod from Image 1 instead." },
+        { type: "input_image", image_url: imageDataUrl, detail: "original" }
+      ]
+      : [{ type: "input_image", image_url: imageDataUrl, detail: "original" }];
 
     async function requestIdentification(maxOutputTokens, retryMode = "none", effort = reasoningEffort, priorIdentification = null) {
       const remainingMs = deadline - Date.now();
@@ -178,11 +188,7 @@ export function createOpenAIImageIdentifier({
                     ...promptLines
                   ].join("\n")
                 },
-                {
-                  type: "input_image",
-                  image_url: imageDataUrl,
-                  detail: "original"
-                }
+                ...imageContent
               ]
             }],
             text: {

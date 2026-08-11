@@ -16,9 +16,12 @@ const fallbackMaxSide = 2048;
 const fallbackQuality = 0.9;
 const emergencyMaxSide = 1600;
 const emergencyQuality = 0.84;
+const overviewMaxSide = 1280;
+const overviewQuality = 0.78;
 const reviewThumbnailMaxSide = 640;
 const reviewThumbnailQuality = 0.72;
 const fallbackThresholdBytes = 3 * 1024 * 1024;
+export const croppedPhotoThresholdBytes = 2 * 1024 * 1024;
 
 function resizeActions(width: number, height: number, maxSide: number): RealBugPhotoResizeAction[] {
   const safeWidth = Number.isFinite(width) ? Math.max(0, width) : 0;
@@ -50,6 +53,13 @@ export function emergencyRealBugPhotoPlan(width: number, height: number): RealBu
   };
 }
 
+export function overviewRealBugPhotoPlan(width: number, height: number): RealBugPhotoPlan {
+  return {
+    resize: resizeActions(width, height, overviewMaxSide),
+    quality: overviewQuality
+  };
+}
+
 export function reviewRealBugThumbnailPlan(width: number, height: number): RealBugPhotoPlan {
   return {
     resize: resizeActions(width, height, reviewThumbnailMaxSide),
@@ -57,8 +67,8 @@ export function reviewRealBugThumbnailPlan(width: number, height: number): RealB
   };
 }
 
-export function shouldFallbackRealBugPhoto(base64: string): boolean {
+export function shouldFallbackRealBugPhoto(base64: string, thresholdBytes = fallbackThresholdBytes): boolean {
   const paddingBytes = base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0;
   const decodedBytes = Math.max(0, Math.floor((base64.length * 3) / 4) - paddingBytes);
-  return decodedBytes > fallbackThresholdBytes;
+  return decodedBytes > thresholdBytes;
 }

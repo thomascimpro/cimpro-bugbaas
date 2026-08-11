@@ -1,5 +1,13 @@
 # Test Results
 
+## 2026-08-11 - BugBaas 3.0.13 BugScan crop/context-fix
+
+- Gerichte clienttests: **17/17**; server- en OpenAI-requesttests: **26/26**; `npm run typecheck`: passed; BugDex-artvalidatie tijdens de APK-build: **3/3**.
+- De meegestuurde probleemfoto is getest met een expres foutieve uitsnede die alleen planten bevat. Met de volledige foto als context identificeerde de analyse correct `Bombus sp.` met 86% confidence, in plaats van een schildwants of rups.
+- Vercel-deployment `dpl_8TtZMv4PWtUfh2CZ9ESTJbFpkwBg` is READY. Beide productiehosts geven HTTP 200 en de scanroute geeft zonder login correct HTTP 401.
+- APK: package `nl.cimpro.bugbaas`, versionCode 322/versionName 3.0.13, arm64-v8a, 105.517.753 bytes, SHA-256 `90087B86E518323E5B8E48A1E9E13A520FCF535367E0A3724F337E76B5432F03`. De bundle bevat de nieuwe overzichtsfotokoppeling en de bestaande productie-URL/Firebase-configuratie; v2-signature is geldig.
+- Niet geclaimd: installatie en cameracontrole op een fysiek Android-toestel, omdat geen ADB-device aangesloten was.
+
 ## 2026-08-11 - BugBaas 3.0.12 Android BugScan-netwerkhotfix
 
 - App-configtests: **3/3**; `npm run typecheck`: passed; BugDex-artvalidatie tijdens releasebuild: **3/3**.

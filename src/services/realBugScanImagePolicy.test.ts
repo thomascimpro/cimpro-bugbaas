@@ -3,9 +3,11 @@ import test from "node:test";
 import {
   emergencyRealBugPhotoPlan,
   fallbackRealBugPhotoPlan,
+  overviewRealBugPhotoPlan,
   primaryRealBugPhotoPlan,
   reviewRealBugThumbnailPlan,
-  shouldFallbackRealBugPhoto
+  shouldFallbackRealBugPhoto,
+  croppedPhotoThresholdBytes
 } from "./realBugScanImagePolicy.ts";
 
 test("keeps enough landscape detail for reliable AI identification", () => {
@@ -43,6 +45,13 @@ test("uses a compact emergency fallback for unusually large photos", () => {
   });
 });
 
+test("creates a compact full-photo overview beside a selected crop", () => {
+  assert.deepEqual(overviewRealBugPhotoPlan(3024, 4032), {
+    resize: [{ resize: { height: 1280 } }],
+    quality: 0.78
+  });
+});
+
 test("creates a readable 640 pixel developer review thumbnail", () => {
   assert.deepEqual(reviewRealBugThumbnailPlan(2000, 1000), {
     resize: [{ resize: { width: 640 } }],
@@ -56,4 +65,12 @@ test("falls back above three megabytes to keep the JSON request below Vercel's l
 
   assert.equal(shouldFallbackRealBugPhoto(exactlyThreeMbBase64), false);
   assert.equal(shouldFallbackRealBugPhoto(aboveThreeMbBase64), true);
+});
+
+test("uses a smaller crop budget when an overview is uploaded too", () => {
+  const exactlyTwoMbBase64 = "a".repeat(Math.ceil((croppedPhotoThresholdBytes * 4) / 3));
+  const aboveTwoMbBase64 = "a".repeat(Math.ceil(((croppedPhotoThresholdBytes + 1) * 4) / 3));
+
+  assert.equal(shouldFallbackRealBugPhoto(exactlyTwoMbBase64, croppedPhotoThresholdBytes), false);
+  assert.equal(shouldFallbackRealBugPhoto(aboveTwoMbBase64, croppedPhotoThresholdBytes), true);
 });

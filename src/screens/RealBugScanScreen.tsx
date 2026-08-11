@@ -17,8 +17,10 @@ import { getBugProfessorBrief } from "../services/bugProfessorService";
 import { getFieldPhotoStamps, type FieldPhotoStamp } from "../services/fieldPhotoStampService";
 import { type RealBugScanResponse } from "../services/realBugScanContract";
 import {
+  croppedPhotoThresholdBytes,
   emergencyRealBugPhotoPlan,
   fallbackRealBugPhotoPlan,
+  overviewRealBugPhotoPlan,
   primaryRealBugPhotoPlan,
   reviewRealBugThumbnailPlan,
   shouldFallbackRealBugPhoto,
@@ -53,6 +55,7 @@ type PreparedPhoto = {
 
 type SubmissionPhoto = {
   dataUrl: string;
+  overviewDataUrl?: string;
   reviewThumbnailDataUrl: string;
 };
 
@@ -205,6 +208,9 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
   }, []);
 
   async function prepareSubmissionPhoto(sourceUri: string, width: number, height: number, crop?: RealBugPhotoCrop): Promise<SubmissionPhoto> {
+    const targetWidth = crop?.width ?? width;
+    const targetHeight = crop?.height ?? height;
+    const uploadThreshold = crop ? croppedPhotoThresholdBytes : undefined;
     const manipulatePhoto = (plan: RealBugPhotoPlan) => ImageManipulator.manipulateAsync(sourceUri, [
       ...(crop ? [{ crop }] : []),
       ...plan.resize
@@ -213,17 +219,27 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
       compress: plan.quality,
       format: ImageManipulator.SaveFormat.JPEG
     });
-    const primary = await manipulatePhoto(primaryRealBugPhotoPlan(width, height));
+    const primary = await manipulatePhoto(primaryRealBugPhotoPlan(targetWidth, targetHeight));
     if (!primary.base64) throw new Error(t("bugScan.error.prepare"));
 
-    let prepared = shouldFallbackRealBugPhoto(primary.base64)
-      ? await manipulatePhoto(fallbackRealBugPhotoPlan(width, height))
+    let prepared = shouldFallbackRealBugPhoto(primary.base64, uploadThreshold)
+      ? await manipulatePhoto(fallbackRealBugPhotoPlan(targetWidth, targetHeight))
       : primary;
     if (!prepared.base64) throw new Error(t("bugScan.error.prepare"));
-    if (shouldFallbackRealBugPhoto(prepared.base64)) {
-      prepared = await manipulatePhoto(emergencyRealBugPhotoPlan(width, height));
+    if (shouldFallbackRealBugPhoto(prepared.base64, uploadThreshold)) {
+      prepared = await manipulatePhoto(emergencyRealBugPhotoPlan(targetWidth, targetHeight));
     }
     if (!prepared.base64) throw new Error(t("bugScan.error.prepare"));
+
+    const overviewPlan = crop ? overviewRealBugPhotoPlan(width, height) : null;
+    const overview = overviewPlan
+      ? await ImageManipulator.manipulateAsync(sourceUri, overviewPlan.resize, {
+        base64: true,
+        compress: overviewPlan.quality,
+        format: ImageManipulator.SaveFormat.JPEG
+      })
+      : null;
+    if (crop && !overview?.base64) throw new Error(t("bugScan.error.prepare"));
 
     const thumbnailPlan = reviewRealBugThumbnailPlan(prepared.width ?? 0, prepared.height ?? 0);
     const thumbnail = await ImageManipulator.manipulateAsync(prepared.uri, thumbnailPlan.resize, {
@@ -234,6 +250,7 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     if (!thumbnail.base64) throw new Error(t("bugScan.error.thumbnail"));
     return {
       dataUrl: `data:image/jpeg;base64,${prepared.base64}`,
+      ...(overview?.base64 ? { overviewDataUrl: `data:image/jpeg;base64,${overview.base64}` } : {}),
       reviewThumbnailDataUrl: `data:image/jpeg;base64,${thumbnail.base64}`
     };
   }
@@ -413,8 +430,6 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
     setError("");
     try {
       let sourceUri = photo.sourceUri;
-      let sourceWidth = photo.width;
-      let sourceHeight = photo.height;
       let crop: RealBugPhotoCrop | undefined;
       if (photoZoom > 1 && photo.width > 0 && photo.height > 0) {
         const cropWidth = Math.max(1, Math.round(photo.width / photoZoom));
@@ -424,11 +439,9 @@ export function RealBugScanScreen({ user, onBack, onOpenCollection, onOpenJourna
         const originX = Math.round(((photoOffsetX + 1) / 2) * maxOriginX);
         const originY = Math.round(((photoOffsetY + 1) / 2) * maxOriginY);
         crop = { originX, originY, width: cropWidth, height: cropHeight };
-        sourceWidth = cropWidth;
-        sourceHeight = cropHeight;
       }
-      const prepared = await prepareSubmissionPhoto(sourceUri, sourceWidth, sourceHeight, crop);
-      const submission = await submitRealBugScan(user, prepared.dataUrl, prepared.reviewThumbnailDataUrl);
+      const prepared = await prepareSubmissionPhoto(sourceUri, photo.width, photo.height, crop);
+      const submission = await submitRealBugScan(user, prepared.dataUrl, prepared.reviewThumbnailDataUrl, prepared.overviewDataUrl);
       const nextResult = submission.result;
       setResult(nextResult);
       setJournalSaved(false);

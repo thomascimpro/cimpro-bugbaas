@@ -97,6 +97,32 @@ test("sends the image and returns structured identification", async () => {
   assert.deepEqual(requestBody.text.format.schema.properties.catalogStatus.enum, ["matched", "not_in_catalog", "uncertain"]);
 });
 
+test("sends the full overview before the selected crop and guards against plant-shaped false positives", async () => {
+  const requestBodies = [];
+  const identifyImage = createOpenAIImageIdentifier({
+    apiKey: "test-key",
+    fetchImpl: async (_url, options) => {
+      requestBodies.push(JSON.parse(options.body));
+      return successfulResponse();
+    }
+  });
+
+  await identifyImage({
+    imageDataUrl: "data:image/jpeg;base64,Y3JvcA==",
+    overviewImageDataUrl: "data:image/jpeg;base64,b3ZlcnZpZXc="
+  });
+
+  const content = requestBodies[0].input[0].content;
+  assert.match(content[0].text, /never identify a leaf edge, bud, petal, hole, shadow, or plant silhouette/i);
+  assert.match(content[1].text, /complete original photo/i);
+  assert.equal(content[2].image_url, "data:image/jpeg;base64,b3ZlcnZpZXc=");
+  assert.equal(content[2].detail, "high");
+  assert.match(content[3].text, /selected detail crop/i);
+  assert.match(content[3].text, /only shows plants/i);
+  assert.equal(content[4].image_url, "data:image/jpeg;base64,Y3JvcA==");
+  assert.equal(content[4].detail, "original");
+});
+
 test("retries once with a larger budget after an incomplete response", async () => {
   const requestBodies = [];
   const identifyImage = createOpenAIImageIdentifier({
