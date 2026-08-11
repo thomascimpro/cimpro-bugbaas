@@ -130,7 +130,7 @@ test("records a concrete missing species at seventy percent confidence", () => {
   assert.equal(result.status, "not_in_catalog");
 });
 
-test("does not register a broad order with an adjective as a new species", () => {
+test("keeps a confident broad taxon as a developer review instead of discarding the scan", () => {
   const result = normalizeIdentification({
     containsBug: true,
     imageQuality: "good",
@@ -142,15 +142,16 @@ test("does not register a broad order with an adjective as a new species", () =>
     reason: "De precieze soort is niet zichtbaar."
   }, catalog);
 
-  assert.equal(result.status, "pending_review");
+  assert.equal(result.status, "not_in_catalog");
   assert.equal(result.identification.bugId, null);
 });
 
-test("does not register a family or genus placeholder as a new species", () => {
-  for (const [commonName, scientificName] of [
-    ["donkere mier", "Formicidae"],
-    ["houtmier", "Camponotus sp."],
-    ["mestkever", "Scarabaeidae"]
+test("accepts a confident family or genus identification as a BugDex match or developer review", () => {
+  for (const [commonName, scientificName, expectedStatus] of [
+    ["donkere mier", "Formicidae", "not_in_catalog"],
+    ["houtmier", "Camponotus sp.", "matched"],
+    ["mestkever", "Scarabaeidae", "matched"],
+    ["Pagevlinder", "Papilionidae", "not_in_catalog"]
   ]) {
     const result = normalizeIdentification({
       containsBug: true,
@@ -162,8 +163,25 @@ test("does not register a family or genus placeholder as a new species", () => {
       confidence: 0.9,
       reason: "De familie is zichtbaar, maar de soort niet."
     }, catalog);
-    assert.notEqual(result.status, "not_in_catalog", `${scientificName} mag geen nieuwe soort worden`);
+    assert.equal(result.status, expectedStatus, `${scientificName} moet als herkende vondst worden bewaard`);
   }
+});
+
+test("matches a known BugDex species by scientific alias when the common name is broad", () => {
+  const result = normalizeIdentification({
+    containsBug: true,
+    imageQuality: "good",
+    captureAuthenticity: "live",
+    commonName: "Pagevlinder",
+    scientificName: "Papilio machaon",
+    fact: "De koninginnenpage heeft opvallende staartjes aan de achtervleugels.",
+    confidence: 0.88,
+    reason: "De vleugelvorm en tekening passen bij een koninginnenpage."
+  }, catalog);
+
+  assert.equal(result.status, "matched");
+  assert.equal(result.identification.bugId, "koninginnenpage");
+  assert.equal(result.identification.commonName, "Koninginnenpage");
 });
 
 test("recommends a confident specific missing species even when the model marks it uncertain", () => {

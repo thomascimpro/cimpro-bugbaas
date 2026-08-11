@@ -54,16 +54,12 @@ export function dayKeyInTimeZone(date = new Date(), timeZone = defaultTimeZone) 
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-function specificMissingSpeciesName(commonName, scientificName) {
+function recognizedMissingTaxon(commonName, scientificName) {
   const normalizedCommonName = commonName.toLowerCase();
   const normalizedScientificName = cleanString(scientificName).replace(/\s+/g, " ");
-  const scientificParts = normalizedScientificName.split(" ");
-  const speciesEpithet = scientificParts[1]?.replace(/[^A-Za-z-]/g, "").toLowerCase() ?? "";
-  const hasConcreteBinomial = /^[A-Z][a-z-]+\s+[a-z][a-z-]+(?:\s+[a-z][a-z-]+)?$/.test(normalizedScientificName)
-    && !["sp", "spp", "cf", "aff", "species"].includes(speciesEpithet);
-  const genericCommonName = normalizedCommonName.startsWith("onbekend")
-    || /^(?:[a-zà-ÿ-]+\s+)*(?:bug|insect|spin|kever|vlinder|mot|wesp|bij|mier|vlieg|wants|larve|rups)$/i.test(normalizedCommonName);
-  return hasConcreteBinomial && commonName.length >= 4 && !genericCommonName;
+  const unknownCommonName = normalizedCommonName.startsWith("onbekend")
+    || normalizedCommonName === "geen bug herkend";
+  return commonName.length >= 3 && normalizedScientificName.length >= 3 && !unknownCommonName;
 }
 
 export function normalizeIdentification(
@@ -85,12 +81,13 @@ export function normalizeIdentification(
   const requestedBugId = cleanString(raw?.matchedBugId) || null;
   const confidence = clampConfidence(raw?.confidence);
   const commonName = cleanString(raw?.commonName, containsBug ? "Onbekende bug" : "Geen bug herkend");
+  const scientificName = cleanString(raw?.scientificName);
   const requestedEntry = requestedBugId ? catalogMap.get(requestedBugId) : null;
-  const namedEntry = catalogNameMap.get(normalizedTaxonName(commonName));
+  const namedEntry = catalogNameMap.get(normalizedTaxonName(commonName))
+    ?? catalogNameMap.get(normalizedTaxonName(scientificName));
   const matchedEntry = namedEntry ?? requestedEntry;
   const commonNameEn = cleanString(raw?.commonNameEn, commonName);
   const commonNameFr = cleanString(raw?.commonNameFr, commonName);
-  const scientificName = cleanString(raw?.scientificName);
   const fact = cleanProse(raw?.fact);
   const factEn = cleanProse(raw?.factEn, fact);
   const factFr = cleanProse(raw?.factFr, fact);
@@ -112,7 +109,10 @@ export function normalizeIdentification(
   const reasonEn = cleanProse(raw?.reasonEn, reason);
   const reasonFr = cleanProse(raw?.reasonFr, reason);
   const exactCatalogNameMatch = Boolean(matchedEntry)
-    && taxonNamesForEntry(matchedEntry).includes(normalizedTaxonName(commonName));
+    && (
+      taxonNamesForEntry(matchedEntry).includes(normalizedTaxonName(commonName))
+      || taxonNamesForEntry(matchedEntry).includes(normalizedTaxonName(scientificName))
+    );
 
   let status;
   if (captureAuthenticity === "reproduction") status = "rejected_authenticity";
@@ -121,7 +121,7 @@ export function normalizeIdentification(
   else if (exactCatalogNameMatch && confidence >= autoAwardThreshold) status = "matched";
   else if (
     confidence >= missingCatalogThreshold
-    && specificMissingSpeciesName(commonName, scientificName)
+    && recognizedMissingTaxon(commonName, scientificName)
     && fact.length >= 12
   ) status = "not_in_catalog";
   else if (imageQuality === "poor") status = "rejected_quality";
